@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookstore - Book Details</title>
+    <link rel="stylesheet" href="../styles/bookDetails.css">
+</head>
+<body>
+    
+    <header>
+        <div class="navbar">
+            <div class="logo">📚 Bookstore</div>
+            <div class="search-container">
+                <input type="text" id="search" class="search-bar" placeholder="Search books...">
+                <div id="search-suggestions" class="suggestions-box"></div>
+            </div>
+            <div class="nav-links">
+                <span>Profile</span>
+                <span>Cart</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="content-wrapper">
+        <!-- Breadcrumb -->
+        <div class="breadcrumb">
+            <a href="Homepage.html">Home</a> > <span>Book Details</span>
+        </div>
+
+        <!-- Book Details Section -->
+        <section class="book-details">
+            <div class="book-details-left">
+                <!-- Image Container for Preview and Main Image -->
+                <div class="image-container">
+                    <div class="book-preview">
+                        <img src="path-to-preview-image1.jpg" alt="Preview 1" class="preview-image">
+                        <img src="path-to-preview-image2.jpg" alt="Preview 2" class="preview-image">
+                    </div>
+                    <div class="book-image-wrapper">
+                        <img src="path-to-book-image.jpg" alt="Book Title" class="book-image">
+                    </div>
+                </div>
+                <!-- Action Buttons Below Image -->
+                <div class="action-buttons">
+                    <button id="add-to-bag" class="add-to-bag">ADD TO BAG</button>
+                    <button id="add-to-wishlist" class="wishlist">♥ WISHLIST</button>
+                </div>
+            </div>
+            <div class="book-details-right">
+                <h1 id="book-title">Don't Make Me Think</h1>
+                <p id="book-author">by Steve Krug</p>
+                <div class="rating">
+                    <span id="book-rating-value">4.5</span>
+                    <span class="star">★</span>
+                    <span id="book-rating-count">(210)</span>
+                </div>
+                <div class="price-info">
+                    <span id="book-price">Rs. 1500</span>
+                    <span id="book-old-price">Rs. 2000</span>
+                </div>
+                <div class="book-description">
+                    <h3>Book Detail</h3>
+                    <p id="book-description">
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                    </p>
+                </div>
+                <!-- Customer Feedback Section -->
+                <section class="customer-feedback">
+                    <h2>Customer Feedback</h2>
+                    <div class="overall-rating">
+                        <h3>Overall rating</h3>
+                        <div class="stars">
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                            <span class="star">★</span>
+                        </div>
+                        <form id="review-form">
+                            <textarea id="review-text" placeholder="Write your review" required></textarea>
+                            <button type="submit" id="submit-review">Submit</button>
+                        </form>
+                    </div>
+                    <div id="reviews-list" class="reviews-list">
+                        <div class="review">
+                            <p class="review-author">Aniket Chile</p>
+                            <div class="review-stars">
+                                <span class="star">★</span>
+                                <span class="star">★</span>
+                                <span class="star">★</span>
+                                <span class="star">★</span>
+                                <span class="star">★</span>
+                            </div>
+                            <p class="review-text">Wonderful Book ★★★★★</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <script src="../scripts/bookDetails.js"></script>
+</body>
+</html>

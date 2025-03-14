@@ -1,0 +1,408 @@
+/* Reset default styles (optional, added for consistency) */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Body */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5; /* Slightly darker background for premium feel */
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #a52a2a;
+    color: white;
+    padding: 0 15px;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 50px;
+    box-sizing: border-box;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Logo Section */
+.logo {
+    display: flex;
+    align-items: center;
+    margin-right: 15px;
+}
+
+.logo img {
+    height: 24px;
+    margin-right: 8px;
+}
+
+.logo-text {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+}
+
+/* Search Bar */
+.search-container {
+    flex-grow: 1;
+    max-width: 400px;
+    position: relative;
+    margin: 0 auto;
+}
+
+.search-bar {
+    width: 100%;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: none;
+    font-size: 14px;
+    background-color: #fff;
+}
+
+.search-bar::placeholder {
+    color: #999;
+}
+
+/* User Controls */
+.user-controls {
+    display: flex;
+    align-items: center;
+}
+
+.account-icon, .cart-icon {
+    color: white;
+    font-size: 18px;
+    margin-left: 25px;
+    cursor: pointer;
+}
+
+.cart-text {
+    font-size: 12px;
+    margin-left: 4px;
+}
+
+/* Search Bar */
+.search-container {
+    position: relative;
+    width: 40%;
+    min-width: 200px;
+    max-width: 500px;
+    z-index: 1002; /* Above navbar but below search bar when focused */
+}
+
+.search-bar {
+    width: 100%;
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    background-color: #fff;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+    z-index: 1004; /* Highest z-index to ensure visibility */
+    position: relative; /* Ensure it has its own stacking context */
+
+}
+
+/* Search Suggestions */
+.suggestions-box {
+    position: absolute;
+    top: 100%; /* Position directly below the search bar */
+    left: 0;
+    width: 100%;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 1003; /* Below search bar but above page content */
+    display: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 2px; /* Small gap to avoid overlap with search bar border */
+}
+
+/* Show suggestions when active (requires JS to toggle display) */
+.search-bar:focus + .suggestions-box,
+.search-container.active .suggestions-box {
+    display: block;
+}
+
+.suggestions-box:empty {
+    display: none;
+}
+
+.suggestion-item {
+    padding: 8px;
+    cursor: pointer;
+    color: black;
+    font-size: 14px;
+    border-bottom: 1px solid #eee;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background-color: #d5e7c3;
+}
+/* Navigation Links */
+.nav-links {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.nav-links span {
+    margin-left: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    white-space: nowrap;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.nav-links span:hover {
+    color: #ffd700;
+}
+
+.nav-links span:last-child {
+    margin-right: 0;
+}
+
+/* Page Content Wrapper */
+.content-wrapper {
+    margin-top: 70px;
+    padding: 20px;
+}
+
+/* Page Info & Sorting */
+.page-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background-color: white;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.sort-dropdown {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    background-color: #fff;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Book List */
+.book-list {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 20px;
+    justify-items: center;
+    background: linear-gradient(180deg, #f5f5f5, #e8e8e8);
+}
+
+/* Book Card */
+.book-card {
+    background-color: white;
+    border-radius: 5px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* padding: 12px; */
+    padding-bottom: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.book-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Book Image */
+.book-image {
+    width: 100%;
+    height: 220px;
+    object-fit: contain;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    padding: 12px;
+    transition: transform 0.2s ease;
+    background-color: #ddd;
+
+}
+
+.book-card:hover .book-image {
+    transform: scale(1.02);
+}
+
+/* Book Content */
+.book-content {
+    width: 100%;
+    text-align: center;
+}
+
+/* Book Title */
+.book-card h3 {
+    font-size: 14px;
+    font-weight: bold;
+    margin: 5px 0;
+    color: black;
+    line-height: 1.3;
+}
+
+/* Author */
+.book-card p {
+    font-size: 12px;
+    color: gray;
+    margin-bottom: 5px;
+}
+
+/* Rating */
+.rating {
+    display: inline-flex;
+    align-items: center;
+    background-color: #4caf50;
+    color: white;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.rating-count {
+    color: black;
+    font-size: 12px;
+    margin-left: 4px;
+    opacity: 0.7;
+}
+
+/* Price */
+.price-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.price {
+    font-weight: bold;
+    font-size: 14px;
+    color: black;
+}
+
+.old-price {
+    text-decoration: line-through;
+    color: gray;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+/* View Details Button */
+.book-card button {
+    background: linear-gradient(90deg, #a52a2a, #8b1e1e);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    transition: background 0.2s ease;
+}
+
+.book-card button:hover {
+    background: linear-gradient(90deg, #8b1e1e, #6e1515);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin: 30px 0;
+    align-items: center;
+}
+
+.pagination span {
+    margin: 0 10px;
+    font-size: 14px;
+    color: #333;
+}
+
+.pagination button {
+    padding: 8px 12px;
+    margin: 0 5px;
+    border: none;
+    background: linear-gradient(90deg, #a52a2a, #8b1e1e);
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.pagination button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.pagination .active {
+    background: #333;
+}
