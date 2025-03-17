@@ -1,6 +1,25 @@
 document.addEventListener("DOMContentLoaded", () => {
     const urlParams = new URLSearchParams(window.location.search);
     const bookId = urlParams.get("id");
+    const profileLink = document.getElementById("profile-link");
+    const cartLink = document.getElementById("cart-link");
+
+    if (profileLink) {
+        profileLink.addEventListener("click", () => {
+            console.log("Redirecting to profile page");
+            window.location.href = "profile.html";
+        });
+    }
+
+    if (cartLink) {
+        cartLink.addEventListener("click", () => {
+            console.log("Redirecting to cart page");
+            window.location.href = "cart.html";
+        });
+    }
+
+
+
     if (bookId) {
         fetchBookDetails(bookId);
         fetchReviews(bookId);
@@ -9,6 +28,8 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelector(".book-details").innerHTML = "<p>Book not found.</p>";
     }
 
+
+
     // Setup event listeners
     setupEventListeners();
 });
@@ -16,22 +37,17 @@ document.addEventListener("DOMContentLoaded", () => {
 // API Base URL
 const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
 
-// Fetch Book Details with Authentication
+// Fetch Book Details (No Authentication for Consistency with homePage.js)
 async function fetchBookDetails(bookId) {
-    const headers = {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${getAuthToken()}`
-    };
-
     try {
-        const response = await fetch(`${API_BASE_URL}/books/${bookId}`, { headers });
+        const response = await fetch(`${API_BASE_URL}/books/${bookId}`);
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch book details`);
 
         const book = await response.json();
         displayBookDetails(book);
     } catch (error) {
         console.error("Error fetching book details:", error);
-        document.querySelector(".book-details").innerHTML = "<p>Failed to load book details. Please try again or log in.</p>";
+        document.querySelector(".book-details").innerHTML = "<p>Failed to load book details. Please try again.</p>";
     }
 }
 
@@ -47,22 +63,17 @@ function displayBookDetails(book) {
     document.querySelector(".book-image").src = book.book_image || "default-image.jpg";
 }
 
-// Fetch Reviews with Authentication
+// Fetch Reviews (No Authentication for Consistency)
 async function fetchReviews(bookId) {
-    const headers = {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${getAuthToken()}`
-    };
-
     try {
-        const response = await fetch(`${API_BASE_URL}/books/${bookId}/reviews`, { headers });
+        const response = await fetch(`${API_BASE_URL}/books/${bookId}/reviews`);
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch reviews`);
 
         const reviews = await response.json();
         displayReviews(reviews);
     } catch (error) {
         console.error("Error fetching reviews:", error);
-        document.getElementById("reviews-list").innerHTML = "<p>Failed to load reviews. Please try again or log in.</p>";
+        document.getElementById("reviews-list").innerHTML = "<p>Failed to load reviews.</p>";
     }
 }
 
@@ -186,12 +197,8 @@ function setupEventListeners() {
     });
 }
 
-// Fetch Search Suggestions
+// Fetch Search Suggestions (No Authentication for Consistency)
 async function fetchSearchSuggestions(query) {
-    const headers = {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${getAuthToken()}`
-    };
     const suggestionsBox = document.getElementById("search-suggestions");
 
     if (!query.trim()) {
@@ -201,7 +208,7 @@ async function fetchSearchSuggestions(query) {
 
     try {
         const encodedQuery = encodeURIComponent(query);
-        const response = await fetch(`${API_BASE_URL}/books/search_suggestions?query=${encodedQuery}`, { headers });
+        const response = await fetch(`${API_BASE_URL}/books/search_suggestions?query=${encodedQuery}`);
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch suggestions`);
         
         const data = await response.json();
@@ -225,10 +232,14 @@ function displaySuggestions(suggestions) {
         const item = document.createElement("div");
         item.textContent = `${suggestion.book_name} by ${suggestion.author_name}`;
         item.classList.add("suggestion-item");
+        item.style.cursor = "pointer";
         item.addEventListener("click", () => {
-            document.getElementById("search").value = suggestion.book_name;
-            suggestionsBox.innerHTML = "";
-            fetchBooksBySearch(suggestion.book_name);
+            console.log("Suggestion clicked in bookDetails:", suggestion);
+            if (suggestion.id) {
+                window.location.href = `bookDetails.html?id=${suggestion.id}`;
+            } else {
+                console.error("Suggestion ID is missing:", suggestion);
+            }
         });
         suggestionsBox.appendChild(item);
     });
@@ -236,17 +247,13 @@ function displaySuggestions(suggestions) {
 
 // Fetch Books by Search Query
 async function fetchBooksBySearch(query) {
-    const headers = {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${getAuthToken()}`
-    };
     const encodedQuery = encodeURIComponent(query);
     try {
-        const response = await fetch(`${API_BASE_URL}/books/search?query=${encodedQuery}`, { headers });
+        const response = await fetch(`${API_BASE_URL}/books/search?query=${encodedQuery}`);
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch books`);
         const data = await response.json();
         if (data.books && data.books.length > 0) {
-            window.location.href = `book_details.html?id=${data.books[0].id}`;
+            window.location.href = `bookDetails.html?id=${data.books[0].id}`;
         }
     } catch (error) {
         console.error("Error fetching search results:", error);
@@ -255,12 +262,10 @@ async function fetchBooksBySearch(query) {
 
 // Authentication Check
 function isAuthenticated() {
-    // Replace with actual authentication check (e.g., check for token in localStorage)
     return localStorage.getItem("authToken") !== null;
 }
 
 // Get Auth Token
 function getAuthToken() {
-    // Replace with actual token retrieval
     return localStorage.getItem("authToken") || "";
 }

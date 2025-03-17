@@ -1,5 +1,23 @@
 document.addEventListener("DOMContentLoaded", () => {
     fetchBooks(); // Initial fetch when page loads
+
+    // Add event listeners for Profile and Cart links
+    const profileLink = document.getElementById("profile-link");
+    const cartLink = document.getElementById("cart-link");
+
+    if (profileLink) {
+        profileLink.addEventListener("click", () => {
+            console.log("Redirecting to profile page");
+            window.location.href = "profile.html";
+        });
+    }
+
+    if (cartLink) {
+        cartLink.addEventListener("click", () => {
+            console.log("Redirecting to cart page");
+            window.location.href = "cart.html";
+        });
+    }
 });
 
 // Global Variables for Pagination
@@ -40,6 +58,13 @@ async function fetchBooks(sortBy = "relevance", page = 1) {
             return;
         }
 
+        // Log the first few books to verify sorting
+        console.log(`Books sorted by ${sortBy}:`, data.books.slice(0, 3).map(book => ({
+            book_name: book.book_name,
+            discounted_price: book.discounted_price,
+            rating: book.rating
+        })));
+
         displayBooks(data.books);
 
         // Handle missing pagination data safely
@@ -58,7 +83,6 @@ async function fetchBooks(sortBy = "relevance", page = 1) {
         bookContainer.innerHTML = "<p>Failed to load books. Please try again.</p>";
     }
 }
-
 
 // Display Books on the Page
 function displayBooks(books) {
@@ -84,21 +108,20 @@ function displayBooks(books) {
                 <h3>${book.book_name}</h3>
                 <p>by ${book.author_name}</p>
                 <div class="rating">
-                    <span>${book.rating}</span> ★
+                    <span>${book.rating || "N/A"}</span> ★ 
                 </div>
-                <span class="rating-count">(${book.rating_count})</span>
+                <span class="rating-count">(${book.rating_count || "0"})</span>
                 <div class="price-info">
                     <span class="price">Rs. ${book.discounted_price}</span>
                     <span class="old-price">Rs. ${book.book_mrp}</span>
                 </div>
-                <button onclick="viewBookDetails(${book.id})">View Details</button>
+                <button onclick="viewBookDetails(${book.id})">Quick View</button>
             </div>
         `;
 
         bookContainer.appendChild(bookCard);
     });
 }
-
 
 // Update Pagination Controls
 function updatePagination(totalPagesFromAPI, currentPageFromAPI) {
@@ -127,6 +150,7 @@ async function fetchSearchSuggestions(query) {
 
     if (!query.trim()) {
         suggestionsBox.innerHTML = "";
+        suggestionsBox.classList.remove("visible"); // Hide suggestions
         return;
     }
 
@@ -137,6 +161,7 @@ async function fetchSearchSuggestions(query) {
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch suggestions`);
         
         const data = await response.json();
+        console.log("Search Suggestions Response:", data);
         displaySuggestions(data.suggestions);
     } catch (error) {
         console.error("Error fetching search suggestions:", error);
@@ -150,20 +175,31 @@ function displaySuggestions(suggestions) {
 
     if (!suggestions || suggestions.length === 0) {
         suggestionsBox.innerHTML = "<p>No suggestions found</p>";
+        suggestionsBox.classList.remove("visible"); // Hide suggestions
         return;
     }
+
+    suggestionsBox.classList.add("visible"); // Show suggestions
 
     suggestions.forEach(suggestion => {
         const item = document.createElement("div");
         item.textContent = `${suggestion.book_name} by ${suggestion.author_name}`;
         item.classList.add("suggestion-item");
-        item.addEventListener("click", () => {
-            document.getElementById("search").value = suggestion.book_name;
-            suggestionsBox.innerHTML = "";
-            fetchBooksBySearch(suggestion.book_name);
+        item.style.cursor = "pointer";
+        item.addEventListener("click", (event) => {
+            event.stopPropagation(); // Prevent event bubbling
+            event.preventDefault();
+            console.log("Suggestion clicked:", suggestion);
+            if (suggestion.id) {
+                viewBookDetails(suggestion.id);
+            } else {
+                console.error("Suggestion ID is missing:", suggestion);
+            }
         });
         suggestionsBox.appendChild(item);
     });
+
+    console.log("Suggestions box updated with items:", suggestionsBox.children.length);
 }
 
 // Fetch Books by Search Query
@@ -186,7 +222,12 @@ async function fetchBooksBySearch(query) {
 
 // View Book Details
 function viewBookDetails(bookId) {
-    window.location.href = `bookDetails.html?id=${bookId}`;
+    console.log("Navigating to book details with ID:", bookId);
+    if (bookId) {
+        window.location.href = `bookDetails.html?id=${bookId}`;
+    } else {
+        console.error("Book ID is undefined or invalid");
+    }
 }
 
 // Pagination Event Listeners
