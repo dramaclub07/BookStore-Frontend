@@ -139,10 +139,12 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         try {
+            const payload = { email, password }; // Un-nested payload
+            console.log('Login payload:', payload); // Debug line to verify
             const response = await fetch(`${API_BASE_URL}/api/v1/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user: { email, password } })
+                body: JSON.stringify(payload) // Send { "email": "...", "password": "..." }
             });
 
             const data = await response.json();
@@ -150,7 +152,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (data.token) {
                 localStorage.setItem('token', data.token);
                 alert(data.message || 'Login successful!');
-                window.location.href = 'dashboard.html';
+                window.location.href = '../pages/homePage.html';
             } else {
                 alert(data.errors || data.error || 'Invalid email or password.');
             }
