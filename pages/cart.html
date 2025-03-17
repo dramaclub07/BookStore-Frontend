@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookstore Cart</title>
+    <link rel="stylesheet" href="/styles/cart.css">
+</head>
+<body>
+    <header>
+        <div class="logo">📚 Bookstore</div>
+        <input type="text" placeholder="Search...">
+        <div class="profile-cart">
+            <a href="#">Profile</a>
+            <a href="#">Cart (1)</a>
+        </div>
+    </header>
+    
+    <main>
+        <h1>My cart (1)</h1>
+        <div class="cart-item">
+            <img src="book-cover.jpg" alt="Book Cover">
+            <div class="item-details">
+                <h2>Don't Make Me Think</h2>
+                <p>by Steve Krug</p>
+                <p><strong>Rs. 1500</strong><span class="original-price"> Rs. 2000</span></p>
+                <div class="quantity-controls">
+                    <button>-</button>
+                    <span>1</span>
+                    <button>+</button>
+                </div>
+                <button class="remove">Remove</button>
+            </div>
+        </div>
+        
+        <div class="location">
+            <select>
+                <option>Use current location</option>
+            </select>
+        </div>
+
+        <h3>Address Details</h3>
+        <h3>Order Summary</h3>
+        <button class="place-order">PLACE ORDER</button>
+    </main>
+
+    <footer>
+        <p>Copyright © 2020, Bookstore Private Limited. All Rights Reserved</p>
+    </footer>
+</body>
+</html>
