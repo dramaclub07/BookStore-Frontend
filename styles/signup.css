@@ -1,25 +1,195 @@
+/* General Styles */
 body {
     font-family: Arial, sans-serif;
-    background-color: #f5f5f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #e0e0e0;
+    margin: 0;
+}
+
+/* Container */
+.container {
+    display: flex;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    width: 800px;
+    max-height: 600px;
+}
+
+/* Left Card (Logo & Branding) */
+.left-card {
+    flex: 1;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    min-width: 0;
+    max-width: 50%;
+}
+
+/* Circle around the shopper icon */
+.icon-circle {
+    width: 150px;
+    height: 150px;
+    background: #003366;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.shopper {
+    width: 100px;
+    height: 100px;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.title {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin-top: 20px;
     text-align: center;
 }
-.signup-container {
-    max-width: 400px;
-    margin: 100px auto;
+
+/* Right Card (Signup Form) */
+.right-card {
+    flex: 1.5;
     padding: 20px;
-    background: white;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    min-width: 0;
 }
-input {
+
+/* Tabs */
+.tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 20px;
+}
+
+.tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #666;
+}
+
+.tab.active {
+    color: #800000;
+    border-bottom: 2px solid #800000;
+}
+
+/* Form Fields */
+.form-group {
+    margin-bottom: 15px;
+    text-align: left;
+    position: relative;
+}
+
+label {
     display: block;
-    width: 90%;
-    margin: 10px auto;
-    padding: 10px;
+    margin-bottom: 5px;
+    font-weight: bold;
 }
-button {
-    background: #28a745;
+
+.form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    padding-right: 40px; /* Space for password toggle */
+}
+
+/* Error Handling */
+.form-control.error {
+    border-color: red;
+    background: #ffe6e6;
+}
+
+.error-message {
+    color: red;
+    font-size: 12px;
+    margin-top: 5px;
+    display: block;
+}
+
+/* Password Field */
+.password-field {
+    position: relative;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+}
+
+.password-toggle svg {
+    width: 18px;
+    height: 18px;
+    fill: #666;
+    transition: fill 0.3s;
+}
+
+.password-toggle:hover svg {
+    fill: #333;
+}
+
+/* Submit Button */
+.btn-submit {
+    width: 100%;
+    padding: 10px;
+    background: #800000;
     color: white;
     border: none;
-    padding: 10px;
+    border-radius: 4px;
     cursor: pointer;
+    font-size: 16px;
+}
+
+.btn-submit:hover {
+    background: #660000;
+}
+
+/* Responsive Styles */
+@media (max-width: 600px) {
+    .container {
+        flex-direction: column;
+        width: 90%;
+        max-height: none;
+    }
+    
+    .left-card {
+        max-width: 100%;
+        padding: 10px;
+    }
+    
+    .right-card {
+        max-width: 100%;
+        padding: 10px;
+    }
+    
+    .icon-circle {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .shopper {
+        width: 70px;
+        height: 70px;
+    }
+
+    .btn-submit {
+        font-size: 14px;
+    }
 }
