@@ -18,8 +18,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-
-
     if (bookId) {
         fetchBookDetails(bookId);
         fetchReviews(bookId);
@@ -28,26 +26,22 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelector(".book-details").innerHTML = "<p>Book not found.</p>";
     }
 
-
-
-    // Setup event listeners
     setupEventListeners();
 });
 
 // API Base URL
 const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
 
-// Fetch Book Details (No Authentication for Consistency with homePage.js)
+// Fetch Book Details
 async function fetchBookDetails(bookId) {
     try {
         const response = await fetch(`${API_BASE_URL}/books/${bookId}`);
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch book details`);
-
         const book = await response.json();
         displayBookDetails(book);
     } catch (error) {
         console.error("Error fetching book details:", error);
-        document.querySelector(".book-details").innerHTML = "<p>Failed to load book details. Please try again.</p>";
+        document.querySelector(".book-details").innerHTML = "<p>Failed to load book details.</p>";
     }
 }
 
@@ -63,12 +57,11 @@ function displayBookDetails(book) {
     document.querySelector(".book-image").src = book.book_image || "default-image.jpg";
 }
 
-// Fetch Reviews (No Authentication for Consistency)
+// Fetch Reviews
 async function fetchReviews(bookId) {
     try {
         const response = await fetch(`${API_BASE_URL}/books/${bookId}/reviews`);
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch reviews`);
-
         const reviews = await response.json();
         displayReviews(reviews);
     } catch (error) {
@@ -101,70 +94,93 @@ function displayReviews(reviews) {
 
 // Setup Event Listeners
 function setupEventListeners() {
-    // Search Suggestions
     const searchBar = document.getElementById("search");
-    searchBar.addEventListener("input", () => {
-        fetchSearchSuggestions(searchBar.value);
-    });
-
-    searchBar.addEventListener("keypress", (event) => {
+    searchBar?.addEventListener("input", () => fetchSearchSuggestions(searchBar.value));
+    searchBar?.addEventListener("keypress", (event) => {
         if (event.key === "Enter") fetchBooksBySearch(searchBar.value);
     });
 
     // Add to Bag
-    document.getElementById("add-to-bag").addEventListener("click", async () => {
+    document.getElementById("add-to-bag")?.addEventListener("click", async () => {
         if (!isAuthenticated()) {
             alert("Please log in to add to bag.");
             return;
         }
 
         const bookId = new URLSearchParams(window.location.search).get("id");
+        const token = getAuthToken();
+        console.log("Sending Add to Bag request with token:", token);
+
         try {
             const response = await fetch(`${API_BASE_URL}/cart/add`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${getAuthToken()}`
+                    "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify({ book_id: bookId, quantity: 1 })
             });
 
-            if (!response.ok) throw new Error("Failed to add to bag");
+            const result = await response.json();
+            if (!response.ok) throw new Error(`Failed to add to bag: ${result.error || "Unknown error"}`);
             alert("Book added to bag successfully!");
         } catch (error) {
             console.error("Error adding to bag:", error);
-            alert("Failed to add to bag. Please try again.");
+            alert(`Failed to add to bag: ${error.message}`);
         }
     });
 
-    // Add to Wishlist (Toggle)
-    document.getElementById("add-to-wishlist").addEventListener("click", async () => {
+    // Add to Wishlist
+    document.getElementById("add-to-wishlist")?.addEventListener("click", async () => {
         if (!isAuthenticated()) {
             alert("Please log in to add to wishlist.");
             return;
         }
 
         const bookId = new URLSearchParams(window.location.search).get("id");
+        const token = getAuthToken();
+        console.log("Sending Wishlist request with token:", token);
+
         try {
             const response = await fetch(`${API_BASE_URL}/wishlists/toggle/${bookId}`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${getAuthToken()}`
+                    "Authorization": `Bearer ${token}`
                 }
             });
 
-            if (!response.ok) throw new Error("Failed to toggle wishlist");
             const result = await response.json();
+            if (!response.ok) throw new Error(`Failed to toggle wishlist: ${result.error || "Unknown error"}`);
             alert(result.message || "Wishlist updated successfully!");
         } catch (error) {
             console.error("Error adding to wishlist:", error);
-            alert("Failed to update wishlist. Please try again.");
+            alert(`Failed to update wishlist: ${error.message}`);
         }
     });
 
-    // Submit Review
-    document.getElementById("review-form").addEventListener("submit", async (event) => {
+    // Star Rating Logic
+    let selectedRating = 0; // Track user-selected rating
+    const stars = document.querySelectorAll("#rating-stars .star");
+    stars.forEach(star => {
+        star.addEventListener("click", () => {
+            selectedRating = parseInt(star.getAttribute("data-value"));
+            updateStarDisplay(selectedRating);
+            console.log("Selected rating:", selectedRating);
+        });
+
+        star.addEventListener("mouseover", () => {
+            const hoverValue = parseInt(star.getAttribute("data-value"));
+            updateStarDisplay(hoverValue);
+        });
+
+        star.addEventListener("mouseout", () => {
+            updateStarDisplay(selectedRating); // Revert to selected rating
+        });
+    });
+
+    // Submit Review with Dynamic Rating
+    document.getElementById("review-form")?.addEventListener("submit", async (event) => {
         event.preventDefault();
 
         if (!isAuthenticated()) {
@@ -174,7 +190,12 @@ function setupEventListeners() {
 
         const bookId = new URLSearchParams(window.location.search).get("id");
         const reviewText = document.getElementById("review-text").value;
-        const rating = 5; // You can add a rating input if needed (currently hardcoded)
+        const rating = selectedRating || 0; // Use selected rating, default to 0 if none selected
+
+        if (rating === 0) {
+            alert("Please select a rating.");
+            return;
+        }
 
         try {
             const response = await fetch(`${API_BASE_URL}/books/${bookId}/reviews`, {
@@ -186,21 +207,34 @@ function setupEventListeners() {
                 body: JSON.stringify({ rating, comment: reviewText })
             });
 
-            if (!response.ok) throw new Error("Failed to submit review");
+            const result = await response.json();
+            if (!response.ok) throw new Error(`Failed to submit review: ${result.error || "Unknown error"}`);
             alert("Review submitted successfully!");
             document.getElementById("review-text").value = "";
-            fetchReviews(bookId); // Refresh reviews
+            selectedRating = 0; // Reset rating
+            updateStarDisplay(0); // Clear stars
+            fetchReviews(bookId);
+            localStorage.setItem("reviewSubmitted", "true"); // Set flag for homepage refresh
+            console.log("Review submitted, flag set in localStorage");
         } catch (error) {
             console.error("Error submitting review:", error);
-            alert("Failed to submit review. Please try again.");
+            alert(`Failed to submit review: ${error.message}`);
         }
     });
 }
 
-// Fetch Search Suggestions (No Authentication for Consistency)
+// Update Star Display
+function updateStarDisplay(rating) {
+    const stars = document.querySelectorAll("#rating-stars .star");
+    stars.forEach(star => {
+        const starValue = parseInt(star.getAttribute("data-value"));
+        star.classList.toggle("active", starValue <= rating);
+    });
+}
+
+// Fetch Search Suggestions
 async function fetchSearchSuggestions(query) {
     const suggestionsBox = document.getElementById("search-suggestions");
-
     if (!query.trim()) {
         suggestionsBox.innerHTML = "";
         return;
@@ -210,8 +244,8 @@ async function fetchSearchSuggestions(query) {
         const encodedQuery = encodeURIComponent(query);
         const response = await fetch(`${API_BASE_URL}/books/search_suggestions?query=${encodedQuery}`);
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch suggestions`);
-        
         const data = await response.json();
+        console.log("Search Suggestions:", data);
         displaySuggestions(data.suggestions);
     } catch (error) {
         console.error("Error fetching search suggestions:", error);
@@ -234,12 +268,8 @@ function displaySuggestions(suggestions) {
         item.classList.add("suggestion-item");
         item.style.cursor = "pointer";
         item.addEventListener("click", () => {
-            console.log("Suggestion clicked in bookDetails:", suggestion);
-            if (suggestion.id) {
-                window.location.href = `bookDetails.html?id=${suggestion.id}`;
-            } else {
-                console.error("Suggestion ID is missing:", suggestion);
-            }
+            console.log("Suggestion clicked:", suggestion);
+            if (suggestion.id) window.location.href = `bookDetails.html?id=${suggestion.id}`;
         });
         suggestionsBox.appendChild(item);
     });
@@ -260,12 +290,15 @@ async function fetchBooksBySearch(query) {
     }
 }
 
-// Authentication Check
+// Authentication Functions
 function isAuthenticated() {
-    return localStorage.getItem("authToken") !== null;
+    const token = localStorage.getItem("token");
+    console.log("Checking auth, token:", token);
+    return token !== null;
 }
 
-// Get Auth Token
 function getAuthToken() {
-    return localStorage.getItem("authToken") || "";
+    const token = localStorage.getItem("token") || "";
+    console.log("Retrieved token:", token);
+    return token;
 }

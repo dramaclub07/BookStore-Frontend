@@ -6,21 +6,17 @@
     <title>Bookstore - Book Details</title>
     <link rel="stylesheet" href="../styles/bookDetails.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
 </head>
 <body>
-    
     <header>
         <div class="navbar">
             <div class="logo">
                 <img src="../assets/education@2x.png" style="width: 50px; height: 30px;"> Bookstore
             </div>
-            
             <div class="search-container">
                 <input type="text" id="search" class="search-bar" placeholder="Search books...">
                 <div id="search-suggestions" class="suggestions-box"></div>
             </div>
-    
             <div class="nav-links">
                 <span id="profile-link"><i class="fa-solid fa-user"></i> Profile</span>
                 <span id="cart-link"><i class="fa-solid fa-shopping-cart"></i> Cart</span>
@@ -29,15 +25,12 @@
     </header>
 
     <main class="content-wrapper">
-        <!-- Breadcrumb -->
         <div class="breadcrumb">
             <a href="Homepage.html">Home</a> > <span>Book Details</span>
         </div>
 
-        <!-- Book Details Section -->
         <section class="book-details">
             <div class="book-details-left">
-                <!-- Image Container for Preview and Main Image -->
                 <div class="image-container">
                     <div class="book-preview">
                         <img src="path-to-preview-image1.jpg" alt="" class="preview-image">
@@ -47,7 +40,6 @@
                         <img src="path-to-book-image.jpg" alt="Book Title" class="book-image">
                     </div>
                 </div>
-                <!-- Action Buttons Below Image -->
                 <div class="action-buttons">
                     <button id="add-to-bag" class="add-to-bag">ADD TO BAG</button>
                     <button id="add-to-wishlist" class="wishlist">♥ WISHLIST</button>
@@ -68,20 +60,19 @@
                 <div class="book-description">
                     <h3>Book Detail</h3>
                     <p id="book-description">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit...
                     </p>
                 </div>
-                <!-- Customer Feedback Section -->
                 <section class="customer-feedback">
                     <h2>Customer Feedback</h2>
                     <div class="overall-rating">
                         <h3>Overall rating</h3>
-                        <div class="stars">
-                            <span class="star">★</span>
-                            <span class="star">★</span>
-                            <span class="star">★</span>
-                            <span class="star">★</span>
-                            <span class="star">★</span>
+                        <div class="stars" id="rating-stars">
+                            <span class="star" data-value="1">★</span>
+                            <span class="star" data-value="2">★</span>
+                            <span class="star" data-value="3">★</span>
+                            <span class="star" data-value="4">★</span>
+                            <span class="star" data-value="5">★</span>
                         </div>
                         <form id="review-form">
                             <textarea id="review-text" placeholder="Write your review" required></textarea>
