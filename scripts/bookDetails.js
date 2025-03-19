@@ -131,9 +131,10 @@ function setupEventListeners() {
     });
 
 // Add to Wishlist
+// Add to Wishlist
 document.getElementById("add-to-wishlist")?.addEventListener("click", async () => {
     if (!isAuthenticated()) {
-        alert("Please log in to add to wishlist.");
+        window.location.href = "pleaseLogin.html"; // Redirect to login page
         return;
     }
 
@@ -155,14 +156,25 @@ document.getElementById("add-to-wishlist")?.addEventListener("click", async () =
 
         alert(result.message || "Wishlist updated successfully!");
 
-        // **Redirecting to Wishlist page after success**
-        window.location.href = "../pages/wishlist.html";  // Change the URL to match your actual wishlist page
+        // Redirecting to Wishlist page after success
+        window.location.href = "../pages/wishlist.html";
 
     } catch (error) {
         console.error("Error adding to wishlist:", error);
         alert(`Failed to update wishlist: ${error.message}`);
     }
 });
+
+// Helper function to check authentication
+function isAuthenticated() {
+    return !!localStorage.getItem("token"); // Checks if token exists in localStorage
+}
+
+// Helper function to get auth token
+function getAuthToken() {
+    return localStorage.getItem("token");
+}
+
 
 
     // Star Rating Logic

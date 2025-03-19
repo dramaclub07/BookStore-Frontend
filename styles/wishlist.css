@@ -1,4 +1,4 @@
-*{
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -12,34 +12,60 @@ body {
     width: 80%;
     margin: 20px auto;
     text-align: center;
+    min-height: calc(100vh - 90px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .wishlist-container {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 20px;
 }
 
+/* Wishlist Item Styles */
 .wishlist-item {
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    padding: 15px;
-    width: 200px;
-    text-align: center;
+    /* padding: 15px; */
+    width: 1000px;
+    height: 183px;
+    display: flex;
     background-color: #fff;
     box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+    /* border-bottom: 1px solid grey; */
+    /* border: 1px solid green; */
 }
 
-.wishlist-item img {
-    width: 100%;
-    height: 150px;
+.wishlist-details {
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: start;
+    padding-left: 25px;
+}
+
+.btn-container {
+    width: 20%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.img-container {
+    width: 20%;
+    height: 75%;
+    object-fit: cover;
+}
+
+img {
+    height: 100%;
+    width: 39%;
     object-fit: cover;
 }
 
 .wishlist-item h3 {
     font-size: 16px;
-    margin: 10px 0;
 }
 
 .wishlist-item p {
@@ -48,14 +74,23 @@ body {
 
 .remove-btn {
     background-color: red;
+    height: 50px;
     color: white;
     border: none;
     padding: 5px 10px;
     cursor: pointer;
 }
 
-header{
-    border: 1px solid green;
+/* Empty Wishlist Message */
+.empty-wishlist {
+    text-align: center;
+    font-size: 16px;
+    color: #777;
+    margin-top: 10px;
+}
+
+/* Header and Navbar */
+header {
     width: 100%;
     height: 50px;
 }
@@ -71,37 +106,25 @@ header{
     top: 0;
     width: 100vw;
     height: 50px;
-    box-sizing: border-box;
     z-index: 1000;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* Logo Section */
 .logo {
     display: flex;
     align-items: center;
-    margin-right: 10px;
     gap: 5px;
 }
 
 .logo img {
     height: 24px;
-    margin-right: 8px;
 }
 
-.logo-text {
-    font-size: 18px;
-    font-weight: bold;
-    color: white;
-}
-
-/* Search Bar */
 .search-container {
     flex-grow: 1;
     max-width: 400px;
     position: relative;
     margin: 0 auto;
-
 }
 
 .search-bar {
@@ -111,116 +134,21 @@ header{
     border: none;
     font-size: 14px;
     background-color: #fff;
-
 }
 
 .search-bar::placeholder {
     color: #999;
 }
 
-/* User Controls */
-.user-controls {
-    display: flex;
-    align-items: center;
-}
-
-.account-icon,
-.cart-icon {
-    color: white;
-    font-size: 18px;
-    margin-left: 25px;
-    cursor: pointer;
-}
-
-.cart-text {
-    font-size: 20px;
-    margin-left: 4px;
-}
-
-/* Search Bar */
-.search-container {
-    position: relative;
-    width: 40%;
-    min-width: 200px;
-    max-width: 500px;
-    z-index: 1002;
-    /* Above navbar but below search bar when focused */
-}
-
-.search-bar {
-    width: 100%;
-    padding: 8px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-    background-color: #fff;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-    z-index: 1004;
-    /* Highest z-index to ensure visibility */
-    position: relative;
-    /* Ensure it has its own stacking context */
-
-}
-
-/* Search Suggestions */
-.suggestions-box {
-    position: absolute;
-    top: 100%;
-    /* Position directly below the search bar */
-    left: 0;
-    width: 100%;
-    background: white;
-    border: 1px solid #ddd;
-    border-top: none;
-    border-radius: 0 0 5px 5px;
-    max-height: 150px;
-    overflow-y: auto;
-    z-index: 1003;
-    /* Below search bar but above page content */
-    display: none;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    margin-top: 2px;
-    /* Small gap to avoid overlap with search bar border */
-}
-
-/* Show suggestions when active (requires JS to toggle display) */
-.search-bar:focus+.suggestions-box,
-.search-container.active .suggestions-box {
-    display: block;
-}
-
-.suggestions-box:empty {
-    display: none;
-}
-
-.suggestion-item {
-    padding: 8px;
-    cursor: pointer;
-    color: black;
-    font-size: 14px;
-    border-bottom: 1px solid #eee;
-}
-
-.suggestion-item:last-child {
-    border-bottom: none;
-}
-
-.suggestion-item:hover {
-    background-color: #d5e7c3;
-}
-
-/* Navigation Links */
 .nav-links {
     display: flex;
     align-items: center;
-    flex-shrink: 0;
 }
 
 .nav-links span {
     margin-left: 20px;
     cursor: pointer;
     font-size: 14px;
-    white-space: nowrap;
     font-weight: 500;
     transition: color 0.2s ease;
 }
@@ -229,12 +157,24 @@ header{
     color: #ffd700;
 }
 
-.nav-links span:last-child {
-    margin-right: 0;
-}
-
-/* Page Content Wrapper */
 .content-wrapper {
     margin-top: 70px;
     padding: 20px;
+}
+
+.wishlist-main-container{
+    /* border: 1px solid purple; */
+    width: 100%;
+    height: 100%;
+    padding: 15px;
+    width: 1000px;
+    height: 183px;
+    display: flex;
+    background-color: #fff;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+a{
+    text-decoration: none;
+    color: black
 }
