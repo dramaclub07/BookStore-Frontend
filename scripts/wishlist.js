@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function fetchWishlist() {
         const token = localStorage.getItem("token"); 
         if (!token) {
-            window.location.href = "login.html"; // Redirect if not logged in
+            window.location.href = "../pages/login.html"; // Redirect if not logged in
             return;
         }
 
