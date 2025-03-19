@@ -139,7 +139,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         try {
-            const payload = { email, password }; // Un-nested payload
+            // const payload = { email, password }; // Un-nested payload
+            const payload = { user: { email, password } };
             console.log('Login payload:', payload); // Debug line to verify
             const response = await fetch(`${API_BASE_URL}/api/v1/login`, {
                 method: 'POST',
