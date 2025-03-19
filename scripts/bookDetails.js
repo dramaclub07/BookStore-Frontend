@@ -49,8 +49,8 @@ async function fetchBookDetails(bookId) {
 function displayBookDetails(book) {
     document.getElementById("book-title").textContent = book.book_name;
     document.getElementById("book-author").textContent = `by ${book.author_name}`;
-    document.getElementById("book-rating-value").textContent = book.rating;
-    document.getElementById("book-rating-count").textContent = `(${book.rating_count})`;
+    document.getElementById("book-rating-value").textContent = book.rating || "0.0";
+    document.getElementById("book-rating-count").textContent = `(${book.rating_count || 0})`;
     document.getElementById("book-price").textContent = `Rs. ${book.discounted_price}`;
     document.getElementById("book-old-price").textContent = `Rs. ${book.book_mrp}`;
     document.getElementById("book-description").textContent = book.description || "No description available.";
@@ -213,7 +213,8 @@ function setupEventListeners() {
             document.getElementById("review-text").value = "";
             selectedRating = 0; // Reset rating
             updateStarDisplay(0); // Clear stars
-            fetchReviews(bookId);
+            fetchReviews(bookId); // Refresh reviews
+            fetchBookDetails(bookId); // Refresh book details (rating and count)
             localStorage.setItem("reviewSubmitted", "true"); // Set flag for homepage refresh
             console.log("Review submitted, flag set in localStorage");
         } catch (error) {
