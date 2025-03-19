@@ -11,11 +11,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
+    const usernameElement = document.querySelector(".username");
+
+    // Set the username in the navbar
+    const username = localStorage.getItem("username") || "User";
+    if (usernameElement) {
+        usernameElement.textContent = username;
+    }
+
+    // Dropdown menu state
+    let dropdownMenu = null;
+    let isDropdownOpen = false;
 
     if (profileLink) {
-        profileLink.addEventListener("click", () => {
-            console.log("Redirecting to profile page");
-            window.location.href = "profile.html";
+        profileLink.addEventListener("click", (event) => {
+            event.preventDefault(); // Prevent default link behavior
+            console.log("Profile link clicked, toggling dropdown");
+
+            // Toggle dropdown visibility
+            if (isDropdownOpen) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+
+        // Close dropdown if clicking outside
+        document.addEventListener("click", (event) => {
+            if (
+                isDropdownOpen &&
+                !profileLink.contains(event.target) &&
+                dropdownMenu &&
+                !dropdownMenu.contains(event.target)
+            ) {
+                closeDropdown();
+            }
         });
     }
 
@@ -25,6 +55,77 @@ document.addEventListener("DOMContentLoaded", () => {
             window.location.href = "cart.html";
         });
     }
+
+    // Function to open the dropdown
+    function openDropdown() {
+        // If dropdown already exists, remove it first
+        if (dropdownMenu) {
+            dropdownMenu.remove();
+        }
+
+        // Create dropdown menu
+        dropdownMenu = document.createElement("div");
+        dropdownMenu.classList.add("profile-dropdown");
+
+        // Dropdown content with Font Awesome icons matching the first image
+        dropdownMenu.innerHTML = `
+            <div class="dropdown-item dropdown-header">Hello ${username},</div>
+            <div class="dropdown-item" id="dropdown-profile">
+                <i class="far fa-user dropdown-icon"></i> Profile
+            </div>
+            <div class="dropdown-item" id="dropdown-orders">
+                <i class="far fa-folder dropdown-icon"></i> My Orders
+            </div>
+            <div class="dropdown-item" id="dropdown-wishlist">
+                <i class="far fa-heart dropdown-icon"></i> My Wishlist
+            </div>
+            <div class="dropdown-item">
+                <button id="dropdown-logout" class="logout-button">Logout</button>
+            </div>
+        `;
+
+        // Append dropdown to the profile link's parent
+        profileLink.parentElement.appendChild(dropdownMenu);
+
+        // Add event listeners to dropdown items
+        document.getElementById("dropdown-profile").addEventListener("click", () => {
+            console.log("Redirecting to profile page");
+            window.location.href = "profile.html";
+            closeDropdown();
+        });
+
+        document.getElementById("dropdown-orders").addEventListener("click", () => {
+            console.log("Redirecting to orders page");
+            window.location.href = "orders.html"; // Adjust the URL as needed
+            closeDropdown();
+        });
+
+        document.getElementById("dropdown-wishlist").addEventListener("click", () => {
+            console.log("Redirecting to wishlist page");
+            window.location.href = "wishlist.html"; // Adjust the URL as needed
+            closeDropdown();
+        });
+
+        document.getElementById("dropdown-logout").addEventListener("click", () => {
+            console.log("Logging out...");
+            // Clear any session data (e.g., localStorage, cookies, etc.)
+            localStorage.clear(); // Example: Clear localStorage
+            // Redirect to login page or homepage
+            window.location.href = "login.html"; // Adjust the URL as needed
+            closeDropdown();
+        });
+
+        isDropdownOpen = true;
+    }
+
+    // Function to close the dropdown
+    function closeDropdown() {
+        if (dropdownMenu) {
+            dropdownMenu.remove();
+            dropdownMenu = null;
+        }
+        isDropdownOpen = false;
+    }
 });
 
 // Global Variables for Pagination
@@ -32,7 +133,7 @@ let currentPage = 1;
 let totalPages = 1;
 const API_BASE_URL = "http://127.0.0.1:3000/api/v1/books";
 
-// Fetch Books from API (unchanged)
+// Fetch Books from API
 async function fetchBooks(sortBy = "relevance", page = 1) {
     const bookContainer = document.getElementById("book-list");
     const prevButton = document.getElementById("prev-page");
@@ -86,7 +187,7 @@ async function fetchBooks(sortBy = "relevance", page = 1) {
     }
 }
 
-// Display Books on the Page (unchanged)
+// Display Books on the Page
 function displayBooks(books) {
     const bookContainer = document.getElementById("book-list");
     bookContainer.innerHTML = "";
@@ -125,7 +226,7 @@ function displayBooks(books) {
     });
 }
 
-// Update Pagination Controls (unchanged)
+// Update Pagination Controls
 function updatePagination(totalPagesFromAPI, currentPageFromAPI) {
     totalPages = totalPagesFromAPI;
     currentPage = currentPageFromAPI;
@@ -143,7 +244,7 @@ function updatePagination(totalPagesFromAPI, currentPageFromAPI) {
     if (nextButton) nextButton.disabled = currentPage >= totalPages || totalPages === 0;
 }
 
-// Debounced Fetch Search Suggestions (unchanged)
+// Debounced Fetch Search Suggestions
 let debounceTimer;
 document.getElementById("search")?.addEventListener("input", (event) => {
     clearTimeout(debounceTimer);
@@ -152,7 +253,7 @@ document.getElementById("search")?.addEventListener("input", (event) => {
     }, 300);
 });
 
-// Fetch Search Suggestions (unchanged)
+// Fetch Search Suggestions
 async function fetchSearchSuggestions(query) {
     const suggestionsBox = document.getElementById("search-suggestions");
 
@@ -178,7 +279,7 @@ async function fetchSearchSuggestions(query) {
     }
 }
 
-// Display Search Suggestions (unchanged)
+// Display Search Suggestions
 function displaySuggestions(suggestions) {
     const suggestionsBox = document.getElementById("search-suggestions");
     suggestionsBox.innerHTML = "";
@@ -206,7 +307,7 @@ function displaySuggestions(suggestions) {
     });
 }
 
-// Fetch Books by Search Query (unchanged)
+// Fetch Books by Search Query
 async function fetchBooksBySearch(query) {
     const bookContainer = document.getElementById("book-list");
     bookContainer.innerHTML = "<p>Loading search results...</p>";
@@ -226,7 +327,7 @@ async function fetchBooksBySearch(query) {
     }
 }
 
-// View Book Details (unchanged)
+// View Book Details
 function viewBookDetails(bookId) {
     console.log("Navigating to book details with ID:", bookId);
     if (bookId) {
@@ -236,7 +337,7 @@ function viewBookDetails(bookId) {
     }
 }
 
-// Pagination Event Listeners (unchanged)
+// Pagination Event Listeners
 document.getElementById("prev-page")?.addEventListener("click", () => {
     if (currentPage > 1) {
         console.log("Fetching previous page:", currentPage - 1);
@@ -251,7 +352,7 @@ document.getElementById("next-page")?.addEventListener("click", () => {
     }
 });
 
-// Search & Sort Event Listeners (unchanged)
+// Search & Sort Event Listeners
 document.getElementById("search")?.addEventListener("keypress", (event) => {
     if (event.key === "Enter") {
         console.log("Search triggered with query:", event.target.value);
