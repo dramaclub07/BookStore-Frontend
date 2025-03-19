@@ -3,49 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bookstore Cart</title>
-    <link rel="stylesheet" href="/styles/cart.css">
+    <title>Bookstore - Cart</title>
+    <link rel="stylesheet" href="/styles/styles.css">
 </head>
 <body>
-    <header>
-        <div class="logo">📚 Bookstore</div>
-        <input type="text" placeholder="Search...">
-        <div class="profile-cart">
-            <a href="#">Profile</a>
-            <a href="#">Cart (1)</a>
-        </div>
-    </header>
-    
-    <main>
-        <h1>My cart (1)</h1>
-        <div class="cart-item">
-            <img src="book-cover.jpg" alt="Book Cover">
-            <div class="item-details">
-                <h2>Don't Make Me Think</h2>
-                <p>by Steve Krug</p>
-                <p><strong>Rs. 1500</strong><span class="original-price"> Rs. 2000</span></p>
-                <div class="quantity-controls">
-                    <button>-</button>
-                    <span>1</span>
-                    <button>+</button>
+    <div class="content">
+        <div class="breadcrumb">Home / My cart</div>
+        <div class="section">
+            <h2>My cart (1)</h2>
+            <div class="cart-item">
+                <img src="https://via.placeholder.com/80x120" alt="Don't Make Me Think">
+                <div class="cart-item-details">
+                    <h3>Don't Make Me Think</h3>
+                    <p>by Steve Krug</p>
+                    <p>Rs. 1500 <del>Rs. 2000</del></p>
+                    <div class="quantity">
+                        <button>-</button>
+                        <span>1</span>
+                        <button>+</button>
+                    </div>
+                    <button class="remove">Remove</button>
                 </div>
-                <button class="remove">Remove</button>
             </div>
+            <button class="use-location">📍 Use current location</button>
+            <button class="place-order" onclick="window.location.href='customer-details.html'">Place Order</button>
         </div>
-        
-        <div class="location">
-            <select>
-                <option>Use current location</option>
-            </select>
+        <div class="section">
+            <h2>Address Details</h2>
         </div>
-
-        <h3>Address Details</h3>
-        <h3>Order Summary</h3>
-        <button class="place-order">PLACE ORDER</button>
-    </main>
-
+        <div class="section">
+            <h2>Order summary</h2>
+        </div>
+    </div>
     <footer>
-        <p>Copyright © 2020, Bookstore Private Limited. All Rights Reserved</p>
+        <p>Copyright © 2020, BookstorePrivate Limited. All Rights Reserved</p>
     </footer>
+    <script src="/scripts/script.js"></script>
 </body>
 </html>
