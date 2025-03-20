@@ -3,34 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bookstore - Order Confirmation</title>
+    <title>Order Success</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/styles/styles.css">
+    <style>
+         body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+    </style>
 </head>
 <body>
-    <div class="content">
-        <div class="confirmation">
-            <h2>Order Placed Successfully</h2>
-            <p class="message">hurray!!! your order is confirmed the order id is #123456 save the order id for further communication...</p>
-            <div class="contact-info">
-                <div>
-                    <strong>Email us</strong><br>
-                    admin@bookstore.com
-                </div>
-                <div>
-                    <strong>Contact us</strong><br>
-                    +91 8163475881
-                </div>
-                <div>
-                    <strong>Address</strong><br>
-                    42, 14th Main, 15th Cross, Sector 4, Opp to BDA complex, near Kumarakom restaurant, HSR Layout, Bangalore 560034
-                </div>
+    <header>
+        <div class="header-container">
+            <div class="logo">📖 Bookstore</div>
+            <input type="text" class="search-bar" placeholder="Search...">
+            <div class="user-nav">
+                <span class="profile">👤 User</span>
+                <span class="cart">🛒<span class="cart-count">0</span></span>
             </div>
-            <button class="continue-shopping" onclick="window.location.href='homePage.html'">CONTINUE SHOPPING</button>
         </div>
+    </header>
+
+    <div class="success-container">
+        <div class="confetti">🎉✨🎊</div>
+        <div class="success-message">
+            <h1>Order Placed Successfully</h1>
+            <p>Hurray!!! Your order is confirmed <br> 
+               The order ID is <strong id="order-id">#123456</strong>. 
+               Save the order ID for further communication.
+            </p>
+        </div>
+        <table class="contact-table">
+            <tr>
+                <th>Email us</th>
+                <th>Contact us</th>
+                <th>Address</th>
+            </tr>
+            <tr>
+                <td>admin@bookstore.com</td>
+                <td>+91 8163475881</td>
+                <td>42, 14th Main, 15th Cross, Sector 4, Opp to BDA complex, near Kumarakom restaurant, HSR Layout, Bangalore 560034</td>
+            </tr>
+        </table>
+        <button class="continue-button">CONTINUE SHOPPING</button>
     </div>
     <footer>
-        <p>Copyright © 2020, BookstorePrivate Limited. All Rights Reserved</p>
+        <p>Copyright &copy; 2020, Bookstore Private Limited. All Rights Reserved</p>
     </footer>
-    <script src="/scripts/script.js"></script>
+    <script src="/scripts/order-confirmation.js"></script>
 </body>
 </html>

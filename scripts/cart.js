@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     await loadUserProfile();
     await loadCartItems();
+    setupLocationButton();
 });
 
 // Get auth headers
@@ -262,3 +263,92 @@ async function loadUserProfile() {
       console.error("Profile fetch error:", error.message);
     }
   }
+
+// Setup event listener for the "Use current location" button
+function setupLocationButton() {
+    const useLocationButton = document.querySelector('.use-location');
+    if (!useLocationButton) {
+        console.log('Use current location button not found');
+        return;
+    }
+
+    useLocationButton.addEventListener('click', async function() {
+        // Check if the browser supports Geolocation
+        if ("geolocation" in navigator) {
+            useLocationButton.textContent = '📍 Fetching location...';
+            useLocationButton.disabled = true;
+
+            try {
+                // Get the user's current position
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+                });
+
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+
+                // Use Nominatim API to convert coordinates to an address
+                const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`;
+                const response = await fetch(nominatimUrl, {
+                    headers: {
+                        'User-Agent': 'BookstoreApp/1.0 (your-email@example.com)' // Nominatim requires a User-Agent header
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch address from Nominatim API');
+                }
+
+                const data = await response.json();
+                if (data && data.display_name) {
+                    const address = data.display_name;
+                    // Update the Address Details section
+                    const addressContainer = document.getElementById('address-container');
+                    if (addressContainer) {
+                        addressContainer.innerHTML = `<p>${address}</p>`;
+                    }
+                } else {
+                    throw new Error('No address found for the given coordinates');
+                }
+
+                // Reset the button
+                useLocationButton.textContent = '📍 Use current location';
+                useLocationButton.disabled = false;
+            } catch (error) {
+                // Handle errors
+                let errorMessage = 'Unable to fetch location: ';
+                if (error.code) {
+                    // Geolocation API errors
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage += 'User denied the request for Geolocation.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage += 'Location information is unavailable.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage += 'The request to get user location timed out.';
+                            break;
+                        default:
+                            errorMessage += 'An unknown error occurred.';
+                            break;
+                    }
+                } else {
+                    // Nominatim API or other errors
+                    errorMessage += error.message;
+                }
+                alert(errorMessage);
+                const addressContainer = document.getElementById('address-container');
+                if (addressContainer) {
+                    addressContainer.innerHTML = `<p>No address selected.</p>`;
+                }
+
+                // Reset the button
+                useLocationButton.textContent = '📍 Use current location';
+                useLocationButton.disabled = false;
+            }
+        } else {
+            alert('Geolocation is not supported by your browser.');
+        }
+    });
+}
