@@ -70,7 +70,6 @@ async function fetchReviews(bookId) {
     }
 }
 
-
 // Display Reviews
 function displayReviews(reviews) {
     const reviewsList = document.getElementById("reviews-list");
@@ -81,31 +80,86 @@ function displayReviews(reviews) {
         return;
     }
 
+    const currentUser = getCurrentUserFromToken();
+    const currentUserId = currentUser?.user_id;
+    console.log("Current user ID from token:", currentUserId);
 
     reviews.forEach(review => {
         const reviewDiv = document.createElement("div");
         reviewDiv.classList.add("review");
 
         const reviewAuthor = review.user_name || "Anonymous";
+        const isCurrentUserReview = currentUserId && review.user_id === currentUserId;
+
+        let deleteButton = '';
+        if (isCurrentUserReview) {
+            deleteButton = `
+                <button class="delete-review-btn" data-review-id="${review.id}">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>
+            `;
+        }
 
         reviewDiv.innerHTML = `
-            <p class="review-author">${reviewAuthor}</p>
+            <div class="review-header">
+                <p class="review-author">${reviewAuthor}</p>
+                ${deleteButton}
+            </div>
             <div class="review-stars">${"★".repeat(review.rating)}</div>
             <p class="review-text">${review.comment}</p>
         `;
+
         reviewsList.appendChild(reviewDiv);
+
+        if (isCurrentUserReview) {
+            const deleteBtn = reviewDiv.querySelector(".delete-review-btn");
+            deleteBtn.addEventListener("click", () => deleteReview(review.id));
+        }
     });
+}
+
+// Delete Review
+async function deleteReview(reviewId) {
+    if (!confirm("Are you sure you want to delete this review?")) {
+        return;
+    }
+
+    const bookId = new URLSearchParams(window.location.search).get("id");
+    const token = getAuthToken();
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/books/${bookId}/reviews/${reviewId}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to delete review");
+        }
+
+        alert("Review deleted successfully!");
+        fetchReviews(bookId); // Refresh reviews
+        fetchBookDetails(bookId); // Refresh book rating
+    } catch (error) {
+        console.error("Error deleting review:", error);
+        alert(`Failed to delete review: ${error.message}`);
+    }
 }
 
 // Get Current User from Token
 function getCurrentUserFromToken() {
     const token = localStorage.getItem("token");
-    if (!token) return null;
+    if (!token) {
+        console.log("No token found in localStorage");
+        return null;
+    }
 
     try {
-        // Decode JWT token (header.payload.signature)
         const payload = token.split(".")[1];
-        const decodedPayload = atob(payload); // Base64 decode
+        const decodedPayload = atob(payload);
         const userData = JSON.parse(decodedPayload);
         console.log("Decoded user data from token:", userData);
         return userData; // Should include { id, full_name }
@@ -123,7 +177,6 @@ function setupEventListeners() {
         if (event.key === "Enter") fetchBooksBySearch(searchBar.value);
     });
 
-    // Add to Bag
     document.getElementById("add-to-bag")?.addEventListener("click", async () => {
         if (!isAuthenticated()) {
             alert("Please log in to add to bag.");
@@ -132,7 +185,6 @@ function setupEventListeners() {
 
         const bookId = new URLSearchParams(window.location.search).get("id");
         const token = getAuthToken();
-        console.log("Sending Add to Bag request with token:", token);
 
         try {
             const response = await fetch(`${API_BASE_URL}/cart/add`, {
@@ -153,16 +205,14 @@ function setupEventListeners() {
         }
     });
 
-    // Add to Wishlist
     document.getElementById("add-to-wishlist")?.addEventListener("click", async () => {
         if (!isAuthenticated()) {
-            window.location.href = "pleaseLogin.html"; // Redirect to login page
+            window.location.href = "pleaseLogin.html";
             return;
         }
 
         const bookId = new URLSearchParams(window.location.search).get("id");
         const token = getAuthToken();
-        console.log("Sending Wishlist request with token:", token);
 
         try {
             const response = await fetch(`${API_BASE_URL}/wishlists/toggle/${bookId}`, {
@@ -175,7 +225,6 @@ function setupEventListeners() {
 
             const result = await response.json();
             if (!response.ok) throw new Error(`Failed to toggle wishlist: ${result.error || "Unknown error"}`);
-
             alert(result.message || "Wishlist updated successfully!");
             window.location.href = "../pages/wishlist.html";
         } catch (error) {
@@ -184,8 +233,7 @@ function setupEventListeners() {
         }
     });
 
-    // Star Rating Logic
-    let selectedRating = 0; // Track user-selected rating
+    let selectedRating = 0;
     const stars = document.querySelectorAll("#rating-stars .star");
     stars.forEach(star => {
         star.addEventListener("click", () => {
@@ -200,11 +248,10 @@ function setupEventListeners() {
         });
 
         star.addEventListener("mouseout", () => {
-            updateStarDisplay(selectedRating); // Revert to selected rating
+            updateStarDisplay(selectedRating);
         });
     });
 
-    // Submit Review with Dynamic Rating
     document.getElementById("review-form")?.addEventListener("submit", async (event) => {
         event.preventDefault();
 
@@ -215,7 +262,7 @@ function setupEventListeners() {
 
         const bookId = new URLSearchParams(window.location.search).get("id");
         const reviewText = document.getElementById("review-text").value;
-        const rating = selectedRating || 0; // Use selected rating, default to 0 if none selected
+        const rating = selectedRating || 0;
 
         if (rating === 0) {
             alert("Please select a rating.");
@@ -236,11 +283,11 @@ function setupEventListeners() {
             if (!response.ok) throw new Error(`Failed to submit review: ${result.error || "Unknown error"}`);
             alert("Review submitted successfully!");
             document.getElementById("review-text").value = "";
-            selectedRating = 0; // Reset rating
-            updateStarDisplay(0); // Clear stars
-            fetchReviews(bookId); // Refresh reviews
-            fetchBookDetails(bookId); // Refresh book details (rating and count)
-            localStorage.setItem("reviewSubmitted", "true"); // Set flag for homepage refresh
+            selectedRating = 0;
+            updateStarDisplay(0);
+            fetchReviews(bookId);
+            fetchBookDetails(bookId);
+            localStorage.setItem("reviewSubmitted", "true");
             console.log("Review submitted, flag set in localStorage");
         } catch (error) {
             console.error("Error submitting review:", error);

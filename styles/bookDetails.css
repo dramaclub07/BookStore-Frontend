@@ -13,7 +13,7 @@ body {
     background-color: #f5f5f5;
 }
 
-/* Navbar (unchanged) */
+/* Navbar */
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -370,7 +370,6 @@ body {
     color: #ffd700; /* Gold for selected stars */
 }
 
-/* Remove conflicting hover rules */
 .overall-rating .stars .star:hover {
     color: #ffd700; /* Hover effect only on the star itself */
 }
@@ -417,10 +416,17 @@ body {
     padding-bottom: 15px;
 }
 
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
 .review-author {
     font-size: 14px;
     font-weight: 600;
-    margin-bottom: 5px;
+    margin-bottom: 0; /* Remove bottom margin since it's in a flex container */
 }
 
 .review-stars {
@@ -439,7 +445,30 @@ body {
     color: #666;
 }
 
-/* Responsive Design (unchanged) */
+.delete-review-btn {
+    background-color: transparent;
+    color: #a52a2a;
+    border: 1px solid brown;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 5px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.delete-review-btn:hover {
+    background-color: rgba(165, 42, 42, 0.1);
+
+}
+
+.delete-review-btn i {
+    font-size: 12px;
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
     .navbar {
         flex-wrap: wrap;
