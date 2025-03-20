@@ -1,12 +1,11 @@
 document.addEventListener("DOMContentLoaded", () => {
     console.log("DOM fully loaded, fetching books...");
-    // Check if returning from book details with a review update
     if (localStorage.getItem("reviewSubmitted") === "true") {
-        console.log("Review submitted previously, refreshing books...");
-        localStorage.removeItem("reviewSubmitted"); // Clear flag
-        fetchBooks(); // Refresh data
+        console.log("Review submitted previously, forcing refresh of books...");
+        localStorage.removeItem("reviewSubmitted");
+        fetchBooks("relevance", 1, true);
     } else {
-        fetchBooks(); // Initial fetch
+        fetchBooks();
     }
 
     const profileLink = document.getElementById("profile-link");
@@ -27,13 +26,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// Global Variables for Pagination
 let currentPage = 1;
 let totalPages = 1;
 const API_BASE_URL = "http://127.0.0.1:3000/api/v1/books";
 
-// Fetch Books from API (unchanged)
-async function fetchBooks(sortBy = "relevance", page = 1) {
+async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) {
     const bookContainer = document.getElementById("book-list");
     const prevButton = document.getElementById("prev-page");
     const nextButton = document.getElementById("next-page");
@@ -49,7 +46,7 @@ async function fetchBooks(sortBy = "relevance", page = 1) {
     if (nextButton) nextButton.disabled = true;
 
     try {
-        const url = `${API_BASE_URL}?sort=${sortBy}&page=${page}`;
+        const url = `${API_BASE_URL}?sort=${sortBy}&page=${page}&force_refresh=${forceRefresh}`;
         console.log("Fetching books from:", url);
 
         const response = await fetch(url);
@@ -61,6 +58,7 @@ async function fetchBooks(sortBy = "relevance", page = 1) {
 
         const data = await response.json();
         console.log("API Response:", data);
+        console.log("Books with ratings:", data.books.map(b => ({ name: b.book_name, rating: b.rating, rating_count: b.rating_count })));
 
         if (!data.success || !data.books || data.books.length === 0) {
             console.warn("No books returned from API.");
@@ -86,7 +84,6 @@ async function fetchBooks(sortBy = "relevance", page = 1) {
     }
 }
 
-// Display Books on the Page (unchanged)
 function displayBooks(books) {
     const bookContainer = document.getElementById("book-list");
     bookContainer.innerHTML = "";
@@ -110,7 +107,7 @@ function displayBooks(books) {
                 <h3>${book.book_name}</h3>
                 <p>by ${book.author_name}</p>
                 <div class="rating">
-                    <span>${book.rating || "N/A"}</span> ★ 
+                    <span>${book.rating || "0.0"}</span> ★ 
                 </div>
                 <span class="rating-count">(${book.rating_count || "0"})</span>
                 <div class="price-info">
@@ -125,7 +122,6 @@ function displayBooks(books) {
     });
 }
 
-// Update Pagination Controls (unchanged)
 function updatePagination(totalPagesFromAPI, currentPageFromAPI) {
     totalPages = totalPagesFromAPI;
     currentPage = currentPageFromAPI;
@@ -143,7 +139,6 @@ function updatePagination(totalPagesFromAPI, currentPageFromAPI) {
     if (nextButton) nextButton.disabled = currentPage >= totalPages || totalPages === 0;
 }
 
-// Debounced Fetch Search Suggestions (unchanged)
 let debounceTimer;
 document.getElementById("search")?.addEventListener("input", (event) => {
     clearTimeout(debounceTimer);
@@ -152,7 +147,6 @@ document.getElementById("search")?.addEventListener("input", (event) => {
     }, 300);
 });
 
-// Fetch Search Suggestions (unchanged)
 async function fetchSearchSuggestions(query) {
     const suggestionsBox = document.getElementById("search-suggestions");
 
@@ -178,7 +172,6 @@ async function fetchSearchSuggestions(query) {
     }
 }
 
-// Display Search Suggestions (unchanged)
 function displaySuggestions(suggestions) {
     const suggestionsBox = document.getElementById("search-suggestions");
     suggestionsBox.innerHTML = "";
@@ -206,7 +199,6 @@ function displaySuggestions(suggestions) {
     });
 }
 
-// Fetch Books by Search Query (unchanged)
 async function fetchBooksBySearch(query) {
     const bookContainer = document.getElementById("book-list");
     bookContainer.innerHTML = "<p>Loading search results...</p>";
@@ -226,7 +218,6 @@ async function fetchBooksBySearch(query) {
     }
 }
 
-// View Book Details (unchanged)
 function viewBookDetails(bookId) {
     console.log("Navigating to book details with ID:", bookId);
     if (bookId) {
@@ -236,7 +227,6 @@ function viewBookDetails(bookId) {
     }
 }
 
-// Pagination Event Listeners (unchanged)
 document.getElementById("prev-page")?.addEventListener("click", () => {
     if (currentPage > 1) {
         console.log("Fetching previous page:", currentPage - 1);
@@ -251,7 +241,6 @@ document.getElementById("next-page")?.addEventListener("click", () => {
     }
 });
 
-// Search & Sort Event Listeners (unchanged)
 document.getElementById("search")?.addEventListener("keypress", (event) => {
     if (event.key === "Enter") {
         console.log("Search triggered with query:", event.target.value);

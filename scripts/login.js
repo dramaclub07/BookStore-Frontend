@@ -1,7 +1,6 @@
 // Base URL for API
 const API_BASE_URL = 'http://localhost:3000';
 
-// Initialize on DOM load
 document.addEventListener("DOMContentLoaded", function () {
     // Tab switching with card transition
     document.querySelectorAll('.tab').forEach(tab => {
@@ -25,32 +24,24 @@ document.addEventListener("DOMContentLoaded", function () {
         document.querySelector('#signup-form').classList.add('active');
     });
 
-    // Password toggle for login form (inspired by fundooLogin.js)
+    // Password toggle for login form (persistent toggle)
     const loginPasswordInput = document.getElementById('login-password');
     const loginTogglePassword = document.getElementById('login-toggle-password');
     const loginEyeIcon = loginTogglePassword.querySelector('svg');
     loginTogglePassword.addEventListener('click', () => {
-        loginPasswordInput.type = 'text';
-        loginEyeIcon.style.opacity = '0.5'; // Visually indicate toggle (optional, adjust based on your CSS)
-
-        setTimeout(() => {
-            loginPasswordInput.type = 'password';
-            loginEyeIcon.style.opacity = '1';
-        }, 2000); // Revert after 2 seconds
+        const isPassword = loginPasswordInput.type === 'password';
+        loginPasswordInput.type = isPassword ? 'text' : 'password';
+        loginEyeIcon.style.opacity = isPassword ? '0.5' : '1'; // Toggle visibility state
     });
 
-    // Password toggle for signup form (same behavior)
+    // Password toggle for signup form (persistent toggle)
     const signupPasswordInput = document.getElementById('signup-password');
     const signupTogglePassword = document.getElementById('signup-toggle-password');
     const signupEyeIcon = signupTogglePassword.querySelector('svg');
     signupTogglePassword.addEventListener('click', () => {
-        signupPasswordInput.type = 'text';
-        signupEyeIcon.style.opacity = '0.5';
-
-        setTimeout(() => {
-            signupPasswordInput.type = 'password';
-            signupEyeIcon.style.opacity = '1';
-        }, 2000);
+        const isPassword = signupPasswordInput.type === 'password';
+        signupPasswordInput.type = isPassword ? 'text' : 'password';
+        signupEyeIcon.style.opacity = isPassword ? '0.5' : '1';
     });
 
     // Forgot Password Modal handling
@@ -100,16 +91,16 @@ document.addEventListener("DOMContentLoaded", function () {
                 alert(data.errors || 'Failed to send OTP. Please try again.');
             }
         } catch (error) {
-            alert(`Failed to connect to the server at ${API_BASE_URL}. Error: ${error.message}`);
+            console.error('Forgot password error:', error.message);
+            alert(`Failed to connect to the server. Error: ${error.message}`);
         }
     });
 
-    // Login form submission (inspired by fundooLogin.js)
+    // Login form submission
     const emailInput = document.getElementById('login-email');
     const passwordInput = document.getElementById('login-password');
     const rememberMeCheckbox = document.getElementById('rememberMe');
 
-    // Check local storage for remembered email
     if (localStorage.getItem('rememberedEmail')) {
         emailInput.value = localStorage.getItem('rememberedEmail');
         if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
@@ -131,7 +122,6 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // Save email to localStorage if "Remember Me" is checked
         if (rememberMeCheckbox && rememberMeCheckbox.checked) {
             localStorage.setItem('rememberedEmail', email);
         } else {
@@ -139,26 +129,30 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         try {
-            const payload = { email, password }; // Un-nested payload
-            console.log('Login payload:', payload); // Debug line to verify
+            const payload = { email, password }; // Adjust to { user: { email, password } } if required by API
+            console.log('Login payload:', payload);
             const response = await fetch(`${API_BASE_URL}/api/v1/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload) // Send { "email": "...", "password": "..." }
+                body: JSON.stringify(payload),
+                // credentials: 'include' // Uncomment if API uses cookies/auth headers
             });
 
             const data = await response.json();
             console.log('Login response:', data);
+            if (!response.ok) {
+                throw new Error(data.errors || data.error || 'Login failed');
+            }
             if (data.token) {
                 localStorage.setItem('token', data.token);
                 alert(data.message || 'Login successful!');
                 window.location.href = '../pages/homePage.html';
             } else {
-                alert(data.errors || data.error || 'Invalid email or password.');
+                alert('No token received. Please try again.');
             }
         } catch (error) {
             console.error('Login error:', error.message);
-            alert(`Failed to connect to the server at ${API_BASE_URL}. Error: ${error.message}`);
+            alert(`Login failed. Error: ${error.message}`);
         }
     });
 
@@ -211,7 +205,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 alert(data.errors || 'Failed to sign up. Please try again.');
             }
         } catch (error) {
-            alert(`Failed to connect to the server at ${API_BASE_URL}. Error: ${error.message}`);
+            console.error('Signup error:', error.message);
+            alert(`Failed to connect to the server. Error: ${error.message}`);
         }
     });
 
