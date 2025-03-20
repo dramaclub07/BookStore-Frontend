@@ -67,17 +67,17 @@ document.addEventListener("DOMContentLoaded", () => {
         dropdownMenu = document.createElement("div");
         dropdownMenu.classList.add("profile-dropdown");
 
-        // Dropdown content with Font Awesome icons matching the first image
+        // Dropdown content with Font Awesome icons matching the image
         dropdownMenu.innerHTML = `
             <div class="dropdown-item dropdown-header">Hello ${username},</div>
             <div class="dropdown-item" id="dropdown-profile">
-                <i class="far fa-user dropdown-icon"></i> Profile
+                <i class="fa-solid fa-user dropdown-icon"></i> Profile
             </div>
             <div class="dropdown-item" id="dropdown-orders">
-                <i class="far fa-folder dropdown-icon"></i> My Orders
+                <i class="fa-solid fa-folder dropdown-icon"></i> My Orders
             </div>
             <div class="dropdown-item" id="dropdown-wishlist">
-                <i class="far fa-heart dropdown-icon"></i> My Wishlist
+                <i class="fa-solid fa-heart dropdown-icon"></i> My Wishlist
             </div>
             <div class="dropdown-item">
                 <button id="dropdown-logout" class="logout-button">Logout</button>

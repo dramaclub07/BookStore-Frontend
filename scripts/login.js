@@ -1,15 +1,161 @@
 // Base URL for API
 const API_BASE_URL = 'http://localhost:3000';
 
+console.log('login.js running');
+
+// Fallback quote in case API fails
+const fallbackQuote = '"A room without books is like a body without a soul." – Cicero';
+
+// Function to fetch a random quote from Quotable API
+async function fetchRandomQuote() {
+    try {
+        const response = await fetch('https://api.quotable.io/random?tags=inspirational|wisdom');
+        if (!response.ok) {
+            throw new Error('Failed to fetch quote');
+        }
+        const data = await response.json();
+        return `"${data.content}" – ${data.author}`;
+    } catch (error) {
+        console.error('Error fetching quote:', error);
+        return fallbackQuote; // Use fallback quote on error
+    }
+}
+
+// Function to rotate quotes every 6 seconds
+async function rotateQuotes() {
+    const quoteElement = document.getElementById('quote-text');
+
+    // Initial quote fetch
+    quoteElement.textContent = await fetchRandomQuote();
+    quoteElement.style.opacity = '1';
+
+    // Rotate quotes every 6 seconds
+    setInterval(async () => {
+        quoteElement.style.opacity = '0'; // Fade out
+        setTimeout(async () => {
+            quoteElement.textContent = await fetchRandomQuote();
+            quoteElement.style.opacity = '1'; // Fade in
+        }, 500); // Match the fade-out duration
+    }, 6000); // Change every 6 seconds
+}
+
+// Initialize Facebook SDK
+window.fbAsyncInit = function() {
+    FB.init({
+        appId: 'your_facebook_app_id', // Replace with your Facebook App ID
+        cookie: true,
+        xfbml: true,
+        version: 'v20.0'
+    });
+    FB.AppEvents.logPageView();
+};
+
+// Function to handle Google Sign-In response
+function handleCredentialResponse(response) {
+    console.log("Google Sign-In successful!");
+    const id_token = response.credential;
+    verifySocialToken(id_token, 'google');
+}
+
+// Function to handle Facebook Sign-In
+function facebookSignIn() {
+    console.log("Initiating Facebook Sign-In");
+    FB.login(function(response) {
+        if (response.authResponse) {
+            const accessToken = response.authResponse.accessToken;
+            console.log("Facebook Sign-In successful! Access token received.");
+            verifySocialToken(accessToken, 'facebook');
+        } else {
+            console.error('User cancelled Facebook login or did not fully authorize.');
+            alert('Facebook login cancelled');
+        }
+    }, { scope: 'email' });
+}
+
+// Function to verify social tokens (Google or Facebook) with your backend
+async function verifySocialToken(token, provider) {
+    try {
+        console.log(`Sending ${provider} token to backend for verification`);
+        const endpoint = provider === 'google' ? '/api/v1/google_auth' : '/api/v1/facebook_auth';
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ token })
+        });
+        const data = await response.json();
+        
+        if (response.ok && data.message === 'Authentication successful') {
+            console.log("User authenticated successfully:", data.user);
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('username', data.user.name || data.user.email.split('@')[0]);
+            localStorage.setItem('socialEmail', data.user.email);
+            localStorage.setItem('socialProvider', provider);
+            document.querySelector('.social-login').style.display = 'none';
+            document.getElementById('signout-container').style.display = 'flex';
+            alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login successful! Welcome, ${data.user.name || data.user.email.split('@')[0]}`);
+            window.location.href = '../pages/homePage.html'; // Redirect to homepage
+        } else {
+            console.error(`${provider} authentication failed:`, data.error || "Unknown error");
+            alert(`Authentication failed: ${data.error || "Unknown error"}`);
+        }
+    } catch (error) {
+        console.error(`Error verifying ${provider} token:`, error);
+        alert(`Failed to verify ${provider} token: ${error.message}`);
+    }
+}
+
+// Function to handle Sign-Out (Google and Facebook)
+function handleSignOut() {
+    console.log('Signing out');
+    const provider = localStorage.getItem('socialProvider');
+    
+    if (provider === 'google' && typeof google !== 'undefined' && google.accounts) {
+        console.log('Signing out from Google');
+        google.accounts.id.disableAutoSelect();
+        google.accounts.id.revoke(localStorage.getItem('socialEmail') || '', () => {
+            console.log('Google session revoked');
+        });
+    }
+    
+    if (provider === 'facebook') {
+        console.log('Signing out from Facebook');
+        FB.getLoginStatus(function(response) {
+            if (response.status === 'connected') {
+                FB.logout(function(response) {
+                    console.log('Facebook session revoked');
+                });
+            }
+        });
+    }
+    
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    localStorage.removeItem('socialEmail');
+    localStorage.removeItem('socialProvider');
+    document.querySelector('.social-login').style.display = 'block';
+    document.getElementById('signout-container').style.display = 'none';
+    alert('Signed out successfully.');
+}
+
 // Initialize on DOM load
 document.addEventListener("DOMContentLoaded", function () {
+    // Start rotating quotes
+    rotateQuotes();
+
+    // Check if user is already signed in
+    if (localStorage.getItem('token') && localStorage.getItem('socialEmail')) {
+        document.querySelector('.social-login').style.display = 'none';
+        document.getElementById('signout-container').style.display = 'flex';
+    }
+
     // Tab switching with card transition
     document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', (e) => {
             e.preventDefault();
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
-
             const tabId = tab.getAttribute('data-tab');
             document.querySelectorAll('.auth-card').forEach(card => card.classList.remove('active'));
             document.getElementById(`${tabId}-form`).classList.add('active');
@@ -25,28 +171,26 @@ document.addEventListener("DOMContentLoaded", function () {
         document.querySelector('#signup-form').classList.add('active');
     });
 
-    // Password toggle for login form (inspired by fundooLogin.js)
+    // Password toggle for login form
     const loginPasswordInput = document.getElementById('login-password');
     const loginTogglePassword = document.getElementById('login-toggle-password');
     const loginEyeIcon = loginTogglePassword.querySelector('svg');
     loginTogglePassword.addEventListener('click', () => {
         loginPasswordInput.type = 'text';
-        loginEyeIcon.style.opacity = '0.5'; // Visually indicate toggle (optional, adjust based on your CSS)
-
+        loginEyeIcon.style.opacity = '0.5';
         setTimeout(() => {
             loginPasswordInput.type = 'password';
             loginEyeIcon.style.opacity = '1';
-        }, 2000); // Revert after 2 seconds
+        }, 2000);
     });
 
-    // Password toggle for signup form (same behavior)
+    // Password toggle for signup form
     const signupPasswordInput = document.getElementById('signup-password');
     const signupTogglePassword = document.getElementById('signup-toggle-password');
     const signupEyeIcon = signupTogglePassword.querySelector('svg');
     signupTogglePassword.addEventListener('click', () => {
         signupPasswordInput.type = 'text';
         signupEyeIcon.style.opacity = '0.5';
-
         setTimeout(() => {
             signupPasswordInput.type = 'password';
             signupEyeIcon.style.opacity = '1';
@@ -91,7 +235,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
             });
-
             const data = await response.json();
             if (response.ok && data.message) {
                 alert(data.message);
@@ -104,12 +247,11 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Login form submission (inspired by fundooLogin.js)
+    // Login form submission
     const emailInput = document.getElementById('login-email');
     const passwordInput = document.getElementById('login-password');
     const rememberMeCheckbox = document.getElementById('rememberMe');
 
-    // Check local storage for remembered email
     if (localStorage.getItem('rememberedEmail')) {
         emailInput.value = localStorage.getItem('rememberedEmail');
         if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
@@ -131,7 +273,6 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        // Save email to localStorage if "Remember Me" is checked
         if (rememberMeCheckbox && rememberMeCheckbox.checked) {
             localStorage.setItem('rememberedEmail', email);
         } else {
@@ -139,21 +280,22 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         try {
-            // const payload = { email, password }; // Un-nested payload
-            const payload = { user: { email, password } };
-            console.log('Login payload:', payload); // Debug line to verify
+            const payload = { email, password };
+            console.log('Login payload:', payload);
             const response = await fetch(`${API_BASE_URL}/api/v1/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload) // Send { "email": "...", "password": "..." }
+                body: JSON.stringify(payload)
             });
-
             const data = await response.json();
             console.log('Login response:', data);
             if (data.token) {
                 localStorage.setItem('token', data.token);
+                const username = data.user?.full_name || email.split('@')[0];
+                localStorage.setItem('username', username);
+                console.log('Username stored in localStorage:', username);
                 alert(data.message || 'Login successful!');
-                window.location.href = '../pages/homePage.html';
+                window.location.href = '../pages/homePage.html'; // Redirect to homepage
             } else {
                 alert(data.errors || data.error || 'Invalid email or password.');
             }
@@ -203,7 +345,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user: { full_name: name, email, password, mobile_number: mobile } })
             });
-
             const data = await response.json();
             if (response.ok && data.message) {
                 alert(data.message);
@@ -216,12 +357,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Social login buttons (placeholder)
-    document.querySelector('.btn-facebook').addEventListener('click', () => {
-        alert('Facebook login not implemented yet.');
-    });
-
-    document.querySelector('.btn-google').addEventListener('click', () => {
-        alert('Google login not implemented yet.');
-    });
+    // Attach sign-out handler
+    document.getElementById('signout-button').addEventListener('click', handleSignOut);
 });
