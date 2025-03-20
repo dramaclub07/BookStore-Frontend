@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookstore - Cart</title>
+    <link rel="stylesheet" href="/styles/styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-container">
+            <div class="logo">📖 Bookstore</div>
+            <input type="text" class="search-bar" placeholder="Search...">
+            <div class="user-nav">
+                <span class="profile">👤 User</span>
+                <span class="cart">🛒<span class="cart-count">0</span></span>
+            </div>
+        </div>
+    </header>
+    
+    <div class="content">
+        <div class="breadcrumb">
+            <a href="/pages/homePage.html" class="breadcrumb-link">Home</a> / <span class="my_cart">My cart</span>
+        </div>
+        
+        <div class="section">
+            <h2>My cart (<span id="cart-count">0</span>)</h2>
+            <div id="cart-container">
+                <!-- Cart items will be dynamically added here -->
+            </div>
+            <button class="use-location">📍 Use current location</button>
+            <button class="place-order" onclick="window.location.href='customer-details.html'">Place Order</button>
+        </div>
+
+        <div class="section">
+            <h2>Address Details</h2>
+            <div id="address-container">
+                <p>No address selected.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Order Summary</h2>
+            <p>Total Price: Rs. <span id="cart-total">0</span></p>
+        </div>
+    </div>
+
+    <footer>
+        <p>Copyright © 2020, BookstorePrivate Limited. All Rights Reserved</p>
+    </footer>
+
+    <script src="/scripts/cart.js"></script>
+</body>
+</html>
