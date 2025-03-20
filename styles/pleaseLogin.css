@@ -1,0 +1,73 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f9f9f9;
+    text-align: center;
+}
+
+.navbar {
+    background-color: #a52a2a;
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.search {
+    padding: 8px;
+    width: 40%;
+    border-radius: 5px;
+    border: none;
+}
+
+.nav-icons span {
+    margin-left: 20px;
+    cursor: pointer;
+}
+
+.container {
+    margin-top: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+h2 {
+    font-size: 24px;
+}
+
+p {
+    color: #666;
+}
+
+.wishlist-icon {
+    width: 80px;
+    margin: 20px 0;
+}
+
+button {
+    background-color: white;
+    border: 2px solid #a52a2a;
+    color: #a52a2a;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #a52a2a;
+    color: white;
+}

@@ -49,8 +49,8 @@ async function fetchBookDetails(bookId) {
 function displayBookDetails(book) {
     document.getElementById("book-title").textContent = book.book_name;
     document.getElementById("book-author").textContent = `by ${book.author_name}`;
-    document.getElementById("book-rating-value").textContent = book.rating;
-    document.getElementById("book-rating-count").textContent = `(${book.rating_count})`;
+    document.getElementById("book-rating-value").textContent = book.rating || "0.0";
+    document.getElementById("book-rating-count").textContent = `(${book.rating_count || 0})`;
     document.getElementById("book-price").textContent = `Rs. ${book.discounted_price}`;
     document.getElementById("book-old-price").textContent = `Rs. ${book.book_mrp}`;
     document.getElementById("book-description").textContent = book.description || "No description available.";
@@ -131,9 +131,10 @@ function setupEventListeners() {
     });
 
 // Add to Wishlist
+// Add to Wishlist
 document.getElementById("add-to-wishlist")?.addEventListener("click", async () => {
     if (!isAuthenticated()) {
-        alert("Please log in to add to wishlist.");
+        window.location.href = "pleaseLogin.html"; // Redirect to login page
         return;
     }
 
@@ -155,14 +156,25 @@ document.getElementById("add-to-wishlist")?.addEventListener("click", async () =
 
         alert(result.message || "Wishlist updated successfully!");
 
-        // **Redirecting to Wishlist page after success**
-        window.location.href = "../pages/wishlist.html";  // Change the URL to match your actual wishlist page
+        // Redirecting to Wishlist page after success
+        window.location.href = "../pages/wishlist.html";
 
     } catch (error) {
         console.error("Error adding to wishlist:", error);
         alert(`Failed to update wishlist: ${error.message}`);
     }
 });
+
+// Helper function to check authentication
+function isAuthenticated() {
+    return !!localStorage.getItem("token"); // Checks if token exists in localStorage
+}
+
+// Helper function to get auth token
+function getAuthToken() {
+    return localStorage.getItem("token");
+}
+
 
 
     // Star Rating Logic
@@ -219,7 +231,8 @@ document.getElementById("add-to-wishlist")?.addEventListener("click", async () =
             document.getElementById("review-text").value = "";
             selectedRating = 0; // Reset rating
             updateStarDisplay(0); // Clear stars
-            fetchReviews(bookId);
+            fetchReviews(bookId); // Refresh reviews
+            fetchBookDetails(bookId); // Refresh book details (rating and count)
             localStorage.setItem("reviewSubmitted", "true"); // Set flag for homepage refresh
             console.log("Review submitted, flag set in localStorage");
         } catch (error) {
