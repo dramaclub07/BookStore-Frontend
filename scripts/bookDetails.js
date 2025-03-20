@@ -25,7 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("No book ID found in URL");
         document.querySelector(".book-details").innerHTML = "<p>Book not found.</p>";
     }
-
     setupEventListeners();
 });
 
@@ -71,6 +70,7 @@ async function fetchReviews(bookId) {
     }
 }
 
+
 // Display Reviews
 function displayReviews(reviews) {
     const reviewsList = document.getElementById("reviews-list");
@@ -80,6 +80,7 @@ function displayReviews(reviews) {
         reviewsList.innerHTML = "<p>No reviews yet.</p>";
         return;
     }
+
 
     reviews.forEach(review => {
         const reviewDiv = document.createElement("div");
