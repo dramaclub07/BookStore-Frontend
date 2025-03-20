@@ -63,6 +63,7 @@ async function fetchReviews(bookId) {
         const response = await fetch(`${API_BASE_URL}/books/${bookId}/reviews`);
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch reviews`);
         const reviews = await response.json();
+        console.log("Fetched reviews:", reviews);
         displayReviews(reviews);
     } catch (error) {
         console.error("Error fetching reviews:", error);
@@ -83,13 +84,34 @@ function displayReviews(reviews) {
     reviews.forEach(review => {
         const reviewDiv = document.createElement("div");
         reviewDiv.classList.add("review");
+
+        const reviewAuthor = review.user_name || "Anonymous";
+
         reviewDiv.innerHTML = `
-            <p class="review-author">${review.user_name}</p>
+            <p class="review-author">${reviewAuthor}</p>
             <div class="review-stars">${"★".repeat(review.rating)}</div>
             <p class="review-text">${review.comment}</p>
         `;
         reviewsList.appendChild(reviewDiv);
     });
+}
+
+// Get Current User from Token
+function getCurrentUserFromToken() {
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+
+    try {
+        // Decode JWT token (header.payload.signature)
+        const payload = token.split(".")[1];
+        const decodedPayload = atob(payload); // Base64 decode
+        const userData = JSON.parse(decodedPayload);
+        console.log("Decoded user data from token:", userData);
+        return userData; // Should include { id, full_name }
+    } catch (error) {
+        console.error("Error decoding token:", error);
+        return null;
+    }
 }
 
 // Setup Event Listeners
@@ -130,52 +152,36 @@ function setupEventListeners() {
         }
     });
 
-// Add to Wishlist
-// Add to Wishlist
-document.getElementById("add-to-wishlist")?.addEventListener("click", async () => {
-    if (!isAuthenticated()) {
-        window.location.href = "pleaseLogin.html"; // Redirect to login page
-        return;
-    }
+    // Add to Wishlist
+    document.getElementById("add-to-wishlist")?.addEventListener("click", async () => {
+        if (!isAuthenticated()) {
+            window.location.href = "pleaseLogin.html"; // Redirect to login page
+            return;
+        }
 
-    const bookId = new URLSearchParams(window.location.search).get("id");
-    const token = getAuthToken();
-    console.log("Sending Wishlist request with token:", token);
+        const bookId = new URLSearchParams(window.location.search).get("id");
+        const token = getAuthToken();
+        console.log("Sending Wishlist request with token:", token);
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/wishlists/toggle/${bookId}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            }
-        });
+        try {
+            const response = await fetch(`${API_BASE_URL}/wishlists/toggle/${bookId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                }
+            });
 
-        const result = await response.json();
-        if (!response.ok) throw new Error(`Failed to toggle wishlist: ${result.error || "Unknown error"}`);
+            const result = await response.json();
+            if (!response.ok) throw new Error(`Failed to toggle wishlist: ${result.error || "Unknown error"}`);
 
-        alert(result.message || "Wishlist updated successfully!");
-
-        // Redirecting to Wishlist page after success
-        window.location.href = "../pages/wishlist.html";
-
-    } catch (error) {
-        console.error("Error adding to wishlist:", error);
-        alert(`Failed to update wishlist: ${error.message}`);
-    }
-});
-
-// Helper function to check authentication
-function isAuthenticated() {
-    return !!localStorage.getItem("token"); // Checks if token exists in localStorage
-}
-
-// Helper function to get auth token
-function getAuthToken() {
-    return localStorage.getItem("token");
-}
-
-
+            alert(result.message || "Wishlist updated successfully!");
+            window.location.href = "../pages/wishlist.html";
+        } catch (error) {
+            console.error("Error adding to wishlist:", error);
+            alert(`Failed to update wishlist: ${error.message}`);
+        }
+    });
 
     // Star Rating Logic
     let selectedRating = 0; // Track user-selected rating
