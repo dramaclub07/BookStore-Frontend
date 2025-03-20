@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wishlist - Bookstore</title>
+    <link rel="stylesheet" href="../styles/wishlist.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo">
+                <img src="../assets/education@2x.png" style="width: 50px; height: 30px;"> Bookstore
+            </div>
+            <div class="search-container">
+                <input type="text" id="search" class="search-bar" placeholder="Search books...">
+                <div id="search-suggestions" class="suggestions-box"></div>
+            </div>
+            <div class="nav-links">
+                <span id="profile-link"><i class="fa-solid fa-user"></i> Profile</span>
+                <span id="cart-link"><i class="fa-solid fa-shopping-cart"></i> Cart</span>
+            </div>
+        </div>
+    </header>
+    
+    <main class="content-wrapper">
+        <h2>My Wishlist</h2>
+        <section id="wishlist-container" class="wishlist-container">
+            <!-- Wishlist books or empty message will be inserted here dynamically -->
+        </section>
+    </main>
+
+    <script src="../scripts/wishlist.js"></script>
+</body>
+</html>
