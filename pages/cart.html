@@ -7,37 +7,48 @@
     <link rel="stylesheet" href="/styles/styles.css">
 </head>
 <body>
+    <header>
+        <div class="header-container">
+            <div class="logo">📖 Bookstore</div>
+            <input type="text" class="search-bar" placeholder="Search...">
+            <div class="user-nav">
+                <span class="profile">👤 User</span>
+                <span class="cart">🛒<span class="cart-count">0</span></span>
+            </div>
+        </div>
+    </header>
+    
     <div class="content">
-        <div class="breadcrumb">Home / My cart</div>
+        <div class="breadcrumb">
+            <a href="/pages/homePage.html" class="breadcrumb-link">Home</a> / My cart
+        </div>
+        
         <div class="section">
-            <h2>My cart (1)</h2>
-            <div class="cart-item">
-                <img src="https://via.placeholder.com/80x120" alt="Don't Make Me Think">
-                <div class="cart-item-details">
-                    <h3>Don't Make Me Think</h3>
-                    <p>by Steve Krug</p>
-                    <p>Rs. 1500 <del>Rs. 2000</del></p>
-                    <div class="quantity">
-                        <button>-</button>
-                        <span>1</span>
-                        <button>+</button>
-                    </div>
-                    <button class="remove">Remove</button>
-                </div>
+            <h2>My cart (<span id="cart-count">0</span>)</h2>
+            <div id="cart-container">
+                <!-- Cart items will be dynamically added here -->
             </div>
             <button class="use-location">📍 Use current location</button>
             <button class="place-order" onclick="window.location.href='customer-details.html'">Place Order</button>
         </div>
+
         <div class="section">
             <h2>Address Details</h2>
+            <div id="address-container">
+                <p>No address selected.</p>
+            </div>
         </div>
+
         <div class="section">
-            <h2>Order summary</h2>
+            <h2>Order Summary</h2>
+            <p>Total Price: Rs. <span id="cart-total">0</span></p>
         </div>
     </div>
+
     <footer>
         <p>Copyright © 2020, BookstorePrivate Limited. All Rights Reserved</p>
     </footer>
-    <script src="/scripts/script.js"></script>
+
+    <script src="/scripts/cart.js"></script>
 </body>
 </html>

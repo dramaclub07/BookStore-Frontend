@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookstore - Book Details</title>
+    <link rel="stylesheet" href="../styles/bookDetails.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo">
+                <img src="../assets/education@2x.png" style="width: 50px; height: 30px;"> Bookstore
+            </div>
+            <div class="search-container">
+                <input type="text" id="search" class="search-bar" placeholder="Search books...">
+                <div id="search-suggestions" class="suggestions-box"></div>
+            </div>
+            <div class="nav-links">
+                <span id="profile-link"><i class="fa-solid fa-user"></i> Profile</span>
+                <span id="cart-link"><i class="fa-solid fa-shopping-cart"></i> Cart</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="content-wrapper">
+        <div class="breadcrumb">
+            <a href="Homepage.html">Home</a> > <span>Book Details</span>
+        </div>
+
+        <section class="book-details">
+            <div class="book-details-left">
+                <div class="image-container">
+                    <div class="book-preview">
+                        <img src="path-to-preview-image1.jpg" alt="" class="preview-image">
+                        <img src="path-to-preview-image2.jpg" alt="" class="preview-image">
+                    </div>
+                    <div class="book-image-wrapper">
+                        <img src="path-to-book-image.jpg" alt="Book Title" class="book-image">
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button id="add-to-bag" class="add-to-bag">ADD TO BAG</button>
+                    <button id="add-to-wishlist" class="wishlist">♥ WISHLIST</button>
+                </div>
+            </div>
+            <div class="book-details-right">
+                <h1 id="book-title">Don't Make Me Think</h1>
+                <p id="book-author">by Steve Krug</p>
+                <div class="rating">
+                    <span id="book-rating-value">4.5</span>
+                    <span class="star">★</span>
+                    <span id="book-rating-count">(210)</span>
+                </div>
+                <div class="price-info">
+                    <span id="book-price">Rs. 1500</span>
+                    <span id="book-old-price">Rs. 2000</span>
+                </div>
+                <div class="book-description">
+                    <h3>Book Detail</h3>
+                    <p id="book-description">
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit...
+                    </p>
+                </div>
+                <section class="customer-feedback">
+                    <h2>Customer Feedback</h2>
+                    <div class="overall-rating">
+                        <h3>Overall rating</h3>
+                        <div class="stars" id="rating-stars">
+                            <span class="star" data-value="1">★</span>
+                            <span class="star" data-value="2">★</span>
+                            <span class="star" data-value="3">★</span>
+                            <span class="star" data-value="4">★</span>
+                            <span class="star" data-value="5">★</span>
+                        </div>
+                        <form id="review-form">
+                            <textarea id="review-text" placeholder="Write your review" required></textarea>
+                            <button type="submit" id="submit-review">Submit</button>
+                        </form>
+                    </div>
+                    <div id="reviews-list" class="reviews-list">
+                        <div class="review">
+                            <p class="review-author">Aniket Chile</p>
+                            <div class="review-stars">
+                                <span class="star">★</span>
+                                <span class="star">★</span>
+                                <span class="star">★</span>
+                                <span class="star">★</span>
+                                <span class="star">★</span>
+                            </div>
+                            <p class="review-text">Wonderful Book ★★★★★</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <script src="../scripts/bookDetails.js"></script>
+</body>
+</html>

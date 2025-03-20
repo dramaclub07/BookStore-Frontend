@@ -7,8 +7,35 @@
     <link rel="stylesheet" href="/styles/styles.css">
 </head>
 <body>
+    <header>
+        <div class="header-container">
+            <div class="logo">📖 Bookstore</div>
+            <input type="text" class="search-bar" placeholder="Search...">
+            <div class="user-nav">
+                <span class="profile">👤 User</span>
+                <span class="cart">🛒<span class="cart-count">0</span></span>
+            </div>
+        </div>
+    </header>
+    
     <div class="content">
+        <div class="breadcrumb">
+            <a href="/pages/homePage.html" class="breadcrumb-link">Home</a> / Order Summary
+        </div>
+        
         <div class="section">
+            <h2>My cart (<span id="cart-count">0</span>)</h2>
+            <div id="cart-container">
+                <!-- Cart items will be dynamically added here -->
+            </div>
+            <div class="cart-buttons">
+                <button class="use-location">📍 Use current location</button>
+                <button class="place-order" onclick="window.location.href='customer-details.html'">Place Order</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Customer Details</h2>
             <div class="form-group">
                 <label>Full Name</label>
                 <input type="text" value="Poonam Yadav" readonly>
@@ -32,28 +59,22 @@
             <div class="form-group">
                 <label>Type</label>
                 <div class="radio-group">
-                    <label><input type="radio" name="address-type"> Home</label>
-                    <label><input type="radio" name="address-type" checked> Work</label>
-                    <label><input type="radio" name="address-type"> Other</label>
+                    <label><input type="radio" name="address-type" value="Home"> Home</label>
+                    <label><input type="radio" name="address-type" value="Work" checked> Work</label>
+                    <label><input type="radio" name="address-type" value="Other"> Other</label>
                 </div>
             </div>
         </div>
-        <div class="section">
-            <h2>Order summary</h2>
-            <div class="summary-item">
-                <img src="https://via.placeholder.com/80x120" alt="Don't Make Me Think">
-                <div class="summary-item-details">
-                    <h3>Don't Make Me Think</h3>
-                    <p>by Steve Krug</p>
-                    <p>Rs. 1500 <del>Rs. 2000</del></p>
-                </div>
-            </div>
-            <button class="checkout" onclick="window.location.href='order-confirmation.html'">CHECKOUT</button>
+
+        <div class="section" id="order-summary-section">
+            <h2>Order Summary</h2>
+            <!-- Cart items will be dynamically added here -->
         </div>
     </div>
+
     <footer>
         <p>Copyright © 2020, BookstorePrivate Limited. All Rights Reserved</p>
     </footer>
-    <script src="/scripts/script.js"></script>
+    <script src="/scripts/order-summary.js"></script>
 </body>
 </html>

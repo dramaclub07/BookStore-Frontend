@@ -1,1 +1,119 @@
-hello
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Book Shopping - Login</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <link rel="stylesheet" href="../styles/login.css">
+    <link rel="stylesheet" href="../styles/responsive.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="left-card">
+            <div class="icon-circle">
+                <svg class="shopper" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="30" y="70" width="40" height="20" fill="#fff" stroke="#000" stroke-width="1" />
+                    <circle cx="50" cy="40" r="10" fill="#fff" stroke="#003366" stroke-width="1" />
+                    <path d="M40 50 L35 70 L65 70 L60 50" fill="#6c46a6" stroke="#003366" stroke-width="0.5" />
+                    <rect x="45" y="40" width="10" height="10" fill="#003366" />
+                </svg>
+            </div>
+            <div class="title">ONLINE BOOK SHOPPING</div>
+        </div>
+        <div class="right-card">
+            <div class="tabs">
+                <div class="tab active" data-tab="login">LOGIN</div>
+                <div class="tab" data-tab="signup">SIGNUP</div>
+            </div>
+            <div class="form-container">
+                <form class="auth-card active" id="login-form">
+                    <div class="form-group">
+                        <label for="login-email">Email Id</label>
+                        <input type="email" class="form-control" id="login-email" value="test2@gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <div class="password-field">
+                            <input type="password" class="form-control error" id="login-password" value="P@ssw0rd">
+                            <span class="password-toggle" id="login-toggle-password">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                    viewBox="0 0 16 16">
+                                    <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
+                                    <path
+                                        d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
+                                </svg>
+                            </span>
+                        </div>
+                        <!-- Add Remember Me Checkbox -->
+                        <div class="form-check mb-3 text-start">
+                            <input class="form-check-input" type="checkbox" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">Remember Me</label>
+                        </div>
+                        <a href="#" class="forgot-password" id="forgot-password-link">Forgot Password?</a>
+                    </div>
+                    <button type="submit" class="btn-submit">Login</button>
+                    <div class="separator">OR</div>
+                    <div class="social-login">
+                        <button type="button" class="btn-social btn-facebook">Facebook</button>
+                        <button type="button" class="btn-social btn-google">Google</button>
+                    </div>
+                    <div class="form-footer">
+                        <p>Don't have an account? <a href="#" class="toggle-signup">Signup</a></p>
+                    </div>
+                </form>
+                <form class="auth-card" id="signup-form">
+                    <div class="form-group">
+                        <label for="signup-name">Full Name</label>
+                        <input type="text" class="form-control" id="signup-name" placeholder="Enter full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-email">Email Id</label>
+                        <input type="email" class="form-control" id="signup-email" placeholder="Enter your email">
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-password">Password</label>
+                        <div class="password-field">
+                            <input type="password" class="form-control" id="signup-password"
+                                placeholder="Enter your password">
+                            <span class="password-toggle" id="signup-toggle-password">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                    viewBox="0 0 16 16">
+                                    <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
+                                    <path
+                                        d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="signup-mobile">Mobile Number</label>
+                        <input type="tel" class="form-control" id="signup-mobile" placeholder="Enter mobile number">
+                    </div>
+                    <button type="submit" class="btn-submit">Sign</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="forgot-password-modal">
+        <div class="modal-content">
+            <span class="close-btn">×</span>
+            <div class="modal-header">
+                <h2>Forgot Password</h2>
+            </div>
+            <form id="forgot-password-form">
+                <div class="form-group">
+                    <label for="forgot-email">Email Id</label>
+                    <input type="email" class="form-control" id="forgot-email" placeholder="Enter your email">
+                </div>
+                <button type="submit" class="btn-submit">Send OTP</button>
+            </form>
+        </div>
+    </div>
+    <script src="../scripts/login.js"></script>
+</body>
+
+</html>
