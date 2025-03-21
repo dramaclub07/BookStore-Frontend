@@ -37,25 +37,21 @@ async function loadUserProfile() {
         const response = await fetch(`${API_BASE_URL}/users/profile`, {
             headers: getAuthHeaders()
         });
-
-        if (response.status === 401) {
-            handleUnauthorized();
-            return;
-        }
         if (!response.ok) {
+            if (response.status === 401) {
+                alert("Session expired. Please log in again.");
+                localStorage.removeItem('token');
+                window.location.href = '/pages/login.html';
+                return;
+            }
             throw new Error(`Profile fetch failed with status: ${response.status}`);
         }
-
         const userData = await response.json();
-        console.log("User Data:", userData);
-
-        if (userData && userData.name) {
-            const profileElement = document.querySelector('.profile');
+        if (userData.success) {
+            const profileElement = document.getElementById('profile-link');
             if (profileElement) {
-                profileElement.innerHTML = `👤 ${userData.name}`;
+                profileElement.innerHTML = `<i class="fa-solid fa-user"></i> ${userData.name || 'User'}`;
             }
-        } else {
-            console.warn("No name found in user data");
         }
     } catch (error) {
         console.error("Profile fetch error:", error.message);

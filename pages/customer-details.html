@@ -5,15 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bookstore - Customer Details</title>
     <link rel="stylesheet" href="/styles/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <header>
-        <div class="header-container">
-            <div class="logo">📖 Bookstore</div>
-            <input type="text" class="search-bar" placeholder="Search...">
-            <div class="user-nav">
-                <span class="profile">👤 User</span>
-                <span class="cart">🛒<span class="cart-count">0</span></span>
+        <div class="navbar">
+            <div class="logo">
+                <img src="../assets/education@2x.png" style="width: 50px; height: 30px;"> Bookstore
+            </div>
+            <div class="search-container">
+                <input type="text" id="search" class="search-bar" placeholder="Search books...">
+                <div id="search-suggestions" class="suggestions-box"></div>
+            </div>
+            <div class="nav-links">
+                <span id="profile-link"><i class="fa-solid fa-user"></i> Profile</span>
+                <span id="cart-link"><i class="fa-solid fa-shopping-cart"></i> <span class="cart-count">0</span></span>
             </div>
         </div>
     </header>
