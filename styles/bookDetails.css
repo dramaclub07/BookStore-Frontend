@@ -60,28 +60,9 @@ body {
 
 .image-container {
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
+    align-items: center; /* Center the main image */
+    justify-content: center; /* Center the main image */
     margin-bottom: 20px;
-}
-
-.book-preview {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.preview-image {
-    width: 60px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-}
-
-.preview-image:hover {
-    transform: scale(1.05);
 }
 
 .book-image-wrapper {
@@ -92,16 +73,17 @@ body {
 
 .book-image {
     width: 100%;
-    max-width: 300px;
+    max-width: 350px; /* Increased size to fill the space */
     height: auto;
     border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
 }
 
 .action-buttons {
     display: flex;
     gap: 15px;
     width: 100%;
-    max-width: 300px;
+    max-width: 350px; /* Match the increased image width */
     margin-top: 10px;
     justify-content: center;
 }
@@ -124,12 +106,11 @@ body {
 .add-to-bag {
     background: linear-gradient(90deg, #a52a2a, #8b1e1e);
     color: white;
-    margin-left: 50px;
+    margin-left: 0; /* Remove the margin-left since it’s unnecessary */
 }
 
 .add-to-bag:hover {
     background: linear-gradient(90deg, #8b1e1e, #6e1515);
-    margin-left: 50px;
 }
 
 .wishlist {
@@ -350,26 +331,13 @@ body {
     }
 
     .image-container {
-        flex-direction: row;
-        align-items: flex-start;
-        gap: 10px;
-        width: 100%;
+        align-items: center;
         justify-content: center;
-    }
-
-    .book-preview {
-        flex-direction: column;
-        gap: 10px;
-        margin-bottom: 0;
-    }
-
-    .preview-image {
-        width: 50px;
-        height: 70px;
+        width: 100%;
     }
 
     .book-image {
-        max-width: 250px;
+        max-width: 300px; /* Slightly smaller for smaller screens */
     }
 
     .book-details-right {
@@ -378,7 +346,7 @@ body {
     }
 
     .action-buttons {
-        max-width: 250px;
+        max-width: 300px;
     }
 }
 
@@ -387,20 +355,11 @@ body {
         padding: 5px;
     }
 
-    .image-container {
-        gap: 5px;
-    }
-
-    .preview-image {
-        width: 40px;
-        height: 60px;
-    }
-
     .book-image {
-        max-width: 200px;
+        max-width: 250px;
     }
 
     .action-buttons {
-        max-width: 200px;
+        max-width: 250px;
     }
 }

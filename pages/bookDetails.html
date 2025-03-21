@@ -1,25 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bookstore - Book Details</title>
     <link rel="stylesheet" href="../styles/bookDetails.css">
+    <link rel="stylesheet" href="../styles/navbar.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
     <header>
         <div class="navbar">
             <div class="logo">
-                <img src="../assets/education@2x.png" s tyle="width: 50px; height: 30px;"> Bookstore
+                <img src="../assets/education@2x.png" style="width: 50px; height: 30px;"> Bookstore
             </div>
             <div class="search-container">
                 <input type="text" id="search" class="search-bar" placeholder="Search books...">
                 <div id="search-suggestions" class="suggestions-box"></div>
             </div>
             <div class="nav-links">
-                <span id="profile-link"><i class="fa-solid fa-user"></i> Profile</span>
-                <span id="cart-link"><i class="fa-solid fa-shopping-cart"></i> Cart</span>
+                <div class="profile-link" id="profile-link">
+                    <span class="nav-icon">
+                        <i class="fa-solid fa-user"></i>
+                    </span>
+                    <span class="username" id="username">Profile</span>
+                </div>
+                <a href="../pages/cart.html" class="cart-link" id="cart-link">
+                    <span class="nav-icon">
+                        <i class="fa-solid fa-shopping-cart"></i>
+                    </span>
+                    Cart <span class="cart-count" id="cart-count">0</span>
+                </a>
             </div>
         </div>
     </header>
@@ -32,10 +45,6 @@
         <section class="book-details">
             <div class="book-details-left">
                 <div class="image-container">
-                    <div class="book-preview">
-                        <img src="path-to-preview-image1.jpg" alt="" class="preview-image">
-                        <img src="path-to-preview-image2.jpg" alt="" class="preview-image">
-                    </div>
                     <div class="book-image-wrapper">
                         <img src="path-to-book-image.jpg" alt="Book Title" class="book-image">
                     </div>
@@ -98,5 +107,7 @@
     </main>
 
     <script src="../scripts/bookDetails.js"></script>
+    <script src="../scripts/navbar.js"></script>
 </body>
+
 </html>

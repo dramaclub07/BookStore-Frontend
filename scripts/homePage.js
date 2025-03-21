@@ -1,6 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
     console.log("DOM fully loaded, fetching books...");
-    if (localStorage.getItem("reviewSubmitted") === "true") {
+
+    // Check if user just logged in
+    if (localStorage.getItem("justLoggedIn") === "true") {
+        console.log("User just logged in, forcing refresh of books...");
+        localStorage.removeItem("justLoggedIn");
+        fetchBooks("relevance", 1, true);
+    } else if (localStorage.getItem("reviewSubmitted") === "true") {
         console.log("Review submitted previously, forcing refresh of books...");
         localStorage.removeItem("reviewSubmitted");
         fetchBooks("relevance", 1, true);
@@ -10,17 +16,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
-    const usernameElement = document.querySelector(".username");
+    const usernameElement = document.getElementById("username");
+    const dropdownUsernameElement = document.getElementById("dropdown-username");
 
-    // Set the username in the navbar
+    // Set the username in the navbar and dropdown
     const username = localStorage.getItem("username") || "User";
     if (usernameElement) {
         usernameElement.textContent = username;
     }
+    if (dropdownUsernameElement) {
+        dropdownUsernameElement.textContent = `Hello, ${username}`;
+    }
 
     // Dropdown menu state
-    let dropdownMenu = null;
     let isDropdownOpen = false;
+    const dropdownMenu = document.getElementById("profile-dropdown");
 
     if (profileLink) {
         profileLink.addEventListener("click", (event) => {
@@ -51,81 +61,69 @@ document.addEventListener("DOMContentLoaded", () => {
     if (cartLink) {
         cartLink.addEventListener("click", () => {
             console.log("Redirecting to cart page");
-            window.location.href = "cart.html";
+            window.location.href = "../pages/cart.html";
         });
     }
 
     // Function to open the dropdown
     function openDropdown() {
-        // If dropdown already exists, remove it first
         if (dropdownMenu) {
-            dropdownMenu.remove();
+            dropdownMenu.style.display = "block";
+            isDropdownOpen = true;
         }
-
-        // Create dropdown menu
-        dropdownMenu = document.createElement("div");
-        dropdownMenu.classList.add("profile-dropdown");
-
-        // Dropdown content with Font Awesome icons matching the image
-        dropdownMenu.innerHTML = `
-            <div class="dropdown-item dropdown-header">Hello ${username},</div>
-            <div class="dropdown-item" id="dropdown-profile">
-                <i class="fa-solid fa-user dropdown-icon"></i> Profile
-            </div>
-            <div class="dropdown-item" id="dropdown-orders">
-                <i class="fa-solid fa-folder dropdown-icon"></i> My Orders
-            </div>
-            <div class="dropdown-item" id="dropdown-wishlist">
-                <i class="fa-solid fa-heart dropdown-icon"></i> My Wishlist
-            </div>
-            <div class="dropdown-item">
-                <button id="dropdown-logout" class="logout-button">Logout</button>
-            </div>
-        `;
-
-        // Append dropdown to the profile link's parent
-        profileLink.parentElement.appendChild(dropdownMenu);
-
-        // Add event listeners to dropdown items
-        document.getElementById("dropdown-profile").addEventListener("click", () => {
-            console.log("Redirecting to profile page");
-            window.location.href = "profile.html";
-            closeDropdown();
-        });
-
-        document.getElementById("dropdown-orders").addEventListener("click", () => {
-            console.log("Redirecting to orders page");
-            window.location.href = "orders.html"; // Adjust the URL as needed
-            closeDropdown();
-        });
-
-        document.getElementById("dropdown-wishlist").addEventListener("click", () => {
-            console.log("Redirecting to wishlist page");
-            window.location.href = "wishlist.html"; // Adjust the URL as needed
-            closeDropdown();
-        });
-
-        document.getElementById("dropdown-logout").addEventListener("click", () => {
-            console.log("Logging out...");
-            // Clear any session data (e.g., localStorage, cookies, etc.)
-            localStorage.clear(); // Example: Clear localStorage
-            // Redirect to login page or homepage
-            window.location.href = "login.html"; // Adjust the URL as needed
-            closeDropdown();
-        });
-
-        isDropdownOpen = true;
     }
 
     // Function to close the dropdown
     function closeDropdown() {
         if (dropdownMenu) {
-            dropdownMenu.remove();
-            dropdownMenu = null;
+            dropdownMenu.style.display = "none";
+            isDropdownOpen = false;
         }
-        isDropdownOpen = false;
     }
 });
+
+// Sign Out (Logout) functionality
+function handleSignOut() {
+    console.log("Logging out...");
+    const provider = localStorage.getItem("socialProvider");
+
+    // Revoke Google session if applicable
+    if (provider === "google" && typeof google !== "undefined" && google.accounts) {
+        console.log("Logging out from Google");
+        google.accounts.id.disableAutoSelect();
+        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
+            console.log("Google session revoked");
+        });
+    }
+
+    // Revoke Facebook session if applicable
+    if (provider === "facebook") {
+        console.log("Logging out from Facebook");
+        FB.getLoginStatus(function (response) {
+            if (response.status === "connected") {
+                FB.logout(function (response) {
+                    console.log("Facebook session revoked");
+                });
+            }
+        });
+    }
+
+    // Clear localStorage
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    localStorage.removeItem("socialEmail");
+    localStorage.removeItem("socialProvider");
+    localStorage.removeItem("justLoggedIn");
+
+    // Hide the sign-out container (optional, since we're redirecting)
+    const signoutContainer = document.getElementById("signout-container");
+    if (signoutContainer) {
+        signoutContainer.style.display = "none";
+    }
+
+    alert("Logged out successfully.");
+    window.location.href = "../pages/login.html"; // Redirect to login page
+}
 
 let currentPage = 1;
 let totalPages = 1;
@@ -150,16 +148,33 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
         const url = `${API_BASE_URL}?sort=${sortBy}&page=${page}&force_refresh=${forceRefresh}`;
         console.log("Fetching books from:", url);
 
-        const response = await fetch(url);
+        // Add authentication token to the request if available
+        const token = localStorage.getItem("token");
+        const headers = {
+            "Content-Type": "application/json",
+        };
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+            console.log("Including Authorization token in request:", token);
+        } else {
+            console.log("No token found in localStorage, proceeding without Authorization.");
+        }
+
+        const response = await fetch(url, {
+            method: "GET",
+            headers: headers,
+        });
         console.log("Response status:", response.status);
+        console.log("Response headers:", response.headers);
 
         if (!response.ok) {
-            throw new Error(`HTTP Error ${response.status}: Unable to fetch books`);
+            const errorText = await response.text();
+            throw new Error(`HTTP Error ${response.status}: ${errorText}`);
         }
 
         const data = await response.json();
         console.log("API Response:", data);
-        console.log("Books with ratings:", data.books.map(b => ({ name: b.book_name, rating: b.rating, rating_count: b.rating_count })));
+        console.log("Books with ratings:", data.books?.map(b => ({ name: b.book_name, rating: b.rating, rating_count: b.rating_count })));
 
         if (!data.success || !data.books || data.books.length === 0) {
             console.warn("No books returned from API.");
@@ -323,7 +338,7 @@ async function fetchBooksBySearch(query) {
 function viewBookDetails(bookId) {
     console.log("Navigating to book details with ID:", bookId);
     if (bookId) {
-        window.location.href = `bookDetails.html?id=${bookId}`;
+        window.location.href = `../pages/bookDetails.html?id=${bookId}`;
     } else {
         console.error("Book ID is undefined or invalid");
     }

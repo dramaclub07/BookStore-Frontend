@@ -1,22 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     const urlParams = new URLSearchParams(window.location.search);
     const bookId = urlParams.get("id");
-    const profileLink = document.getElementById("profile-link");
-    const cartLink = document.getElementById("cart-link");
-
-    if (profileLink) {
-        profileLink.addEventListener("click", () => {
-            console.log("Redirecting to profile page");
-            window.location.href = "profile.html";
-        });
-    }
-
-    if (cartLink) {
-        cartLink.addEventListener("click", () => {
-            console.log("Redirecting to cart page");
-            window.location.href = "cart.html";
-        });
-    }
 
     if (bookId) {
         fetchBookDetails(bookId);
@@ -130,52 +114,38 @@ function setupEventListeners() {
         }
     });
 
-// Add to Wishlist
-// Add to Wishlist
-document.getElementById("add-to-wishlist")?.addEventListener("click", async () => {
-    if (!isAuthenticated()) {
-        window.location.href = "pleaseLogin.html"; // Redirect to login page
-        return;
-    }
+    // Add to Wishlist
+    document.getElementById("add-to-wishlist")?.addEventListener("click", async () => {
+        if (!isAuthenticated()) {
+            window.location.href = "pleaseLogin.html"; // Redirect to login page
+            return;
+        }
 
-    const bookId = new URLSearchParams(window.location.search).get("id");
-    const token = getAuthToken();
-    console.log("Sending Wishlist request with token:", token);
+        const bookId = new URLSearchParams(window.location.search).get("id");
+        const token = getAuthToken();
+        console.log("Sending Wishlist request with token:", token);
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/wishlists/toggle/${bookId}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            }
-        });
+        try {
+            const response = await fetch(`${API_BASE_URL}/wishlists/toggle/${bookId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                }
+            });
 
-        const result = await response.json();
-        if (!response.ok) throw new Error(`Failed to toggle wishlist: ${result.error || "Unknown error"}`);
+            const result = await response.json();
+            if (!response.ok) throw new Error(`Failed to toggle wishlist: ${result.error || "Unknown error"}`);
 
-        alert(result.message || "Wishlist updated successfully!");
+            alert(result.message || "Wishlist updated successfully!");
 
-        // Redirecting to Wishlist page after success
-        window.location.href = "../pages/wishlist.html";
-
-    } catch (error) {
-        console.error("Error adding to wishlist:", error);
-        alert(`Failed to update wishlist: ${error.message}`);
-    }
-});
-
-// Helper function to check authentication
-function isAuthenticated() {
-    return !!localStorage.getItem("token"); // Checks if token exists in localStorage
-}
-
-// Helper function to get auth token
-function getAuthToken() {
-    return localStorage.getItem("token");
-}
-
-
+            // Redirecting to Wishlist page after success
+            window.location.href = "../pages/wishlist.html";
+        } catch (error) {
+            console.error("Error adding to wishlist:", error);
+            alert(`Failed to update wishlist: ${error.message}`);
+        }
+    });
 
     // Star Rating Logic
     let selectedRating = 0; // Track user-selected rating

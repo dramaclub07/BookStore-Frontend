@@ -1,286 +1,257 @@
 /* navbar.css */
 
-/* Reset default styles */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-/* Navbar */
+/* General Navbar Styling */
 .navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #A03037;
-    color: white;
-    padding: 0 15px;
-    position: fixed;
+    background-color: #A03037; /* Updated to maroon from previous CSS */
+    padding: 15px 30px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    position: sticky;
     top: 0;
-    width: 100%;
-    height: 50px;
-    box-sizing: border-box;
     z-index: 1000;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* Logo Section */
+/* Logo Styling */
 .logo {
     display: flex;
     align-items: center;
-    margin-left: 35px;
+    gap: 10px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #ecf0f1; /* Light color for contrast */
 }
 
 .logo img {
-    height: 24px;
-    margin-right: 8px;
+    width: 50px;
+    height: 30px;
 }
 
-/* Navigation Links */
-.nav-links {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-right: 35px;
-}
-
-.profile-link {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    color: white;
-    font-size: 14px;
-    font-weight: 500;
-    transition: color 0.2s ease;
-}
-
-.profile-link i {
-    font-size: 16px;
-    margin-right: 5px;
-}
-
-.profile-link .username {
-    font-size: 14px;
-}
-
-.profile-link:hover {
-    color: #ffd700;
-}
-
-.cart-link {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    color: white;
-    font-size: 14px;
-    font-weight: 500;
-    transition: color 0.2s ease;
-}
-
-.cart-link i {
-    font-size: 16px;
-    margin-right: 5px;
-}
-
-.cart-link:hover {
-    color: #ffd700;
-}
-
-/* Search Bar */
+/* Search Container */
 .search-container {
-    flex-grow: 1;
-    max-width: 400px;
+    flex: 1;
+    max-width: 500px;
     position: relative;
     margin: 0 20px;
 }
 
 .search-bar {
     width: 100%;
-    padding: 6px 12px;
-    border-radius: 5px;
-    border: none;
-    font-size: 14px;
-    background-color: #fff;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 25px; /* Rounded search bar */
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s ease;
 }
 
-.search-bar::placeholder {
-    color: #999;
+.search-bar:focus {
+    border-color: #d32f2f; /* Updated to red from previous CSS */
+    box-shadow: 0 0 5px rgba(211, 47, 47, 0.3); /* Updated shadow to match #d32f2f */
 }
 
-/* Search Bar (Detailed) */
-.search-container {
-    position: relative;
-    width: 40%;
-    min-width: 200px;
-    max-width: 500px;
-    z-index: 1002;
-}
-
-.search-bar {
-    width: 100%;
-    padding: 8px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-    background-color: #fff;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-    z-index: 1004;
-    position: relative;
-}
-
-/* Search Suggestions */
 .suggestions-box {
     position: absolute;
     top: 100%;
     left: 0;
-    width: 100%;
-    background: white;
+    right: 0;
+    background: #fff;
     border: 1px solid #ddd;
-    border-top: none;
-    border-radius: 0 0 5px 5px;
-    max-height: 150px;
+    border-radius: 5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
     overflow-y: auto;
-    z-index: 1003;
     display: none;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    margin-top: 2px;
 }
 
-/* Show suggestions when active */
-.search-bar:focus + .suggestions-box,
-.search-container.active .suggestions-box {
+.suggestions-box.visible {
     display: block;
 }
 
-.suggestions-box:empty {
-    display: none;
-}
-
 .suggestion-item {
-    padding: 8px;
+    padding: 10px 15px;
     cursor: pointer;
-    color: black;
     font-size: 14px;
-    border-bottom: 1px solid #eee;
-}
-
-.suggestion-item:last-child {
-    border-bottom: none;
+    color: #333;
 }
 
 .suggestion-item:hover {
-    background-color: #d5e7c3;
+    background: #d5e7c3; /* Updated to light green from previous CSS */
 }
 
-/* Profile Dropdown Styles */
-#profile-link {
+/* Nav Links */
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Profile Link */
+.profile-link {
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ecf0f1; /* Light color for contrast */
+    font-size: 16px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
 }
 
+.profile-link:hover {
+    background-color: #8b252b; /* Slightly darker shade of #A03037 for hover */
+    color: #ffd700; /* Gold hover effect from previous CSS */
+}
+
+.nav-icon i {
+    font-size: 18px; /* Slightly larger icon */
+}
+
+/* Dropdown Styling */
 .profile-dropdown {
     position: absolute;
     top: 100%;
     right: 0;
-    background-color: #fff;
+    background: #fff;
     border: 1px solid #ddd;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    z-index: 1001;
-    width: 200px;
     border-radius: 5px;
-}
-
-.dropdown-item {
-    padding: 12px 15px;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    font-size: 14px;
-    color: #333;
-}
-
-.dropdown-item:hover {
-    background-color: #f5f5f5;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 200px;
+    padding: 10px;
+    z-index: 1000;
 }
 
 .dropdown-header {
     font-weight: bold;
-    border-bottom: 1px solid #ddd;
-    padding: 12px 15px;
-    cursor: default;
+    margin-bottom: 10px;
     color: #333;
-    font-size: 14px;
+    font-size: 16px;
 }
 
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between icon and text */
+    padding: 10px;
+    color: #333;
+    text-decoration: none;
+    font-size: 15px;
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+}
+
+.dropdown-item:hover {
+    background: #f5f5f5;
+}
+
+.dropdown-icon {
+    color: #555; /* Slightly darker color for icons */
+}
+
+/* Logout Button */
 .logout-button {
-    width: 100%;
-    padding: 8px;
-    background-color: transparent;
-    border: 1px solid #d32f2f;
-    color: #d32f2f;
-    border-radius: 5px;
+    background: transparent; /* Transparent background by default, as in previous CSS */
+    border: 1px solid #d32f2f; /* Red border from previous CSS */
+    color: #d32f2f; /* Red text by default */
+    padding: 8px 16px;
+    border-radius: 4px;
     cursor: pointer;
-    text-align: center;
-    transition: background-color 0.2s ease, color 0.2s ease;
-    font-size: 14px;
-    font-weight: 500;
-    text-transform: uppercase;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between icon and text */
+    width: 100%; /* Full width for consistency */
+    text-align: left;
+    font-size: 15px;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .logout-button:hover {
-    background-color: #d32f2f;
-    color: #fff;
+    background: #d32f2f; /* Red background on hover from previous CSS */
+    color: white; /* White text on hover */
 }
 
-/* Responsive Design for Navbar */
+/* Cart Link */
+.cart-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ecf0f1;
+    font-size: 16px;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.cart-link:hover {
+    background-color: #8b252b; /* Slightly darker shade of #A03037 for hover */
+    color: #ffd700; /* Gold hover effect from previous CSS */
+}
+
+.cart-count {
+    background: #d32f2f; /* Updated to red from previous CSS */
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
     .navbar {
-        flex-wrap: wrap;
-        text-align: center;
-        padding: 10px;
-        height: auto;
-        min-height: 60px;
-    }
-
-    .logo {
-        margin-left: 15px;
+        flex-direction: column;
+        padding: 10px 20px;
+        gap: 10px;
     }
 
     .search-container {
-        width: 80%;
-        margin: 10px auto;
+        width: 100%;
         max-width: none;
+        margin: 10px 0;
     }
 
     .nav-links {
-        margin: 10px auto;
-        justify-content: center;
         width: 100%;
-        gap: 15px;
+        justify-content: space-between;
     }
 
-    .profile-link, .cart-link {
-        font-size: 12px;
-    }
-
-    .profile-link i, .cart-link i {
+    .profile-link,
+    .cart-link {
         font-size: 14px;
+        padding: 6px 10px;
+    }
+
+    .profile-dropdown {
+        width: 150px;
+    }
+
+    .dropdown-item {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    .logout-button {
+        font-size: 14px;
+        padding: 6px 12px;
     }
 }
 
 @media (max-width: 480px) {
-    .search-container {
-        width: 100%;
+    .logo {
+        font-size: 20px;
     }
 
-    .nav-links {
-        gap: 10px;
+    .logo img {
+        width: 40px;
+        height: 24px;
     }
 
-    .profile-link, .cart-link {
-        font-size: 10px;
-    }
-
-    .profile-link i, .cart-link i {
-        font-size: 12px;
+    .nav-icon i {
+        font-size: 16px;
     }
 }
