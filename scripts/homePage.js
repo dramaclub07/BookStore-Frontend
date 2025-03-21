@@ -1,25 +1,28 @@
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("DOM fully loaded, fetching books...");
+    console.log("DOM fully loaded, initializing homepage...");
 
-    // Check if user just logged in
+    // Check for refresh triggers (e.g., after login or review submission)
+    const sortBooks = document.getElementById("sort-books");
+    const initialSortOption = sortBooks?.value || "relevance";
+
     if (localStorage.getItem("justLoggedIn") === "true") {
         console.log("User just logged in, forcing refresh of books...");
         localStorage.removeItem("justLoggedIn");
-        fetchBooks("relevance", 1, true);
+        fetchBooks(initialSortOption, 1, true);
     } else if (localStorage.getItem("reviewSubmitted") === "true") {
         console.log("Review submitted previously, forcing refresh of books...");
         localStorage.removeItem("reviewSubmitted");
-        fetchBooks("relevance", 1, true);
+        fetchBooks(initialSortOption, 1, true);
     } else {
-        fetchBooks();
+        fetchBooks(initialSortOption, 1);
     }
 
-    const profileLink = document.getElementById("profile-link");
-    const cartLink = document.getElementById("cart-link");
+    // Update cart count on page load
+    updateCartCount();
+
+    // Set up username in the navbar
     const usernameElement = document.getElementById("username");
     const dropdownUsernameElement = document.getElementById("dropdown-username");
-
-    // Set the username in the navbar and dropdown
     const username = localStorage.getItem("username") || "User";
     if (usernameElement) {
         usernameElement.textContent = username;
@@ -28,8 +31,9 @@ document.addEventListener("DOMContentLoaded", () => {
         dropdownUsernameElement.textContent = `Hello, ${username}`;
     }
 
-    // Dropdown menu state
+    // Dropdown menu state and event listeners
     let isDropdownOpen = false;
+    const profileLink = document.getElementById("profile-link");
     const dropdownMenu = document.getElementById("profile-dropdown");
 
     if (profileLink) {
@@ -58,6 +62,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Cart link navigation
+    const cartLink = document.getElementById("cart-link");
     if (cartLink) {
         cartLink.addEventListener("click", () => {
             console.log("Redirecting to cart page");
@@ -125,12 +131,16 @@ function handleSignOut() {
     window.location.href = "../pages/login.html"; // Redirect to login page
 }
 
+// API Base URL and Pagination Settings
+const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
 let currentPage = 1;
 let totalPages = 1;
-const API_BASE_URL = "http://127.0.0.1:3000/api/v1/books";
+const booksPerPage = 12;
 
+// Fetch Books with Sorting, Pagination, and Optional Force Refresh
 async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) {
     const bookContainer = document.getElementById("book-list");
+    const bookLoader = document.getElementById("book-loader");
     const prevButton = document.getElementById("prev-page");
     const nextButton = document.getElementById("next-page");
     const totalBooksElement = document.getElementById("total-books");
@@ -140,12 +150,17 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
         return;
     }
 
-    bookContainer.innerHTML = "<p>Loading books...</p>";
+    // Show loader while fetching books
+    bookContainer.innerHTML = ""; // Clear previous content
+    if (bookLoader) bookLoader.style.display = "block"; // Show loader
     if (prevButton) prevButton.disabled = true;
     if (nextButton) nextButton.disabled = true;
 
     try {
-        const url = `${API_BASE_URL}?sort=${sortBy}&page=${page}&force_refresh=${forceRefresh}`;
+        // Construct the API URL with query parameters
+        const searchQuery = new URLSearchParams(window.location.search).get("query") || "";
+        let url = `${API_BASE_URL}/books?page=${page}&per_page=${booksPerPage}&sort=${sortBy}&force_refresh=${forceRefresh}`;
+        if (searchQuery) url += `&query=${encodeURIComponent(searchQuery)}`;
         console.log("Fetching books from:", url);
 
         // Add authentication token to the request if available
@@ -180,30 +195,39 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
             console.warn("No books returned from API.");
             bookContainer.innerHTML = "<p>No books found.</p>";
             updatePagination(1, 1);
+            if (totalBooksElement) totalBooksElement.textContent = "0";
             return;
         }
 
         console.log("Sample books:", data.books.slice(0, 3));
         displayBooks(data.books);
 
-        const totalPagesFromAPI = data.pagination?.total_pages || 1;
-        const totalCount = data.pagination?.total_count || 0;
+        const totalBooks = data.pagination?.total_count || 0;
+        totalPages = data.pagination?.total_pages || 1;
+        currentPage = page;
 
-        if (totalBooksElement) totalBooksElement.textContent = totalCount;
-        updatePagination(totalPagesFromAPI, page);
-
-        if (prevButton) prevButton.disabled = page === 1;
-        if (nextButton) nextButton.disabled = page >= totalPagesFromAPI;
+        if (totalBooksElement) totalBooksElement.textContent = totalBooks;
+        updatePagination(totalPages, currentPage);
     } catch (error) {
         console.error("Error fetching books:", error.message);
         bookContainer.innerHTML = "<p>Failed to load books. Please try again.</p>";
+    } finally {
+        // Hide loader after fetching books
+        if (bookLoader) bookLoader.style.display = "none";
+        if (prevButton) prevButton.disabled = currentPage === 1;
+        if (nextButton) nextButton.disabled = currentPage >= totalPages;
     }
 }
 
+// Display Books with Quick View Button Only
 function displayBooks(books) {
     const bookContainer = document.getElementById("book-list");
-    bookContainer.innerHTML = "";
+    if (!bookContainer) {
+        console.error("Error: 'book-list' element not found in the DOM.");
+        return;
+    }
 
+    bookContainer.innerHTML = ""; // Clear previous books
     console.log("Displaying books:", books.length);
 
     if (!books || books.length === 0) {
@@ -219,25 +243,31 @@ function displayBooks(books) {
 
         bookCard.innerHTML = `
             <img src="${bookImage}" alt="${book.book_name}" class="book-image">
+            <button class="quick-view" data-id="${book.id}">Quick View</button>
             <div class="book-content">
                 <h3>${book.book_name}</h3>
-                <p>by ${book.author_name}</p>
-                <div class="rating">
-                    <span>${book.rating || "0.0"}</span> ★ 
+                <p>${book.author_name}</p>
+                <div>
+                    <span class="rating">${book.rating || "0.0"}</span>
+                    <span class="rating-count">(${book.rating_count || "0"})</span>
                 </div>
-                <span class="rating-count">(${book.rating_count || "0"})</span>
                 <div class="price-info">
                     <span class="price">Rs. ${book.discounted_price}</span>
                     <span class="old-price">Rs. ${book.book_mrp}</span>
                 </div>
-                <button onclick="viewBookDetails(${book.id})">Quick View</button>
             </div>
         `;
 
         bookContainer.appendChild(bookCard);
+
+        // Add event listener for Quick View button
+        bookCard.querySelector(".quick-view").addEventListener("click", () => {
+            viewBookDetails(book.id);
+        });
     });
 }
 
+// Update Pagination UI
 function updatePagination(totalPagesFromAPI, currentPageFromAPI) {
     totalPages = totalPagesFromAPI;
     currentPage = currentPageFromAPI;
@@ -252,9 +282,10 @@ function updatePagination(totalPagesFromAPI, currentPageFromAPI) {
     const nextButton = document.getElementById("next-page");
 
     if (prevButton) prevButton.disabled = currentPage === 1;
-    if (nextButton) nextButton.disabled = currentPage >= totalPages || totalPages === 0;
+    if (nextButton) prevButton.disabled = currentPage >= totalPages || totalPages === 0;
 }
 
+// Debounce Search Input
 let debounceTimer;
 document.getElementById("search")?.addEventListener("input", (event) => {
     clearTimeout(debounceTimer);
@@ -263,6 +294,7 @@ document.getElementById("search")?.addEventListener("input", (event) => {
     }, 300);
 });
 
+// Fetch Search Suggestions
 async function fetchSearchSuggestions(query) {
     const suggestionsBox = document.getElementById("search-suggestions");
 
@@ -276,7 +308,7 @@ async function fetchSearchSuggestions(query) {
 
     try {
         const encodedQuery = encodeURIComponent(query);
-        const response = await fetch(`${API_BASE_URL}/search_suggestions?query=${encodedQuery}`);
+        const response = await fetch(`${API_BASE_URL}/books/search_suggestions?query=${encodedQuery}`);
         
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch suggestions`);
         
@@ -285,11 +317,17 @@ async function fetchSearchSuggestions(query) {
         displaySuggestions(data.suggestions);
     } catch (error) {
         console.error("Error fetching search suggestions:", error);
+        if (suggestionsBox) {
+            suggestionsBox.innerHTML = "<p>Failed to load suggestions.</p>";
+        }
     }
 }
 
+// Display Search Suggestions
 function displaySuggestions(suggestions) {
     const suggestionsBox = document.getElementById("search-suggestions");
+    if (!suggestionsBox) return;
+
     suggestionsBox.innerHTML = "";
 
     if (!suggestions || suggestions.length === 0) {
@@ -318,23 +356,38 @@ function displaySuggestions(suggestions) {
 // Fetch Books by Search Query
 async function fetchBooksBySearch(query) {
     const bookContainer = document.getElementById("book-list");
-    bookContainer.innerHTML = "<p>Loading search results...</p>";
+    const bookLoader = document.getElementById("book-loader");
+    if (!bookContainer) return;
+
+    // Show loader while fetching search results
+    bookContainer.innerHTML = "";
+    if (bookLoader) bookLoader.style.display = "block";
 
     try {
         const encodedQuery = encodeURIComponent(query);
-        const response = await fetch(`${API_BASE_URL}?query=${encodedQuery}`);
+        const response = await fetch(`${API_BASE_URL}/books?query=${encodedQuery}`);
         
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch books`);
 
         const data = await response.json();
         console.log("Search Results:", data);
-        displayBooks(data.books);
+        displayBooks(data.books || []);
+        const totalBooks = data.pagination?.total_count || 0;
+        totalPages = data.pagination?.total_pages || 1;
+        currentPage = 1;
+
+        const totalBooksElement = document.getElementById("total-books");
+        if (totalBooksElement) totalBooksElement.textContent = totalBooks;
+        updatePagination(totalPages, currentPage);
     } catch (error) {
         console.error("Error fetching search results:", error);
         bookContainer.innerHTML = "<p>Failed to load search results.</p>";
+    } finally {
+        if (bookLoader) bookLoader.style.display = "none";
     }
 }
 
+// Navigate to Book Details Page
 function viewBookDetails(bookId) {
     console.log("Navigating to book details with ID:", bookId);
     if (bookId) {
@@ -344,6 +397,45 @@ function viewBookDetails(bookId) {
     }
 }
 
+// Update Cart Count
+async function updateCartCount() {
+    const cartCountElement = document.getElementById("cart-count");
+    if (!cartCountElement) return;
+
+    if (!isAuthenticated()) {
+        cartCountElement.textContent = "0";
+        return;
+    }
+
+    try {
+        const token = getAuthToken();
+        const response = await fetch(`${API_BASE_URL}/cart`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch cart");
+        const cart = await response.json();
+        const totalItems = cart.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+        cartCountElement.textContent = totalItems;
+    } catch (error) {
+        console.error("Error fetching cart count:", error);
+        cartCountElement.textContent = "0";
+    }
+}
+
+// Authentication Functions
+function isAuthenticated() {
+    const token = localStorage.getItem("token");
+    return token !== null;
+}
+
+function getAuthToken() {
+    return localStorage.getItem("token") || "";
+}
+
+// Event Listeners for Pagination and Sorting
 document.getElementById("prev-page")?.addEventListener("click", () => {
     if (currentPage > 1) {
         console.log("Fetching previous page:", currentPage - 1);
