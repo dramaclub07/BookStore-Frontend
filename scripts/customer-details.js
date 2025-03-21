@@ -1,4 +1,3 @@
-// customer-details.js
 const API_BASE_URL = 'http://127.0.0.1:3000/api/v1';
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -37,37 +36,41 @@ function getAuthHeaders() {
 }
 
 function updateCartCount(count) {
-    const headerCount = document.querySelector('.cart-count');
+    const cartCount = document.querySelector('#cart-link .cart-count');
     const sectionCount = document.getElementById('cart-count');
-    if (headerCount) headerCount.textContent = count;
+    if (cartCount) cartCount.textContent = count;
     if (sectionCount) sectionCount.textContent = count;
 }
 
 async function loadUserProfile() {
     try {
-        const response = await fetch(`${API_BASE_URL}/users/profile`, { headers: getAuthHeaders() });
-        if (response.status === 401) {
-            alert("Session expired. Please log in again.");
-            localStorage.removeItem('token');
-            window.location.href = '../pages/login.html';
-            return;
-        }
-        if (!response.ok) throw new Error(`Failed to fetch profile: ${response.status}`);
 
+        const response = await fetch(`${API_BASE_URL}/users/profile`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert("Session expired. Please log in again.");
+                localStorage.removeItem('token');
+                window.location.href = '/pages/login.html';
+                return;
+            }
+            throw new Error(`Profile fetch failed with status: ${response.status}`);
+
+        }
         const userData = await response.json();
         if (userData.success) {
-            const profileElement = document.querySelector('.profile');
+            const profileElement = document.getElementById('profile-link');
             if (profileElement) {
-                profileElement.textContent = `👤 ${userData.name || 'User'}`;
+                profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
             }
             document.querySelector('input[readonly][value="Poonam Yadav"]').value = userData.name || 'Unknown';
             document.querySelector('input[readonly][value="81678954778"]').value = userData.mobile_number || 'N/A';
         }
     } catch (error) {
-        console.error("Error fetching profile:", error);
+        console.error("Profile fetch error:", error.message);
     }
 }
-
 async function loadCartItems() {
     const cartContainer = document.getElementById('cart-container');
     if (!cartContainer) return;
@@ -97,7 +100,6 @@ async function loadCartItems() {
         setupCartEventListeners();
         await loadCartSummary();
 
-        // Save cart items to localStorage for use in order summary
         localStorage.setItem('cartItems', JSON.stringify(cartItems));
     } catch (error) {
         console.error('Error fetching cart items:', error);
@@ -292,8 +294,6 @@ async function fetchAddresses() {
 
         const data = await response.json();
         if (!data.success) throw new Error("Failed to load addresses from server");
-
-        console.log("Fetched Addresses:", data.addresses);
         return data.addresses || [];
     } catch (error) {
         console.error("Error fetching addresses:", error);
@@ -303,36 +303,39 @@ async function fetchAddresses() {
 }
 
 async function loadAddresses() {
-    // Check if a selectedAddress exists in localStorage (e.g., from current location)
+    const selectedAddressId = localStorage.getItem('selectedAddressId');
     const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
+    const addresses = await fetchAddresses();
 
-    // If a selectedAddress exists and has the required fields, use it
-    if (selectedAddress.street && selectedAddress.city && selectedAddress.state) {
-        updateAddressFields(selectedAddress);
-        // Optionally, uncheck all radio buttons to indicate this is a custom location
-        document.querySelectorAll('input[name="address-type"]').forEach(radio => {
-            radio.checked = false;
-        });
-    } else {
-        // Otherwise, fetch addresses from the backend
-        const addresses = await fetchAddresses();
-        if (!addresses || addresses.length === 0) {
-            alert("No addresses found. Please add an address or use your current location.");
-            return;
+    if (!addresses || addresses.length === 0) {
+        if (selectedAddress.street) {
+            updateAddressFields(selectedAddress, selectedAddress.address_type === 'other');
         }
-
-        window.addressesList = addresses;
-
-        let defaultAddress = addresses.find(addr => addr.address_type.toLowerCase() === 'work') || 
-                            addresses.find(addr => addr.is_default) || 
-                            addresses[0];
-        updateAddressFields(defaultAddress);
-        localStorage.setItem('selectedAddress', JSON.stringify(defaultAddress));
-        const initialRadio = document.querySelector(`input[name="address-type"][value="${defaultAddress.address_type}"]`);
-        if (initialRadio) initialRadio.checked = true;
+        return;
     }
 
-    // Set up radio button event listeners
+    window.addressesList = addresses;
+
+    let defaultAddress;
+    if (selectedAddressId) {
+        defaultAddress = addresses.find(addr => addr.id === parseInt(selectedAddressId)) || 
+                        addresses.find(addr => addr.is_default) || 
+                        addresses[0];
+    } else if (selectedAddress.street) {
+        defaultAddress = selectedAddress; // Use the address from cart if not found in backend yet
+    } else {
+        defaultAddress = addresses.find(addr => addr.is_default) || addresses[0];
+    }
+
+    updateAddressFields(defaultAddress, defaultAddress.address_type === 'other');
+    localStorage.setItem('selectedAddress', JSON.stringify(defaultAddress));
+    if (defaultAddress.id) {
+        localStorage.setItem('selectedAddressId', defaultAddress.id);
+    }
+
+    const initialRadio = document.querySelector(`input[name="address-type"][value="${defaultAddress.address_type}"]`);
+    if (initialRadio && defaultAddress.id) initialRadio.checked = true;
+
     document.querySelectorAll('input[name="address-type"]').forEach(radio => {
         radio.addEventListener('change', async () => {
             const selectedType = radio.value;
@@ -342,104 +345,151 @@ async function loadAddresses() {
             window.addressesList = freshAddresses;
             const filteredAddress = freshAddresses.find(addr => addr.address_type.toLowerCase() === selectedType.toLowerCase());
             if (filteredAddress) {
-                updateAddressFields(filteredAddress);
+                updateAddressFields(filteredAddress, filteredAddress.address_type === 'other');
                 localStorage.setItem('selectedAddress', JSON.stringify(filteredAddress));
+                localStorage.setItem('selectedAddressId', filteredAddress.id);
             } else {
-                updateAddressFields({ street: '', city: '', state: '' });
+                updateAddressFields({ street: '', city: '', state: '' }, false);
                 localStorage.removeItem('selectedAddress');
+                localStorage.removeItem('selectedAddressId');
                 alert(`No ${selectedType} address found. Please add one.`);
             }
         });
     });
 }
 
-function updateAddressFields(address) {
+function updateAddressFields(address, shouldBlink = false) {
     document.getElementById('address-street').value = address.street || '';
     document.getElementById('address-city').value = address.city || '';
     document.getElementById('address-state').value = address.state || '';
+
+    // Handle radio button blinking for 'other'
+    const otherRadio = document.querySelector('input[name="address-type"][value="Other"]');
+    if (shouldBlink && otherRadio) {
+        otherRadio.checked = true;
+        otherRadio.classList.add('blink');
+        setTimeout(() => otherRadio.classList.remove('blink'), 2000); // Blink for 2 seconds
+    } else if (otherRadio) {
+        otherRadio.classList.remove('blink');
+    }
+}
+
+async function saveCurrentLocationToBackend(locationData) {
+    try {
+        const addressData = {
+            street: locationData.street || 'Unknown Street',
+            city: locationData.city || 'Unknown City',
+            state: locationData.state || 'Unknown State',
+            zip_code: locationData.zip_code || '00000',
+            country: locationData.country || 'Unknown Country',
+            address_type: 'other',
+            is_default: false
+        };
+
+        const response = await fetch(`${API_BASE_URL}/addresses/create`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(addressData)
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(`Failed to save address: ${result.error || 'Unknown error'}`);
+        }
+
+        return result.address;
+    } catch (error) {
+        console.error("Error saving current location:", error);
+        throw error;
+    }
 }
 
 function setupLocationButton() {
     const useLocationButton = document.querySelector('.use-location');
-    if (!useLocationButton) {
-        console.log('Use current location button not found');
-        return;
-    }
+    if (!useLocationButton) return;
 
     useLocationButton.addEventListener('click', async function() {
-        if ("geolocation" in navigator) {
-            useLocationButton.textContent = '📍 Fetching location...';
-            useLocationButton.disabled = true;
-
-            try {
-                const position = await new Promise((resolve, reject) => {
-                    navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
-                });
-
-                const latitude = position.coords.latitude;
-                const longitude = position.coords.longitude;
-
-                const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`;
-                const response = await fetch(nominatimUrl, {
-                    headers: {
-                        'User-Agent': 'BookstoreApp/1.0 (your-email@example.com)'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch address from Nominatim API');
-                }
-
-                const data = await response.json();
-                if (data && data.address) {
-                    const address = {
-                        street: data.address.road || data.address.street || '',
-                        city: data.address.city || data.address.town || data.address.village || '',
-                        state: data.address.state || data.address.region || ''
-                    };
-
-                    updateAddressFields(address);
-                    localStorage.setItem('selectedAddress', JSON.stringify(address));
-
-                    // Uncheck all radio buttons to indicate this is a custom location
-                    document.querySelectorAll('input[name="address-type"]').forEach(radio => {
-                        radio.checked = false;
-                    });
-                } else {
-                    throw new Error('No address found for the given coordinates');
-                }
-
-                useLocationButton.textContent = '📍 Use current location';
-                useLocationButton.disabled = false;
-            } catch (error) {
-                let errorMessage = 'Unable to fetch location: ';
-                if (error.code) {
-                    switch (error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMessage += 'User denied the request for Geolocation.';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMessage += 'Location information is unavailable.';
-                            break;
-                        case error.TIMEOUT:
-                            errorMessage += 'The request to get user location timed out.';
-                            break;
-                        default:
-                            errorMessage += 'An unknown error occurred.';
-                            break;
-                    }
-                } else {
-                    errorMessage += error.message;
-                }
-                alert(errorMessage);
-                updateAddressFields({ street: '', city: '', state: '' });
-                localStorage.removeItem('selectedAddress');
-
-                useLocationButton.textContent = '📍 Use current location';
-                useLocationButton.disabled = false;
-            }
-        } else {
+        if (!("geolocation" in navigator)) {
             alert('Geolocation is not supported by your browser.');
+            return;
+        }
+
+        useLocationButton.textContent = '📍 Fetching location...';
+        useLocationButton.disabled = true;
+
+        try {
+            const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+            });
+
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`;
+            const response = await fetch(nominatimUrl, {
+                headers: {
+                    'User-Agent': 'BookstoreApp/1.0 (your-email@example.com)'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch address from Nominatim API');
+            }
+
+            const data = await response.json();
+            if (!data || !data.address) {
+                throw new Error('No address found for the given coordinates');
+            }
+
+            const address = {
+                street: data.address.road || data.address.street || '',
+                city: data.address.city || data.address.town || data.address.village || '',
+                state: data.address.state || data.address.region || '',
+                zip_code: data.address.postcode || '00000',
+                country: data.address.country || ''
+            };
+
+            const savedAddress = await saveCurrentLocationToBackend(address);
+            updateAddressFields(savedAddress, true); // Trigger blinking
+            localStorage.setItem('selectedAddress', JSON.stringify(savedAddress));
+            localStorage.setItem('selectedAddressId', savedAddress.id);
+            await loadAddresses();
+
+            alert('Latest current location saved successfully!');
+            useLocationButton.textContent = '📍 Use current location';
+            useLocationButton.disabled = false;
+        } catch (error) {
+            let errorMessage = 'Unable to fetch or save location: ';
+            if (error.code) {
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage += 'User denied the request for Geolocation.';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage += 'Location information is unavailable.';
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage += 'The request to get user location timed out.';
+                        break;
+                    default:
+                        errorMessage += 'An unknown error occurred.';
+                        break;
+                }
+            } else {
+                errorMessage += error.message;
+            }
+            alert(errorMessage);
+            updateAddressFields({ street: '', city: '', state: '' }, false);
+            localStorage.removeItem('selectedAddress');
+            localStorage.removeItem('selectedAddressId');
+            useLocationButton.textContent = '📍 Use current location';
+            useLocationButton.disabled = false;
         }
     });
+
+    // Load initial address if already selected
+    const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
+    if (selectedAddress.street) {
+        updateAddressFields(selectedAddress, selectedAddress.address_type === 'other');
+    }
 }

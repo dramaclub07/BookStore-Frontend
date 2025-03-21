@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookstore</title>
+    <link rel="stylesheet" href="../styles/profile.css">
+</head>
+<body>
+    <header>
+        <div class="logo-container">
+            <div class="book-icon">📖</div>
+            <div class="store-name">Bookstore</div>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" class="search-box" placeholder="Search ...">
+        </div>
+        
+        <div class="user-controls">
+            <a href="#" class="user-control">
+                <div class="icon">👤</div>
+                <div id="user-name">Poonam</div>
+            </a>
+            
+            <a href="#" class="user-control">
+                <div class="icon">🛒</div>
+                <div>Cart</div>
+            </a>
+        </div>
+    </header>
+    
+    <main>
+        <!-- Personal Details Section -->
+        <div class="personal-section">
+            <h2>
+                Personal Details
+                <button class="edit-btn" onclick="toggleEdit('personal-details')">Edit</button>
+            </h2>
+            <div id="personal-details">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="full_name" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Email ID</label>
+                    <input type="email" id="email" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number</label>
+                    <input type="text" id="mobile_number" disabled>
+                </div>
+                <button class="save-btn" id="save-personal-details" onclick="savePersonalDetails()">Save</button>
+            </div>
+        </div>
+
+        <!-- Address Details Section -->
+        <div class="address-section">
+            <div class="address-header">
+                <h2>Address Details</h2>
+                <button class="add-btn" onclick="toggleAddressForm()">Add New Address</button>
+            </div>
+            <div id="address-list">
+                <!-- Addresses will be populated dynamically -->
+            </div>
+            <div id="address-form" class="address-form">
+                <div class="form-group">
+                    <label>Address</label>
+                    <textarea id="new-street" placeholder="Enter address"></textarea>
+                </div>
+                <div class="address-row">
+                    <div class="form-group">
+                        <label>City/Town</label>
+                        <input type="text" id="new-city" placeholder="Enter city">
+                    </div>
+                    <div class="form-group">
+                        <label>State</label>
+                        <input type="text" id="new-state" placeholder="Enter state">
+                    </div>
+                </div>
+                <div class="address-row">
+                    <div class="form-group">
+                        <label>Zip Code</label>
+                        <input type="text" id="new-zip-code" placeholder="Enter zip code" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Country</label>
+                        <input type="text" id="new-country" placeholder="Enter country">
+                    </div>
+                </div>
+                <div class="form-group radio-group">
+                    <label>Type</label>
+                    <label><input type="radio" name="new-address_type" value="home" checked> Home</label>
+                    <label><input type="radio" name="new-address_type" value="work"> Work</label>
+                    <label><input type="radio" name="new-address_type" value="other"> Other</label>
+                </div>
+                <button onclick="saveNewAddress()">Save Address</button>
+                <button onclick="toggleAddressForm()">Cancel</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="../scripts/profile.js"></script>
+</body>
+</html>

@@ -24,37 +24,38 @@ function getAuthHeaders() {
 
 // Update cart count in UI
 function updateCartCount(count) {
-    const headerCount = document.querySelector('.cart-count');
+    const cartCount = document.querySelector('#cart-link .cart-count');
     const sectionCount = document.getElementById('cart-count');
-    if (headerCount) headerCount.textContent = count;
+    if (cartCount) cartCount.textContent = count;
     if (sectionCount) sectionCount.textContent = count;
 }
 
 // Load user profile and update header/form
 async function loadUserProfile() {
     try {
-        const response = await fetch(`${API_BASE_URL}/users/profile`, { headers: getAuthHeaders() });
-        if (response.status === 401) {
-            alert("Session expired. Please log in again.");
-            localStorage.removeItem('token');
-            window.location.href = '../pages/login.html';
-            return;
+        const response = await fetch(`${API_BASE_URL}/users/profile`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert("Session expired. Please log in again.");
+                localStorage.removeItem('token');
+                window.location.href = '/pages/login.html';
+                return;
+            }
+            throw new Error(`Profile fetch failed with status: ${response.status}`);
         }
-        if (!response.ok) throw new Error(`Failed to fetch profile: ${response.status}`);
-
         const userData = await response.json();
         if (userData.success) {
-            // Update header profile
-            const profileElement = document.querySelector('.profile');
+            const profileElement = document.getElementById('profile-link');
             if (profileElement) {
-                profileElement.textContent = `👤 ${userData.name || 'User'}`;
+                profileElement.innerHTML = `<i class="fa-solid fa-user"></i> ${userData.name || 'User'}`;
             }
-            // Update form fields
             document.querySelector('input[readonly][value="Poonam Yadav"]').value = userData.name || 'Unknown';
             document.querySelector('input[readonly][value="81678954778"]').value = userData.mobile_number || 'N/A';
         }
     } catch (error) {
-        console.error("Error fetching profile:", error);
+        console.error("Profile fetch error:", error.message);
     }
 }
 

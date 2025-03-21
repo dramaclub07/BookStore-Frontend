@@ -6,56 +6,54 @@
     <title>Order Success</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../styles/styles.css">
-    <style>
-         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #fff;
-            text-align: center;
-            box-sizing: border-box;
-        }
-
-    </style>
+   
 </head>
 <body>
-    <header>
-        <div class="header-container">
-            <div class="logo">📖 Bookstore</div>
-            <input type="text" class="search-bar" placeholder="Search...">
-            <div class="user-nav">
-                <span class="profile">👤 User</span>
-                <span class="cart">🛒<span class="cart-count">0</span></span>
-            </div>
+    <header class="navbar">
+        <div class="logo">
+            <img src="../assets/education@2x.png" alt="Bookstore Logo"> Bookstore
+        </div>
+        <div class="search-container">
+            <input type="text" id="search" class="search-bar" placeholder="Search books...">
+            <div id="search-suggestions" class="suggestions-box"></div>
+        </div>
+        <div class="nav-links">
+            <span id="profile-link"><i class="fa-solid fa-user"></i> Profile</span>
+            <span id="cart-link"><i class="fa-solid fa-shopping-cart"></i></span>
         </div>
     </header>
 
-    <div class="success-container">
-        <div class="confetti">🎉✨🎊</div>
-        <div class="success-message">
-            <h1>Order Placed Successfully</h1>
-            <p>Hurray!!! Your order is confirmed <br> 
-               The order ID is <strong id="order-id">#123456</strong>. 
-               Save the order ID for further communication.
-            </p>
-        </div>
-        <table class="contact-table">
-            <tr>
-                <th>Email us</th>
-                <th>Contact us</th>
-                <th>Address</th>
-            </tr>
-            <tr>
-                <td>admin@bookstore.com</td>
-                <td>+91 8163475881</td>
-                <td>42, 14th Main, 15th Cross, Sector 4, Opp to BDA complex, near Kumarakom restaurant, HSR Layout, Bangalore 560034</td>
-            </tr>
-        </table>
-        <button class="continue-button">CONTINUE SHOPPING</button>
-    </div>
-    <footer>
-        <p>Copyright &copy; 2020, Bookstore Private Limited. All Rights Reserved</p>
+    <main class="main-content">
+        <section class="success-container">
+            <div class="confetti">🎉✨🎊</div>
+            <div class="success-message">
+                <h1>Order Placed Successfully</h1>
+                <p>Hurray!!! Your order is confirmed <br> 
+                   The order ID is <strong id="order-id">#123456</strong>. 
+                   Save the order ID for further communication.
+                </p>
+            </div>
+            <table class="contact-table">
+                <tr>
+                    <th>Email us</th>
+                    <th>Contact us</th>
+                    <th>Address</th>
+                </tr>
+                <tr>
+                    <td>admin@bookstore.com</td>
+                    <td>+91 8163475881</td>
+                    <td>42, 14th Main, 15th Cross, Sector 4, Opp to BDA complex, near Kumarakom restaurant, HSR Layout, Bangalore 560034</td>
+                </tr>
+            </table>
+            <button class="continue-button">CONTINUE SHOPPING</button>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>Copyright © 2020, Bookstore Private Limited. All Rights Reserved</p>
     </footer>
+
     <script src="../scripts/order-confirmation.js"></script>
+
 </body>
 </html>
