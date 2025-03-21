@@ -1,0 +1,257 @@
+/* navbar.css */
+
+/* General Navbar Styling */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #A03037; /* Updated to maroon from previous CSS */
+    padding: 15px 30px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+/* Logo Styling */
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #ecf0f1; /* Light color for contrast */
+}
+
+.logo img {
+    width: 50px;
+    height: 30px;
+}
+
+/* Search Container */
+.search-container {
+    flex: 1;
+    max-width: 500px;
+    position: relative;
+    margin: 0 20px;
+}
+
+.search-bar {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 25px; /* Rounded search bar */
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.search-bar:focus {
+    border-color: #d32f2f; /* Updated to red from previous CSS */
+    box-shadow: 0 0 5px rgba(211, 47, 47, 0.3); /* Updated shadow to match #d32f2f */
+}
+
+.suggestions-box {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+}
+
+.suggestions-box.visible {
+    display: block;
+}
+
+.suggestion-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+}
+
+.suggestion-item:hover {
+    background: #d5e7c3; /* Updated to light green from previous CSS */
+}
+
+/* Nav Links */
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Profile Link */
+.profile-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ecf0f1; /* Light color for contrast */
+    font-size: 16px;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.profile-link:hover {
+    background-color: #8b252b; /* Slightly darker shade of #A03037 for hover */
+    color: #ffd700; /* Gold hover effect from previous CSS */
+}
+
+.nav-icon i {
+    font-size: 18px; /* Slightly larger icon */
+}
+
+/* Dropdown Styling */
+.profile-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 200px;
+    padding: 10px;
+    z-index: 1000;
+}
+
+.dropdown-header {
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 16px;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between icon and text */
+    padding: 10px;
+    color: #333;
+    text-decoration: none;
+    font-size: 15px;
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+}
+
+.dropdown-item:hover {
+    background: #f5f5f5;
+}
+
+.dropdown-icon {
+    color: #555; /* Slightly darker color for icons */
+}
+
+/* Logout Button */
+.logout-button {
+    background: transparent; /* Transparent background by default, as in previous CSS */
+    border: 1px solid #d32f2f; /* Red border from previous CSS */
+    color: #d32f2f; /* Red text by default */
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between icon and text */
+    width: 100%; /* Full width for consistency */
+    text-align: left;
+    font-size: 15px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.logout-button:hover {
+    background: #d32f2f; /* Red background on hover from previous CSS */
+    color: white; /* White text on hover */
+}
+
+/* Cart Link */
+.cart-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ecf0f1;
+    font-size: 16px;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.cart-link:hover {
+    background-color: #8b252b; /* Slightly darker shade of #A03037 for hover */
+    color: #ffd700; /* Gold hover effect from previous CSS */
+}
+
+.cart-count {
+    background: #d32f2f; /* Updated to red from previous CSS */
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        padding: 10px 20px;
+        gap: 10px;
+    }
+
+    .search-container {
+        width: 100%;
+        max-width: none;
+        margin: 10px 0;
+    }
+
+    .nav-links {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .profile-link,
+    .cart-link {
+        font-size: 14px;
+        padding: 6px 10px;
+    }
+
+    .profile-dropdown {
+        width: 150px;
+    }
+
+    .dropdown-item {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    .logout-button {
+        font-size: 14px;
+        padding: 6px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo {
+        font-size: 20px;
+    }
+
+    .logo img {
+        width: 40px;
+        height: 24px;
+    }
+
+    .nav-icon i {
+        font-size: 16px;
+    }
+}

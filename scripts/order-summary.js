@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const token = localStorage.getItem('token');
     if (!token) {
         alert("Please log in to continue.");
-        window.location.href = '/pages/login.html';
+        window.location.href = '../pages/login.html';
         return;
     }
 
@@ -37,7 +37,7 @@ async function loadUserProfile() {
         if (response.status === 401) {
             alert("Session expired. Please log in again.");
             localStorage.removeItem('token');
-            window.location.href = '/pages/login.html';
+            window.location.href = '../pages/login.html';
             return;
         }
         if (!response.ok) throw new Error(`Failed to fetch profile: ${response.status}`);
@@ -75,7 +75,7 @@ async function loadCartItems() {
             if (response.status === 401) {
                 alert("Session expired. Please log in again.");
                 localStorage.removeItem('token');
-                window.location.href = '/pages/login.html';
+                window.location.href = '../pages/login.html';
                 return;
             }
             throw new Error(`Error ${response.status}: Failed to fetch cart items`);
@@ -264,7 +264,7 @@ async function loadCartSummary() {
             if (response.status === 401) {
                 alert("Session expired. Please log in again.");
                 localStorage.removeItem('token');
-                window.location.href = '/pages/login.html';
+                window.location.href = '../pages/login.html';
                 return;
             }
             throw new Error("Failed to fetch cart summary");
@@ -284,13 +284,13 @@ async function loadOrderSummary() {
 
     if (!cartItems.length) {
         alert("Your cart is empty. Please add items to proceed.");
-        window.location.href = '/pages/cart.html';
+        window.location.href = '../pages/cart.html';
         return;
     }
 
     if (!selectedAddress.id) {
         alert("No address selected. Please select an address.");
-        window.location.href = '/pages/customer-details.html';
+        window.location.href = '../pages/customer-details.html';
         return;
     }
 
@@ -340,7 +340,7 @@ async function loadOrderSummary() {
             if (response.status === 401) {
                 alert("Session expired. Please log in again.");
                 localStorage.removeItem('token');
-                window.location.href = '/pages/login.html';
+                window.location.href = '../pages/login.html';
                 return;
             }
             if (!response.ok) {
@@ -352,7 +352,7 @@ async function loadOrderSummary() {
             if (orderData.success) {
                 localStorage.removeItem('cartItems');
                 localStorage.removeItem('selectedAddress');
-                window.location.href = '/pages/order-confirmation.html';
+                window.location.href = '../pages/order-confirmation.html';
             }
         } catch (error) {
             console.error("Error placing order:", error);

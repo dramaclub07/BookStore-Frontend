@@ -1,27 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bookstore - Home</title>
+    <link rel="stylesheet" href="../styles/navbar.css">
     <link rel="stylesheet" href="../styles/homePage.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
+
 <body>
     <header>
         <div class="navbar">
             <div class="logo">
-                <img src="../assets/education@2x.png" style="width: 50px; height: 30px;"> Bookstore
+                <img src="../assets/education@2x.png" style="width: 50px; height: 30px;" alt="Bookstore Logo"> Bookstore
             </div>
-            
             <div class="search-container">
                 <input type="text" id="search" class="search-bar" placeholder="Search books...">
                 <div id="search-suggestions" class="suggestions-box"></div>
             </div>
-    
             <div class="nav-links">
-                <span id="profile-link"><i class="fa-solid fa-user"></i> Profile</span>
-                <span id="cart-link"><i class="fa-solid fa-shopping-cart"></i> Cart</span>
+                <div class="profile-link" id="profile-link">
+                    <span class="nav-icon">
+                        <i class="fa-solid fa-user"></i>
+                    </span>
+                    <span class="username" id="username">Profile</span>
+                </div>
+                <a href="../pages/cart.html" class="cart-link" id="cart-link">
+                    <span class="nav-icon">
+                        <i class="fa-solid fa-shopping-cart"></i>
+                    </span>
+                    Cart <span class="cart-count" id="cart-count">0</span>
+                </a>
             </div>
         </div>
     </header>
@@ -34,7 +47,7 @@
                 <option value="price_low_high">Price: Low to High</option>
                 <option value="price_high_low">Price: High to Low</option>
                 <option value="rating">Rating</option>
-            </select> 
+            </select>
         </div>
 
         <section id="book-list" class="book-list">
@@ -50,5 +63,7 @@
     </main>
 
     <script src="../scripts/homePage.js"></script>
+    <script src="../scripts/navbar.js"></script>
 </body>
+
 </html>
