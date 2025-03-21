@@ -12,13 +12,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadUserProfile();
     await loadCartItems();
     await loadAddresses();
+    setupLocationButton();
 
     document.querySelector('.continue').addEventListener('click', () => {
         const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
-        if (selectedAddress.id) {
+        if (selectedAddress.id || (selectedAddress.street && selectedAddress.city && selectedAddress.state)) {
             window.location.href = '/pages/order-summary.html';
         } else {
-            alert("Please select an address.");
+            alert("Please select an address or use your current location.");
         }
     });
 
@@ -302,22 +303,36 @@ async function fetchAddresses() {
 }
 
 async function loadAddresses() {
-    const addresses = await fetchAddresses();
-    if (!addresses || addresses.length === 0) {
-        alert("No addresses found. Please add an address.");
-        return;
+    // Check if a selectedAddress exists in localStorage (e.g., from current location)
+    const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
+
+    // If a selectedAddress exists and has the required fields, use it
+    if (selectedAddress.street && selectedAddress.city && selectedAddress.state) {
+        updateAddressFields(selectedAddress);
+        // Optionally, uncheck all radio buttons to indicate this is a custom location
+        document.querySelectorAll('input[name="address-type"]').forEach(radio => {
+            radio.checked = false;
+        });
+    } else {
+        // Otherwise, fetch addresses from the backend
+        const addresses = await fetchAddresses();
+        if (!addresses || addresses.length === 0) {
+            alert("No addresses found. Please add an address or use your current location.");
+            return;
+        }
+
+        window.addressesList = addresses;
+
+        let defaultAddress = addresses.find(addr => addr.address_type.toLowerCase() === 'work') || 
+                            addresses.find(addr => addr.is_default) || 
+                            addresses[0];
+        updateAddressFields(defaultAddress);
+        localStorage.setItem('selectedAddress', JSON.stringify(defaultAddress));
+        const initialRadio = document.querySelector(`input[name="address-type"][value="${defaultAddress.address_type}"]`);
+        if (initialRadio) initialRadio.checked = true;
     }
 
-    window.addressesList = addresses;
-
-    let selectedAddress = addresses.find(addr => addr.address_type.toLowerCase() === 'work') || 
-                         addresses.find(addr => addr.is_default) || 
-                         addresses[0];
-    updateAddressFields(selectedAddress);
-    localStorage.setItem('selectedAddress', JSON.stringify(selectedAddress));
-    const initialRadio = document.querySelector(`input[name="address-type"][value="${selectedAddress.address_type}"]`);
-    if (initialRadio) initialRadio.checked = true;
-
+    // Set up radio button event listeners
     document.querySelectorAll('input[name="address-type"]').forEach(radio => {
         radio.addEventListener('change', async () => {
             const selectedType = radio.value;
@@ -342,4 +357,89 @@ function updateAddressFields(address) {
     document.getElementById('address-street').value = address.street || '';
     document.getElementById('address-city').value = address.city || '';
     document.getElementById('address-state').value = address.state || '';
+}
+
+function setupLocationButton() {
+    const useLocationButton = document.querySelector('.use-location');
+    if (!useLocationButton) {
+        console.log('Use current location button not found');
+        return;
+    }
+
+    useLocationButton.addEventListener('click', async function() {
+        if ("geolocation" in navigator) {
+            useLocationButton.textContent = '📍 Fetching location...';
+            useLocationButton.disabled = true;
+
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+                });
+
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+
+                const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`;
+                const response = await fetch(nominatimUrl, {
+                    headers: {
+                        'User-Agent': 'BookstoreApp/1.0 (your-email@example.com)'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch address from Nominatim API');
+                }
+
+                const data = await response.json();
+                if (data && data.address) {
+                    const address = {
+                        street: data.address.road || data.address.street || '',
+                        city: data.address.city || data.address.town || data.address.village || '',
+                        state: data.address.state || data.address.region || ''
+                    };
+
+                    updateAddressFields(address);
+                    localStorage.setItem('selectedAddress', JSON.stringify(address));
+
+                    // Uncheck all radio buttons to indicate this is a custom location
+                    document.querySelectorAll('input[name="address-type"]').forEach(radio => {
+                        radio.checked = false;
+                    });
+                } else {
+                    throw new Error('No address found for the given coordinates');
+                }
+
+                useLocationButton.textContent = '📍 Use current location';
+                useLocationButton.disabled = false;
+            } catch (error) {
+                let errorMessage = 'Unable to fetch location: ';
+                if (error.code) {
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage += 'User denied the request for Geolocation.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage += 'Location information is unavailable.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage += 'The request to get user location timed out.';
+                            break;
+                        default:
+                            errorMessage += 'An unknown error occurred.';
+                            break;
+                    }
+                } else {
+                    errorMessage += error.message;
+                }
+                alert(errorMessage);
+                updateAddressFields({ street: '', city: '', state: '' });
+                localStorage.removeItem('selectedAddress');
+
+                useLocationButton.textContent = '📍 Use current location';
+                useLocationButton.disabled = false;
+            }
+        } else {
+            alert('Geolocation is not supported by your browser.');
+        }
+    });
 }
