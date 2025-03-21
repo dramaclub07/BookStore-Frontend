@@ -157,7 +157,7 @@ document.getElementById("add-to-wishlist")?.addEventListener("click", async () =
         alert(result.message || "Wishlist updated successfully!");
 
         // Redirecting to Wishlist page after success
-        window.location.href = "../pages/wishlist.html";
+        // window.location.href = "../pages/wishlist.html";
 
     } catch (error) {
         console.error("Error adding to wishlist:", error);
