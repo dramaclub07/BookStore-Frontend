@@ -1,3 +1,5 @@
+/* bookDetails.css */
+
 /* Reset default styles */
 * {
     margin: 0;
@@ -13,7 +15,7 @@ body {
     background-color: #f5f5f5;
 }
 
-/* Navbar (unchanged) */
+/* Navbar */
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -167,28 +169,9 @@ body {
 
 .image-container {
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
+    align-items: center; /* Center the main image */
+    justify-content: center; /* Center the main image */
     margin-bottom: 20px;
-}
-
-.book-preview {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.preview-image {
-    width: 60px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: transform 0.2s ease;
-}
-
-.preview-image:hover {
-    transform: scale(1.05);
 }
 
 .book-image-wrapper {
@@ -199,23 +182,24 @@ body {
 
 .book-image {
     width: 100%;
-    max-width: 300px;
+    max-width: 350px; /* Increased size to fill the space */
     height: auto;
     border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
 }
 
 .action-buttons {
     display: flex;
     gap: 15px;
     width: 100%;
-    max-width: 300px;
+    max-width: 350px; /* Match the increased image width */
     margin-top: 10px;
     justify-content: center;
 }
 
 .add-to-bag, .wishlist {
     flex: 1;
-    padding: 10px;
+    padding: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -224,29 +208,58 @@ body {
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, color 0.2s ease; /* Smooth transition for background and text color */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .add-to-bag {
     background: linear-gradient(90deg, #a52a2a, #8b1e1e);
     color: white;
-    margin-left: 50px;
+    margin-left: 60px; 
 }
+
+
+
 
 .add-to-bag:hover {
     background: linear-gradient(90deg, #8b1e1e, #6e1515);
-    margin-left: 50px;
 }
 
 .wishlist {
-    background: #f5f5f5;
-    color: #a52a2a;
+    background: #333333;
+    color: #FFFFFF;
     border: 1px solid #a52a2a;
+    transition: background 0.2s ease, color 0.2s ease, border 0.2s ease; /* Smooth transition for background, text color, and border */
 }
 
+/* Hover effect for the Wishlist button */
 .wishlist:hover {
-    background: #e0e0e0;
+    background: #ffffff; /* White background on hover */
+    color: #333333; /* Black text color to match the design */
+    border: 1px solid #ff0000; /* Red border to match the heart */
+}
+
+/* Style for when the item is wishlisted */
+.wishlist.wishlisted {
+    background: #ffffff; /* White background when wishlisted */
+    color: #333333; /* Dark text color to contrast with white background */
+    border: 1px solid #ff0000; /* Red border to match the heart */
+}
+
+.wishlist i {
+    margin-right: 5px; /* Space between the heart icon and the text */
+    color: #cccccc; /* Default gray color for the heart */
+    transition: color 0.2s ease; /* Smooth color transition for the heart */
+}
+
+/* Style for the heart icon when the item is wishlisted */
+.wishlist.wishlisted i {
+    color: #ff0000; /* Red color for the filled heart */
+}
+
+/* Change the icon to a filled heart when wishlisted */
+.wishlist.wishlisted i.far.fa-heart {
+    font-weight: 900; /* Switch to the filled heart (fas) */
 }
 
 .book-details-right {
@@ -268,6 +281,7 @@ body {
     margin-bottom: 10px;
 }
 
+
 .rating {
     display: flex;
     align-items: center;
@@ -275,11 +289,15 @@ body {
     font-size: 14px;
 }
 
-.rating-value {
-    color: #28a745;
+
+#book-rating-value {
+    color:white;
     font-weight: bold;
     margin-right: 4px;
+    background-color: #388E3C;
+    padding: 5px;
 }
+
 
 .star {
     margin-right: 4px;
@@ -289,14 +307,15 @@ body {
     color: #666;
 }
 
+
 .price-info {
     display: flex;
     align-items: center;
     margin-bottom: 20px;
 }
 
-.book-price {
-    font-weight: bold;
+.price-info.book-price {
+    font-weight:bolder;
     font-size: 18px;
     color: #333;
 }
@@ -304,33 +323,35 @@ body {
 #book-old-price {
     text-decoration: line-through;
     color: #666;
-    font-size: 14px;
+    font-size: 20px; /* Increased font size for MRP to match the design */
     margin-left: 8px;
     opacity: 0.7;
 }
 
 .book-description h3 {
-    font-size: 18px;
+    font-size: 20px; /* Increased font size for "Book Detail" heading */
     margin-bottom: 10px;
 }
 
 .book-description p {
-    font-size: 14px;
+    font-size: 16px; /* Increased font size for the description text */
     color: #666;
     line-height: 1.6;
 }
 
 /* Customer Feedback Section */
 .customer-feedback {
-    background: white;
+    background: #ffffff; /* White background */
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-radius: 0; /* Sharp corners */
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
 }
 
 .customer-feedback h2 {
-    font-size: 20px;
-    margin-bottom: 20px;
+    font-size: 24px; /* Larger heading */
+    color: #000000; /* Black */
+    margin-bottom: 15px; /* Reduced margin */
+    font-weight: 600;
 }
 
 .overall-rating {
@@ -338,8 +359,10 @@ body {
 }
 
 .overall-rating h3 {
-    font-size: 16px;
+    font-size: 14px; /* Smaller label */
+    color: #000000; /* Black */
     margin-bottom: 10px;
+    font-weight: 500;
 }
 
 .stars {
@@ -348,31 +371,24 @@ body {
     margin-bottom: 10px;
 }
 
-.stars .star {
-    font-size: 18px;
-    color: #ffd700; /* Gold color for stars in reviews */
-}
-
-/* Interactive Stars for Rating Input */
 .overall-rating .stars {
     display: flex;
     gap: 5px;
     cursor: pointer;
-    font-size: 20px;
+    font-size: 24px; /* Larger stars */
 }
 
 .overall-rating .stars .star {
-    color: #ccc; /* Default unfilled star color */
+    color: #cccccc; /* Gray for unfilled stars */
     transition: color 0.2s ease;
 }
 
 .overall-rating .stars .star.active {
-    color: #ffd700; /* Gold for selected stars */
+    color: #ffd700;
 }
 
-/* Remove conflicting hover rules */
 .overall-rating .stars .star:hover {
-    color: #ffd700; /* Hover effect only on the star itself */
+    color: #ffd700; /* Gold on hover */
 }
 
 #review-form {
@@ -386,85 +402,132 @@ body {
     min-height: 100px;
     padding: 10px;
     margin-top: 10px;
-    border: 1px solid #ddd;
+    border: none; /* No border by default */
+    background: #f5f5f5; /* Light gray background */
     border-radius: 5px;
     font-size: 14px;
+    color: #666666; /* Gray text */
+    resize: vertical; /* Allow vertical resizing */
+}
+
+#review-text:focus {
+    outline: none;
+    border: 1px solid #007bff; /* Blue border on focus */
 }
 
 #submit-review {
-    background: linear-gradient(90deg, #a52a2a, #8b1e1e);
-    color: white;
+    background: #007bff; /* Solid blue */
+    color: #ffffff; /* White text */
     border: none;
     padding: 8px 16px;
     border-radius: 5px;
     cursor: pointer;
     margin-top: 10px;
     font-size: 14px;
+    align-self: flex-end; /* Align to the right */
+    transition: background 0.2s ease;
 }
 
 #submit-review:hover {
-    background: linear-gradient(90deg, #8b1e1e, #6e1515);
+    background: #0056b3; /* Darker blue on hover */
 }
 
 .reviews-list {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px; /* Increased gap between reviews */
 }
 
 .review {
-    border-bottom: 1px solid #eee;
-    padding-bottom: 15px;
+    display: flex;
+    flex-direction: column; /* Stack elements vertically */
+    gap: 0px; /* Reduced gap between name, stars, and comment */
+    padding-bottom: 0; /* Remove padding */
+    border-bottom: none; /* Remove border */
+}
+
+.review-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Space between name and delete button */
 }
 
 .review-author {
     font-size: 14px;
     font-weight: 600;
-    margin-bottom: 5px;
+    color: #007bff; /* Blue for the name */
+    text-decoration: none; /* Remove underline for link */
+    transition: color 0.2s ease;
+}
+
+.review-author:hover {
+    color: #0056b3; /* Darker blue on hover */
+}
+
+.review-author::before {
+    content: attr(data-initials);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #cccccc; /* Gray background for avatar */
+    color: #ffffff; /* White text */
+    border-radius: 50%;
+    font-size: 14px;
+    font-weight: 600;
+    margin-right: 10px;
 }
 
 .review-stars {
     display: flex;
-    gap: 5px;
-    margin-bottom: 5px;
+    gap: 5px; /* Match the gap of the input stars */
+    margin-left: 50px; /* Add indent to push stars forward */
+    color: #ffd700;
 }
 
 .review-stars .star {
-    font-size: 14px;
-    color: #ffd700;
+    font-size: 24px; /* Larger stars, matching the input stars */
+    color: #ffd700; /* Gold for filled stars */
+}
+
+.review-stars .star.empty {
+    color: #cccccc; /* Gray for unfilled stars */
 }
 
 .review-text {
     font-size: 14px;
-    color: #666;
+    color: #666666; /* Gray text */
+    line-height: 1.5;
+    text-transform: uppercase; /* Uppercase text for the comment */
+    margin-left: 50px; /* Add indent to push comment forward */
 }
 
-/* Responsive Design (unchanged) */
+/* Delete button for logged-in users */
+.delete-review-btn {
+    background-color: transparent;
+    color: #a52a2a; /* Brownish-red color */
+    border: 1px solid #a52a2a; /* Brown border */
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.delete-review-btn:hover {
+    background-color: rgba(165, 42, 42, 0.1); /* Light red background on hover */
+}
+
+.delete-review-btn i {
+    font-size: 12px;
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
-    .navbar {
-        flex-wrap: wrap;
-        text-align: center;
-        padding: 10px;
-        height: auto;
-        min-height: 60px;
-    }
-
-    .search-container {
-        width: 80%;
-        margin-top: 10px;
-        max-width: none;
-    }
-
-    .nav-links {
-        margin-top: 10px;
-        justify-content: center;
-        width: 100%;
-    }
-
-    .nav-links span {
-        margin: 0 10px;
-    }
-
     .content-wrapper {
         padding: 10px;
     }
@@ -483,26 +546,13 @@ body {
     }
 
     .image-container {
-        flex-direction: row;
-        align-items: flex-start;
-        gap: 10px;
-        width: 100%;
+        align-items: center;
         justify-content: center;
-    }
-
-    .book-preview {
-        flex-direction: column;
-        gap: 10px;
-        margin-bottom: 0;
-    }
-
-    .preview-image {
-        width: 50px;
-        height: 70px;
+        width: 100%;
     }
 
     .book-image {
-        max-width: 250px;
+        max-width: 300px; /* Slightly smaller for smaller screens */
     }
 
     .book-details-right {
@@ -511,38 +561,20 @@ body {
     }
 
     .action-buttons {
-        max-width: 250px;
+        max-width: 300px;
     }
 }
 
 @media (max-width: 480px) {
-    .search-container {
-        width: 100%;
-    }
-
-    .nav-links span {
-        margin: 0 5px;
-        font-size: 12px;
-    }
-
     .content-wrapper {
         padding: 5px;
     }
 
-    .image-container {
-        gap: 5px;
-    }
-
-    .preview-image {
-        width: 40px;
-        height: 60px;
-    }
-
     .book-image {
-        max-width: 200px;
+        max-width: 250px;
     }
 
     .action-buttons {
-        max-width: 200px;
+        max-width: 250px;
     }
 }

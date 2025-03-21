@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const token = localStorage.getItem('token');
     if (!token) {
         alert("Please log in to continue.");
-        window.location.href = '/pages/login.html';
+        window.location.href = '../pages/login.html';
         return;
     }
 
@@ -16,14 +16,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.querySelector('.continue').addEventListener('click', () => {
         const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
         if (selectedAddress.id || (selectedAddress.street && selectedAddress.city && selectedAddress.state)) {
-            window.location.href = '/pages/order-summary.html';
+            window.location.href = '../pages/order-summary.html';
         } else {
             alert("Please select an address or use your current location.");
         }
     });
 
     document.querySelector('.add-address')?.addEventListener('click', () => {
-        window.location.href = '/pages/address-details.html';
+        window.location.href = '../pages/address-details.html';
     });
 });
 
@@ -44,6 +44,7 @@ function updateCartCount(count) {
 
 async function loadUserProfile() {
     try {
+
         const response = await fetch(`${API_BASE_URL}/users/profile`, {
             headers: getAuthHeaders()
         });
@@ -55,6 +56,7 @@ async function loadUserProfile() {
                 return;
             }
             throw new Error(`Profile fetch failed with status: ${response.status}`);
+
         }
         const userData = await response.json();
         if (userData.success) {
@@ -85,7 +87,7 @@ async function loadCartItems() {
             if (response.status === 401) {
                 alert("Session expired. Please log in again.");
                 localStorage.removeItem('token');
-                window.location.href = '/pages/login.html';
+                window.location.href = '../pages/login.html';
                 return;
             }
             throw new Error(`Error ${response.status}: Failed to fetch cart items`);
@@ -266,7 +268,7 @@ async function loadCartSummary() {
             if (response.status === 401) {
                 alert("Session expired. Please log in again.");
                 localStorage.removeItem('token');
-                window.location.href = '/pages/login.html';
+                window.location.href = '../pages/login.html';
                 return;
             }
             throw new Error("Failed to fetch cart summary");
@@ -285,7 +287,7 @@ async function fetchAddresses() {
         if (response.status === 401) {
             alert("Session expired. Please log in again.");
             localStorage.removeItem('token');
-            window.location.href = '/pages/login.html';
+            window.location.href = '../pages/login.html';
             return null;
         }
         if (!response.ok) throw new Error(`Failed to fetch addresses: ${response.status}`);

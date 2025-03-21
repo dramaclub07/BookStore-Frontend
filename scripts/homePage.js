@@ -1,6 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
     console.log("DOM fully loaded, fetching books...");
-    if (localStorage.getItem("reviewSubmitted") === "true") {
+
+    // Check if user just logged in
+    if (localStorage.getItem("justLoggedIn") === "true") {
+        console.log("User just logged in, forcing refresh of books...");
+        localStorage.removeItem("justLoggedIn");
+        fetchBooks("relevance", 1, true);
+    } else if (localStorage.getItem("reviewSubmitted") === "true") {
         console.log("Review submitted previously, forcing refresh of books...");
         localStorage.removeItem("reviewSubmitted");
         fetchBooks("relevance", 1, true);
@@ -10,21 +16,114 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
+    const usernameElement = document.getElementById("username");
+    const dropdownUsernameElement = document.getElementById("dropdown-username");
+
+    // Set the username in the navbar and dropdown
+    const username = localStorage.getItem("username") || "User";
+    if (usernameElement) {
+        usernameElement.textContent = username;
+    }
+    if (dropdownUsernameElement) {
+        dropdownUsernameElement.textContent = `Hello, ${username}`;
+    }
+
+    // Dropdown menu state
+    let isDropdownOpen = false;
+    const dropdownMenu = document.getElementById("profile-dropdown");
 
     if (profileLink) {
-        profileLink.addEventListener("click", () => {
-            console.log("Redirecting to profile page");
-            window.location.href = "profile.html";
+        profileLink.addEventListener("click", (event) => {
+            event.preventDefault(); // Prevent default link behavior
+            console.log("Profile link clicked, toggling dropdown");
+
+            // Toggle dropdown visibility
+            if (isDropdownOpen) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+
+        // Close dropdown if clicking outside
+        document.addEventListener("click", (event) => {
+            if (
+                isDropdownOpen &&
+                !profileLink.contains(event.target) &&
+                dropdownMenu &&
+                !dropdownMenu.contains(event.target)
+            ) {
+                closeDropdown();
+            }
         });
     }
 
     if (cartLink) {
         cartLink.addEventListener("click", () => {
             console.log("Redirecting to cart page");
-            window.location.href = "cart.html";
+            window.location.href = "../pages/cart.html";
         });
     }
+
+    // Function to open the dropdown
+    function openDropdown() {
+        if (dropdownMenu) {
+            dropdownMenu.style.display = "block";
+            isDropdownOpen = true;
+        }
+    }
+
+    // Function to close the dropdown
+    function closeDropdown() {
+        if (dropdownMenu) {
+            dropdownMenu.style.display = "none";
+            isDropdownOpen = false;
+        }
+    }
 });
+
+// Sign Out (Logout) functionality
+function handleSignOut() {
+    console.log("Logging out...");
+    const provider = localStorage.getItem("socialProvider");
+
+    // Revoke Google session if applicable
+    if (provider === "google" && typeof google !== "undefined" && google.accounts) {
+        console.log("Logging out from Google");
+        google.accounts.id.disableAutoSelect();
+        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
+            console.log("Google session revoked");
+        });
+    }
+
+    // Revoke Facebook session if applicable
+    if (provider === "facebook") {
+        console.log("Logging out from Facebook");
+        FB.getLoginStatus(function (response) {
+            if (response.status === "connected") {
+                FB.logout(function (response) {
+                    console.log("Facebook session revoked");
+                });
+            }
+        });
+    }
+
+    // Clear localStorage
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    localStorage.removeItem("socialEmail");
+    localStorage.removeItem("socialProvider");
+    localStorage.removeItem("justLoggedIn");
+
+    // Hide the sign-out container (optional, since we're redirecting)
+    const signoutContainer = document.getElementById("signout-container");
+    if (signoutContainer) {
+        signoutContainer.style.display = "none";
+    }
+
+    alert("Logged out successfully.");
+    window.location.href = "../pages/login.html"; // Redirect to login page
+}
 
 let currentPage = 1;
 let totalPages = 1;
@@ -49,16 +148,33 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
         const url = `${API_BASE_URL}?sort=${sortBy}&page=${page}&force_refresh=${forceRefresh}`;
         console.log("Fetching books from:", url);
 
-        const response = await fetch(url);
+        // Add authentication token to the request if available
+        const token = localStorage.getItem("token");
+        const headers = {
+            "Content-Type": "application/json",
+        };
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+            console.log("Including Authorization token in request:", token);
+        } else {
+            console.log("No token found in localStorage, proceeding without Authorization.");
+        }
+
+        const response = await fetch(url, {
+            method: "GET",
+            headers: headers,
+        });
         console.log("Response status:", response.status);
+        console.log("Response headers:", response.headers);
 
         if (!response.ok) {
-            throw new Error(`HTTP Error ${response.status}: Unable to fetch books`);
+            const errorText = await response.text();
+            throw new Error(`HTTP Error ${response.status}: ${errorText}`);
         }
 
         const data = await response.json();
         console.log("API Response:", data);
-        console.log("Books with ratings:", data.books.map(b => ({ name: b.book_name, rating: b.rating, rating_count: b.rating_count })));
+        console.log("Books with ratings:", data.books?.map(b => ({ name: b.book_name, rating: b.rating, rating_count: b.rating_count })));
 
         if (!data.success || !data.books || data.books.length === 0) {
             console.warn("No books returned from API.");
@@ -199,6 +315,7 @@ function displaySuggestions(suggestions) {
     });
 }
 
+// Fetch Books by Search Query
 async function fetchBooksBySearch(query) {
     const bookContainer = document.getElementById("book-list");
     bookContainer.innerHTML = "<p>Loading search results...</p>";
@@ -221,7 +338,7 @@ async function fetchBooksBySearch(query) {
 function viewBookDetails(bookId) {
     console.log("Navigating to book details with ID:", bookId);
     if (bookId) {
-        window.location.href = `bookDetails.html?id=${bookId}`;
+        window.location.href = `../pages/bookDetails.html?id=${bookId}`;
     } else {
         console.error("Book ID is undefined or invalid");
     }

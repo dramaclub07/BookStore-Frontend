@@ -1,0 +1,348 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+header {
+    background-color: #a32f2f;
+    padding: 15px 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: white;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+}
+
+.book-icon {
+    font-size: 24px;
+    margin-right: 10px;
+}
+
+.store-name {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.search-container {
+    flex-grow: 1;
+    margin: 0 20px;
+}
+
+.search-box {
+    width: 100%;
+    max-width: 600px;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.user-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.user-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.icon {
+    font-size: 20px;
+    margin-bottom: 3px;
+}
+
+main {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Personal Details Styles */
+.personal-section {
+    margin-bottom: 40px;
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.personal-section h2 {
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.personal-section .edit-btn {
+    background: none;
+    border: none;
+    color: #a32f2f;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 14px;
+    transition: color 0.3s;
+}
+
+.personal-section .edit-btn:hover {
+    color: #6B1631;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #555;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    font-size: 14px;
+    color: #333;
+    box-sizing: border-box;
+}
+
+.form-group input:disabled,
+.form-group textarea:disabled {
+    background-color: #e9ecef;
+    color: #666;
+}
+
+.personal-section .save-btn {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    background-color: #a32f2f;
+    color: white;
+    display: none;
+}
+
+.personal-section .save-btn:hover {
+    background-color: #6B1631;
+}
+
+/* Address Details Styles */
+.address-section {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.address-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.address-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.add-btn {
+    padding: 8px 12px;
+    background-color: white;
+    color: #a32f2f;
+    border: 1px solid #a32f2f;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.add-btn:hover {
+    background-color: #a32f2f;
+    color: white;
+}
+
+.work-address {
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.work-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.work-title {
+    font-weight: bold;
+    margin-right: 15px;
+    font-size: 14px;
+}
+
+.address-edit-btn {
+    color: #a32f2f;
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.address-edit-btn:hover {
+    color: #6B1631;
+}
+
+.address-details textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: #f9f9f9;
+    resize: none;
+    height: 80px;
+    font-family: Arial, sans-serif;
+}
+
+.address-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.address-col {
+    flex: 1;
+}
+
+.radio-group {
+    display: flex;
+    gap: 30px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.radio-container {
+    display: inline-block;
+    position: relative;
+    width: 18px;
+    height: 18px;
+}
+
+.radio-custom {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 18px;
+    width: 18px;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+}
+
+.radio-custom.selected {
+    border: 1px solid #a32f2f;
+}
+
+.radio-custom.selected::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #a32f2f;
+}
+
+.address-form {
+    display: none;
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #fafafa;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.address-form.show {
+    display: block;
+}
+
+.address-form .address-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.address-form .address-row input {
+    width: 48%;
+}
+
+.address-form .radio-group {
+    margin-bottom: 20px;
+}
+
+.address-form input[type="radio"],
+.work-address input[type="radio"] {
+    margin-right: 8px;
+    accent-color: #a32f2f;
+    width: 16px;
+    height: 16px;
+}
+
+.address-form button,
+.work-address button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.address-form button:first-child,
+.work-address button {
+    background-color: #a32f2f;
+    color: white;
+}
+
+.address-form button:first-child:hover,
+.work-address button:hover {
+    background-color: #6B1631;
+}
+
+.address-form button:last-child {
+    background-color: #ccc;
+    color: #333;
+    margin-left: 10px;
+}
+
+.address-form button:last-child:hover {
+    background-color: #bbb;
+}

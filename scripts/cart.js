@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!token) {
         alert("Please log in to view your cart.");
-        window.location.href = '/pages/login.html';
+        window.location.href = '../pages/login.html';
         return;
     }
 
@@ -49,7 +49,7 @@ async function loadCartItems() {
             if (response.status === 401) {
                 alert("Session expired. Please log in again.");
                 localStorage.removeItem('token');
-                window.location.href = '/pages/login.html';
+                window.location.href = '../pages/login.html';
                 return;
             }
             throw new Error(`Error ${response.status}: Failed to fetch cart items`);
@@ -246,9 +246,11 @@ async function loadUserProfile() {
         }
         const userData = await response.json();
         if (userData.success) {
+
             const profileElement = document.getElementById('profile-link');
             if (profileElement) {
                 profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
+
             }
         }
     } catch (error) {
