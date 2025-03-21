@@ -185,10 +185,6 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
     }
 }
 
-<<<<<<< HEAD
-// Display Books on the Page
-=======
->>>>>>> d59ce85a7734ac34fc7fc8ac45bfb3956d292c20
 function displayBooks(books) {
     const bookContainer = document.getElementById("book-list");
     bookContainer.innerHTML = "";
@@ -227,10 +223,6 @@ function displayBooks(books) {
     });
 }
 
-<<<<<<< HEAD
-// Update Pagination Controls
-=======
->>>>>>> d59ce85a7734ac34fc7fc8ac45bfb3956d292c20
 function updatePagination(totalPagesFromAPI, currentPageFromAPI) {
     totalPages = totalPagesFromAPI;
     currentPage = currentPageFromAPI;
@@ -248,10 +240,6 @@ function updatePagination(totalPagesFromAPI, currentPageFromAPI) {
     if (nextButton) nextButton.disabled = currentPage >= totalPages || totalPages === 0;
 }
 
-<<<<<<< HEAD
-// Debounced Fetch Search Suggestions
-=======
->>>>>>> d59ce85a7734ac34fc7fc8ac45bfb3956d292c20
 let debounceTimer;
 document.getElementById("search")?.addEventListener("input", (event) => {
     clearTimeout(debounceTimer);
@@ -260,10 +248,6 @@ document.getElementById("search")?.addEventListener("input", (event) => {
     }, 300);
 });
 
-<<<<<<< HEAD
-// Fetch Search Suggestions
-=======
->>>>>>> d59ce85a7734ac34fc7fc8ac45bfb3956d292c20
 async function fetchSearchSuggestions(query) {
     const suggestionsBox = document.getElementById("search-suggestions");
 
@@ -289,10 +273,6 @@ async function fetchSearchSuggestions(query) {
     }
 }
 
-<<<<<<< HEAD
-// Display Search Suggestions
-=======
->>>>>>> d59ce85a7734ac34fc7fc8ac45bfb3956d292c20
 function displaySuggestions(suggestions) {
     const suggestionsBox = document.getElementById("search-suggestions");
     suggestionsBox.innerHTML = "";
@@ -320,10 +300,7 @@ function displaySuggestions(suggestions) {
     });
 }
 
-<<<<<<< HEAD
 // Fetch Books by Search Query
-=======
->>>>>>> d59ce85a7734ac34fc7fc8ac45bfb3956d292c20
 async function fetchBooksBySearch(query) {
     const bookContainer = document.getElementById("book-list");
     bookContainer.innerHTML = "<p>Loading search results...</p>";
@@ -343,10 +320,6 @@ async function fetchBooksBySearch(query) {
     }
 }
 
-<<<<<<< HEAD
-// View Book Details
-=======
->>>>>>> d59ce85a7734ac34fc7fc8ac45bfb3956d292c20
 function viewBookDetails(bookId) {
     console.log("Navigating to book details with ID:", bookId);
     if (bookId) {
@@ -356,10 +329,6 @@ function viewBookDetails(bookId) {
     }
 }
 
-<<<<<<< HEAD
-// Pagination Event Listeners
-=======
->>>>>>> d59ce85a7734ac34fc7fc8ac45bfb3956d292c20
 document.getElementById("prev-page")?.addEventListener("click", () => {
     if (currentPage > 1) {
         console.log("Fetching previous page:", currentPage - 1);
@@ -374,10 +343,6 @@ document.getElementById("next-page")?.addEventListener("click", () => {
     }
 });
 
-<<<<<<< HEAD
-// Search & Sort Event Listeners
-=======
->>>>>>> d59ce85a7734ac34fc7fc8ac45bfb3956d292c20
 document.getElementById("search")?.addEventListener("keypress", (event) => {
     if (event.key === "Enter") {
         console.log("Search triggered with query:", event.target.value);
