@@ -68,10 +68,6 @@ async function verifySocialToken(token, provider) {
             localStorage.setItem('socialEmail', data.user.email);
             localStorage.setItem('socialProvider', provider);
             
-            // Hide social login buttons, show sign-out button
-            document.querySelector('.social-login').style.display = 'none';
-            document.getElementById('signout-container').style.display = 'flex';
-            
             // Redirect to home page
             alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login successful! Welcome, ${data.user.name || data.user.email.split('@')[0]}`);
             window.location.href = '../pages/homePage.html';
@@ -85,54 +81,75 @@ async function verifySocialToken(token, provider) {
     }
 }
 
-// Function to handle Sign-Out (Google and Facebook)
-function handleSignOut() {
-    console.log('Signing out');
-    
-    // Determine the provider from localStorage
-    const provider = localStorage.getItem('socialProvider');
-    
-    // Sign out from Google if applicable
-    if (provider === 'google' && typeof google !== 'undefined' && google.accounts) {
-        console.log('Signing out from Google');
-        google.accounts.id.disableAutoSelect();
-        google.accounts.id.revoke(localStorage.getItem('socialEmail') || '', () => {
-            console.log('Google session revoked');
-        });
+// Fallback quotes in case the API fails
+const fallbackQuotes = [
+    { quote: "A room without books is like a body without a soul.", author: "Marcus Tullius Cicero" },
+    { quote: "The only thing that you absolutely have to know, is the location of the library.", author: "Albert Einstein" },
+    { quote: "Books are a uniquely portable magic.", author: "Stephen King" },
+    { quote: "I have always imagined that Paradise will be a kind of library.", author: "Jorge Luis Borges" },
+    { quote: "Reading is to the mind what exercise is to the body.", author: "Joseph Addison" }
+];
+
+let fallbackQuoteIndex = 0;
+
+// Function to fetch a random quote from Quotable API
+async function fetchRandomQuote() {
+    try {
+        // Fetch a random quote with tags related to books, literature, or motivation
+        const response = await fetch('https://api.quotable.io/random?tags=books|literature|motivation|inspirational');
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: Unable to fetch quote`);
+        }
+        const data = await response.json();
+        return {
+            quote: data.content,
+            author: data.author
+        };
+    } catch (error) {
+        console.error('Error fetching random quote:', error);
+        // Return a fallback quote and increment the index
+        const quote = fallbackQuotes[fallbackQuoteIndex];
+        fallbackQuoteIndex = (fallbackQuoteIndex + 1) % fallbackQuotes.length; // Cycle through fallback quotes
+        return quote;
     }
-    
-    // Sign out from Facebook if applicable
-    if (provider === 'facebook') {
-        console.log('Signing out from Facebook');
-        FB.getLoginStatus(function(response) {
-            if (response.status === 'connected') {
-                FB.logout(function(response) {
-                    console.log('Facebook session revoked');
-                });
-            }
-        });
+}
+
+// Function to display the random quote and rotate every 10 seconds
+function displayRandomQuote() {
+    const quoteText = document.getElementById('quote-text');
+    const quoteAuthor = document.getElementById('quote-author');
+    if (!quoteText || !quoteAuthor) {
+        console.error('Quote elements not found in the DOM');
+        return;
     }
-    
-    // Remove user data from localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('socialEmail');
-    localStorage.removeItem('socialProvider');
-    
-    // Show social login buttons, hide sign-out button
-    document.querySelector('.social-login').style.display = 'block';
-    document.getElementById('signout-container').style.display = 'none';
-    
-    alert('Signed out successfully.');
+
+    // Function to update the quote
+    const updateQuote = async () => {
+        const { quote, author } = await fetchRandomQuote();
+        // Fade out the current quote
+        quoteText.style.opacity = '0';
+        quoteAuthor.style.opacity = '0';
+        
+        setTimeout(() => {
+            // Update the text and fade in
+            quoteText.textContent = `"${quote}"`;
+            quoteAuthor.textContent = `— ${author}`;
+            quoteText.style.opacity = '1';
+            quoteAuthor.style.opacity = '1';
+        }, 500); // Match the fade transition duration (0.5s)
+    };
+
+    // Initial quote display
+    updateQuote();
+
+    // Rotate quotes every 10 seconds
+    setInterval(updateQuote, 10000);
 }
 
 // Initialize on DOM load
 document.addEventListener("DOMContentLoaded", function () {
-    // Check if user is already signed in
-    if (localStorage.getItem('token') && localStorage.getItem('socialEmail')) {
-        document.querySelector('.social-login').style.display = 'none';
-        document.getElementById('signout-container').style.display = 'flex';
-    }
+    // Fetch and display a random quote with rotation
+    displayRandomQuote();
 
     // Tab switching with card transition
     document.querySelectorAll('.tab').forEach(tab => {
@@ -182,57 +199,6 @@ document.addEventListener("DOMContentLoaded", function () {
             signupPasswordInput.type = 'password';
             signupEyeIcon.style.opacity = '1';
         }, 2000);
-    });
-
-    // Forgot Password Modal handling
-    const forgotPasswordModal = document.getElementById('forgot-password-modal');
-    const forgotPasswordLink = document.getElementById('forgot-password-link');
-    const closeBtn = document.querySelector('.close-btn');
-
-    forgotPasswordLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        forgotPasswordModal.style.display = 'flex';
-    });
-
-    closeBtn.addEventListener('click', () => {
-        forgotPasswordModal.style.display = 'none';
-    });
-
-    window.addEventListener('click', (e) => {
-        if (e.target === forgotPasswordModal) {
-            forgotPasswordModal.style.display = 'none';
-        }
-    });
-
-    // Forgot Password form submission
-    document.getElementById('forgot-password-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const emailInput = document.getElementById('forgot-email');
-        const email = emailInput.value.trim();
-        const emailRegex = /^[\w+\-.]+@(gmail\.com|yahoo\.com|outlook\.com)$/i;
-
-        if (!email || !emailRegex.test(email)) {
-            alert('Please enter a valid email (Gmail, Yahoo, or Outlook).');
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/forgot_password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-            });
-
-            const data = await response.json();
-            if (response.ok && data.message) {
-                alert(data.message);
-                forgotPasswordModal.style.display = 'none';
-            } else {
-                alert(data.errors || 'Failed to send OTP. Please try again.');
-            }
-        } catch (error) {
-            alert(`Failed to connect to the server at ${API_BASE_URL}. Error: ${error.message}`);
-        }
     });
 
     // Login form submission
@@ -346,7 +312,4 @@ document.addEventListener("DOMContentLoaded", function () {
             alert(`Failed to connect to the server at ${API_BASE_URL}. Error: ${error.message}`);
         }
     });
-
-    // Attach sign-out handler
-    document.getElementById('signout-button').addEventListener('click', handleSignOut);
 });

@@ -1,13 +1,16 @@
-// navbar.js
 document.addEventListener("DOMContentLoaded", () => {
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
     const usernameElement = document.querySelector(".username");
 
-    // Set the username in the navbar
+    // Check if user is logged in
+    const token = localStorage.getItem("token");
+    const isLoggedIn = !!token;
     const username = localStorage.getItem("username") || "User";
+
+    // Set the username in the navbar
     if (usernameElement) {
-        usernameElement.textContent = username;
+        usernameElement.textContent = isLoggedIn ? username : "Profile";
     }
 
     // Dropdown menu state
@@ -41,9 +44,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (cartLink) {
-        cartLink.addEventListener("click", () => {
-            console.log("Redirecting to cart page");
-            window.location.href = "cart.html";
+        cartLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            if (!isLoggedIn) {
+                console.log("User not logged in, redirecting to please login page");
+                window.location.href = "pleaseLogin.html";
+            } else {
+                console.log("Redirecting to cart page");
+                window.location.href = "cart.html";
+            }
         });
     }
 
@@ -58,45 +67,95 @@ document.addEventListener("DOMContentLoaded", () => {
         dropdownMenu = document.createElement("div");
         dropdownMenu.classList.add("profile-dropdown");
 
-        // Dropdown content
-        dropdownMenu.innerHTML = `
-            <div class="dropdown-item dropdown-header">Hello ${username},</div>
-            <div class="dropdown-item" id="dropdown-profile">Profile</div>
-            <div class="dropdown-item" id="dropdown-orders">My Orders</div>
-            <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
-            <div class="dropdown-item">
-                <button id="dropdown-logout" class="logout-button">Logout</button>
-            </div>
-        `;
+        // Dropdown content based on login state
+        if (isLoggedIn) {
+            dropdownMenu.innerHTML = `
+                <div class="dropdown-item dropdown-header">Hello ${username},</div>
+                <div class="dropdown-item" id="dropdown-profile">
+                    <span class="dropdown-icon"><i class="fas fa-user"></i></span>
+                    Profile
+                </div>
+                <div class="dropdown-item" id="dropdown-orders">
+                    <span class="dropdown-icon"><i class="fas fa-box"></i></span>
+                    My Orders
+                </div>
+                <div class="dropdown-item" id="dropdown-wishlist">
+                    <span class="dropdown-icon"><i class="fas fa-heart"></i></span>
+                    My Wishlist
+                </div>
+                <div class="dropdown-item">
+                    <button id="dropdown-logout" class="logout-button">
+                        <span class="dropdown-icon"><i class="fas fa-sign-out-alt"></i></span>
+                        Logout
+                    </button>
+                </div>
+            `;
+        } else {
+            dropdownMenu.innerHTML = `
+                <div class="dropdown-item dropdown-header">Welcome</div>
+                <div class="dropdown-item dropdown-subheader">To access account and manage orders</div>
+                <div class="dropdown-item">
+                    <button id="dropdown-login-signup" class="login-signup-button">LOGIN/SIGNUP</button>
+                </div>
+                <div class="dropdown-item" id="dropdown-orders">
+                    <span class="dropdown-icon"><i class="fas fa-box"></i></span>
+                    My Orders
+                </div>
+                <div class="dropdown-item" id="dropdown-wishlist">
+                    <span class="dropdown-icon"><i class="fas fa-heart"></i></span>
+                    Wishlist
+                </div>
+            `;
+        }
 
         // Append dropdown to the profile link's parent
         profileLink.parentElement.appendChild(dropdownMenu);
 
         // Add event listeners to dropdown items
-        document.getElementById("dropdown-profile").addEventListener("click", () => {
-            console.log("Redirecting to profile page");
-            window.location.href = "profile.html";
-            closeDropdown();
-        });
+        if (isLoggedIn) {
+            document.getElementById("dropdown-profile").addEventListener("click", () => {
+                console.log("Redirecting to profile page");
+                window.location.href = "profile.html";
+                closeDropdown();
+            });
 
-        document.getElementById("dropdown-orders").addEventListener("click", () => {
-            console.log("Redirecting to orders page");
-            window.location.href = "orders.html";
-            closeDropdown();
-        });
+            document.getElementById("dropdown-orders").addEventListener("click", () => {
+                console.log("Redirecting to orders page");
+                window.location.href = "orders.html";
+                closeDropdown();
+            });
 
-        document.getElementById("dropdown-wishlist").addEventListener("click", () => {
-            console.log("Redirecting to wishlist page");
-            window.location.href = "wishlist.html";
-            closeDropdown();
-        });
+            document.getElementById("dropdown-wishlist").addEventListener("click", () => {
+                console.log("Redirecting to wishlist page");
+                window.location.href = "wishlist.html";
+                closeDropdown();
+            });
 
-        document.getElementById("dropdown-logout").addEventListener("click", () => {
-            console.log("Logging out...");
-            localStorage.clear();
-            window.location.href = "login.html";
-            closeDropdown();
-        });
+            document.getElementById("dropdown-logout").addEventListener("click", () => {
+                console.log("Logging out...");
+                localStorage.clear();
+                window.location.href = "login.html";
+                closeDropdown();
+            });
+        } else {
+            document.getElementById("dropdown-login-signup").addEventListener("click", () => {
+                console.log("Redirecting to login page");
+                window.location.href = "login.html";
+                closeDropdown();
+            });
+
+            document.getElementById("dropdown-orders").addEventListener("click", () => {
+                console.log("User not logged in, redirecting to please login page");
+                window.location.href = "pleaseLogin.html";
+                closeDropdown();
+            });
+
+            document.getElementById("dropdown-wishlist").addEventListener("click", () => {
+                console.log("User not logged in, redirecting to please login page");
+                window.location.href = "pleaseLogin.html";
+                closeDropdown();
+            });
+        }
 
         isDropdownOpen = true;
     }

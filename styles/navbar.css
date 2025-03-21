@@ -5,9 +5,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #A03037; /* Updated to maroon from previous CSS */
+    background-color: #A03037; /* Maroon background */
     padding: 15px 30px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -20,12 +20,12 @@
     gap: 10px;
     font-size: 24px;
     font-weight: bold;
-    color: #ecf0f1; /* Light color for contrast */
+    color: #ecf0f1;
 }
 
-.logo img {
-    width: 50px;
-    height: 30px;
+.logo svg {
+    width: 24px;
+    height: 24px;
 }
 
 /* Search Container */
@@ -40,15 +40,15 @@
     width: 100%;
     padding: 10px 15px;
     border: 1px solid #ddd;
-    border-radius: 25px; /* Rounded search bar */
+    border-radius: 25px;
     font-size: 16px;
     outline: none;
     transition: border-color 0.3s ease;
 }
 
 .search-bar:focus {
-    border-color: #d32f2f; /* Updated to red from previous CSS */
-    box-shadow: 0 0 5px rgba(211, 47, 47, 0.3); /* Updated shadow to match #d32f2f */
+    border-color: #d32f2f;
+    box-shadow: 0 0 5px rgba(211, 47, 47, 0.3);
 }
 
 .suggestions-box {
@@ -77,7 +77,7 @@
 }
 
 .suggestion-item:hover {
-    background: #d5e7c3; /* Updated to light green from previous CSS */
+    background: #d5e7c3;
 }
 
 /* Nav Links */
@@ -93,7 +93,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #ecf0f1; /* Light color for contrast */
+    color: #ecf0f1;
     font-size: 16px;
     cursor: pointer;
     padding: 8px 12px;
@@ -102,12 +102,12 @@
 }
 
 .profile-link:hover {
-    background-color: #8b252b; /* Slightly darker shade of #A03037 for hover */
-    color: #ffd700; /* Gold hover effect from previous CSS */
+    background-color: #8b252b;
+    color: #ffd700;
 }
 
 .nav-icon i {
-    font-size: 18px; /* Slightly larger icon */
+    font-size: 18px;
 }
 
 /* Dropdown Styling */
@@ -126,15 +126,21 @@
 
 .dropdown-header {
     font-weight: bold;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     color: #333;
     font-size: 16px;
+}
+
+.dropdown-subheader {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
 }
 
 .dropdown-item {
     display: flex;
     align-items: center;
-    gap: 10px; /* Space between icon and text */
+    gap: 10px;
     padding: 10px;
     color: #333;
     text-decoration: none;
@@ -148,30 +154,54 @@
 }
 
 .dropdown-icon {
-    color: #555; /* Slightly darker color for icons */
+    color: #555;
 }
 
-/* Logout Button */
-.logout-button {
-    background: transparent; /* Transparent background by default, as in previous CSS */
-    border: 1px solid #d32f2f; /* Red border from previous CSS */
-    color: #d32f2f; /* Red text by default */
+/* Login/Signup Button */
+.login-signup-button {
+    background: transparent;
+    border: 1px solid #d32f2f;
+    color: #d32f2f;
     padding: 8px 16px;
     border-radius: 4px;
     cursor: pointer;
     font-weight: bold;
     display: flex;
     align-items: center;
-    gap: 8px; /* Space between icon and text */
-    width: 100%; /* Full width for consistency */
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    text-align: center;
+    font-size: 15px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.login-signup-button:hover {
+    background: #d32f2f;
+    color: white;
+}
+
+/* Logout Button */
+.logout-button {
+    background: transparent;
+    border: 1px solid #d32f2f;
+    color: #d32f2f;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
     text-align: left;
     font-size: 15px;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .logout-button:hover {
-    background: #d32f2f; /* Red background on hover from previous CSS */
-    color: white; /* White text on hover */
+    background: #d32f2f;
+    color: white;
 }
 
 /* Cart Link */
@@ -188,12 +218,12 @@
 }
 
 .cart-link:hover {
-    background-color: #8b252b; /* Slightly darker shade of #A03037 for hover */
-    color: #ffd700; /* Gold hover effect from previous CSS */
+    background-color: #8b252b;
+    color: #ffd700;
 }
 
 .cart-count {
-    background: #d32f2f; /* Updated to red from previous CSS */
+    background: #d32f2f;
     color: white;
     padding: 2px 8px;
     border-radius: 12px;
@@ -235,6 +265,7 @@
         padding: 8px;
     }
 
+    .login-signup-button,
     .logout-button {
         font-size: 14px;
         padding: 6px 12px;
@@ -246,9 +277,9 @@
         font-size: 20px;
     }
 
-    .logo img {
-        width: 40px;
-        height: 24px;
+    .logo svg {
+        width: 20px;
+        height: 20px;
     }
 
     .nav-icon i {
