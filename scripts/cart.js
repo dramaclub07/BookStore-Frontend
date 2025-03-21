@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!token) {
         alert("Please log in to view your cart.");
-        window.location.href = '/pages/login.html';
+        window.location.href = '../pages/login.html';
         return;
     }
 
@@ -49,7 +49,7 @@ async function loadCartItems() {
             if (response.status === 401) {
                 alert("Session expired. Please log in again.");
                 localStorage.removeItem('token');
-                window.location.href = '/pages/login.html';
+                window.location.href = '../pages/login.html';
                 return;
             }
             throw new Error(`Error ${response.status}: Failed to fetch cart items`);
@@ -142,7 +142,6 @@ async function updateQuantity(button, change) {
         return;
     }
 
-    // Get per-unit prices from data attributes
     const perUnitDiscountedPrice = parseFloat(cartItem.dataset.discountedPrice);
     const perUnitPrice = parseFloat(cartItem.dataset.unitPrice);
 
@@ -157,7 +156,6 @@ async function updateQuantity(button, change) {
             throw new Error("Failed to update quantity");
         }
 
-        // Update UI immediately after successful API call
         quantityElement.textContent = newQuantity;
         const newDiscountedPrice = (perUnitDiscountedPrice * newQuantity).toFixed(2);
         const newUnitPrice = (perUnitPrice * newQuantity).toFixed(2);
@@ -169,12 +167,10 @@ async function updateQuantity(button, change) {
             unitPriceElement.textContent = newUnitPrice;
         }
 
-        // Update the cart summary (this still requires a server call, but only for the total)
         await loadCartSummary();
     } catch (error) {
         console.error("Error updating quantity:", error);
         alert("Failed to update quantity.");
-        // Optionally revert UI changes if the API call fails
         quantityElement.textContent = currentQuantity;
     }
 }
@@ -236,33 +232,32 @@ async function loadCartSummary() {
     }
 }
 
-// User profile (unchanged)
+// User profile
 async function loadUserProfile() {
     try {
-      const response = await fetch(`${API_BASE_URL}/users/profile`, {
-        headers: getAuthHeaders()
-      });
-      if (!response.ok) {
-        if (response.status === 401) {
-          alert("Session expired. Please log in again.");
-          localStorage.removeItem('token');
-          console.log("Redirecting to login page due to 401");
-          window.location.href = '/pages/login.html';
-          return;
+        const response = await fetch(`${API_BASE_URL}/users/profile`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert("Session expired. Please log in again.");
+                localStorage.removeItem('token');
+                window.location.href = '/pages/login.html';
+                return;
+            }
+            throw new Error(`Profile fetch failed with status: ${response.status}`);
         }
-        throw new Error(`Profile fetch failed with status: ${response.status}`);
-      }
-      const userData = await response.json();
-      if (userData.success) {
-        const profileElement = document.querySelector('.profile');
-        if (profileElement) {
-          profileElement.textContent = `👤 ${userData.name || 'User'}`;
+        const userData = await response.json();
+        if (userData.success) {
+            const profileElement = document.querySelector('.profile');
+            if (profileElement) {
+                profileElement.textContent = `👤 ${userData.name || 'User'}`;
+            }
         }
-      }
     } catch (error) {
-      console.error("Profile fetch error:", error.message);
+        console.error("Profile fetch error:", error.message);
     }
-  }
+}
 
 // Setup event listener for the "Use current location" button
 function setupLocationButton() {
@@ -273,13 +268,11 @@ function setupLocationButton() {
     }
 
     useLocationButton.addEventListener('click', async function() {
-        // Check if the browser supports Geolocation
         if ("geolocation" in navigator) {
             useLocationButton.textContent = '📍 Fetching location...';
             useLocationButton.disabled = true;
 
             try {
-                // Get the user's current position
                 const position = await new Promise((resolve, reject) => {
                     navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
                 });
@@ -287,11 +280,10 @@ function setupLocationButton() {
                 const latitude = position.coords.latitude;
                 const longitude = position.coords.longitude;
 
-                // Use Nominatim API to convert coordinates to an address
                 const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`;
                 const response = await fetch(nominatimUrl, {
                     headers: {
-                        'User-Agent': 'BookstoreApp/1.0 (your-email@example.com)' // Nominatim requires a User-Agent header
+                        'User-Agent': 'BookstoreApp/1.0 (your-email@example.com)'
                     }
                 });
 
@@ -302,7 +294,6 @@ function setupLocationButton() {
                 const data = await response.json();
                 if (data && data.display_name) {
                     const address = data.display_name;
-                    // Update the Address Details section
                     const addressContainer = document.getElementById('address-container');
                     if (addressContainer) {
                         addressContainer.innerHTML = `<p>${address}</p>`;
@@ -311,14 +302,11 @@ function setupLocationButton() {
                     throw new Error('No address found for the given coordinates');
                 }
 
-                // Reset the button
                 useLocationButton.textContent = '📍 Use current location';
                 useLocationButton.disabled = false;
             } catch (error) {
-                // Handle errors
                 let errorMessage = 'Unable to fetch location: ';
                 if (error.code) {
-                    // Geolocation API errors
                     switch (error.code) {
                         case error.PERMISSION_DENIED:
                             errorMessage += 'User denied the request for Geolocation.';
@@ -334,7 +322,6 @@ function setupLocationButton() {
                             break;
                     }
                 } else {
-                    // Nominatim API or other errors
                     errorMessage += error.message;
                 }
                 alert(errorMessage);
@@ -343,7 +330,6 @@ function setupLocationButton() {
                     addressContainer.innerHTML = `<p>No address selected.</p>`;
                 }
 
-                // Reset the button
                 useLocationButton.textContent = '📍 Use current location';
                 useLocationButton.disabled = false;
             }

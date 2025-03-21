@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const token = localStorage.getItem('token');
     if (!token) {
         alert("Please log in to view order confirmation.");
-        window.location.href = '/pages/login.html';
+        window.location.href = '../pages/login.html';
         return;
     }
 
@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         await fetchOrderDetails();
 
         document.querySelector('.continue-button').addEventListener('click', function() {
-            window.location.href = '/pages/homePage.html';
+            window.location.href = '../pages/homePage.html';
         });
     } catch (error) {
         console.error("Initialization error:", error);
@@ -155,5 +155,5 @@ function handleUnauthorized() {
     alert("Session expired. Please log in again.");
     localStorage.removeItem('token');
     console.log("Redirecting to login page due to 401");
-    window.location.href = '/pages/login.html';
+    window.location.href = '../pages/login.html';
 }

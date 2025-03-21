@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (bookId) {
         fetchBookDetails(bookId);
         fetchReviews(bookId);
+        checkWishlistStatus(bookId); // Check if the book is already wishlisted
     } else {
         console.error("No book ID found in URL");
         document.querySelector(".book-details").innerHTML = "<p>Book not found.</p>";
@@ -149,6 +150,54 @@ async function deleteReview(reviewId) {
     }
 }
 
+// Check Wishlist Status on Page Load
+async function checkWishlistStatus(bookId) {
+    if (!isAuthenticated()) {
+        console.log("User not authenticated, skipping wishlist status check.");
+        return; // Skip if user is not logged in
+    }
+
+    const token = getAuthToken();
+    if (!token) {
+        console.log("No token available for wishlist status check.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/wishlists/fetch`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to fetch wishlist: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+
+        const wishlist = await response.json();
+        console.log("Fetched wishlist:", wishlist);
+
+        // Check if the current bookId is in the wishlist
+        const isWishlisted = wishlist.some(item => item.book_id === parseInt(bookId));
+        const wishlistButton = document.getElementById("add-to-wishlist");
+
+        if (isWishlisted) {
+            wishlistButton.classList.add("wishlisted");
+            console.log(`Book ${bookId} is wishlisted.`);
+        } else {
+            wishlistButton.classList.remove("wishlisted");
+            console.log(`Book ${bookId} is not wishlisted.`);
+        }
+    } catch (error) {
+        console.error("Error checking wishlist status:", error.message);
+        // Fallback: Ensure the button is in a default state (not wishlisted) if the API call fails
+        const wishlistButton = document.getElementById("add-to-wishlist");
+        wishlistButton.classList.remove("wishlisted");
+    }
+}
+
 // Get Current User from Token
 function getCurrentUserFromToken() {
     const token = localStorage.getItem("token");
@@ -180,6 +229,7 @@ function setupEventListeners() {
     document.getElementById("add-to-bag")?.addEventListener("click", async () => {
         if (!isAuthenticated()) {
             alert("Please log in to add to bag.");
+            window.location.href = "pleaseLogin.html";
             return;
         }
 
@@ -213,6 +263,8 @@ function setupEventListeners() {
 
         const bookId = new URLSearchParams(window.location.search).get("id");
         const token = getAuthToken();
+        const wishlistButton = document.getElementById("add-to-wishlist");
+        const wasWishlisted = wishlistButton.classList.contains("wishlisted"); // Store the current state for fallback
 
         try {
             const response = await fetch(`${API_BASE_URL}/wishlists/toggle/${bookId}`, {
@@ -224,12 +276,30 @@ function setupEventListeners() {
             });
 
             const result = await response.json();
+            console.log("Toggle wishlist response:", result); // Log the response to debug
+
             if (!response.ok) throw new Error(`Failed to toggle wishlist: ${result.error || "Unknown error"}`);
-            alert(result.message || "Wishlist updated successfully!");
-            window.location.href = "../pages/wishlist.html";
+
+            // Check if the book was added or removed
+            // Adjust this condition based on the actual response structure
+            const isWishlisted = result.isWishlisted !== undefined ? result.isWishlisted : !wasWishlisted;
+
+            if (isWishlisted) {
+                wishlistButton.classList.add("wishlisted");
+                alert("Book added to wishlist!");
+            } else {
+                wishlistButton.classList.remove("wishlisted");
+                alert("Book removed from wishlist!");
+            }
         } catch (error) {
-            console.error("Error adding to wishlist:", error);
+            console.error("Error toggling wishlist:", error);
             alert(`Failed to update wishlist: ${error.message}`);
+            // Revert the UI state if the API call fails
+            if (wasWishlisted) {
+                wishlistButton.classList.add("wishlisted");
+            } else {
+                wishlistButton.classList.remove("wishlisted");
+            }
         }
     });
 
