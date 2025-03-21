@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", function () {
     const wishlistContainer = document.getElementById("wishlist-container");
+    const wishlistCountElement = document.getElementById("wishlist-count");
 
     function fetchWishlist() {
         const token = localStorage.getItem("token");
@@ -19,7 +20,11 @@ document.addEventListener("DOMContentLoaded", function () {
             })
             .then(data => {
                 wishlistContainer.innerHTML = ""; // Clear previous data
-                if (!data || data.length === 0) {
+                
+                // Update wishlist count dynamically
+                wishlistCountElement.textContent = data.length;
+
+                if (data.length === 0) {
                     wishlistContainer.innerHTML = "<p>Your wishlist is empty.</p>";
                     return;
                 }
@@ -39,7 +44,9 @@ document.addEventListener("DOMContentLoaded", function () {
                                 <p>₹${item.discounted_price}</p>
                             </div>
                             <div class="btn-container">
-                                <button class="remove-btn" data-id="${item.book_id}">Remove</button>
+                                <button class="remove-btn" data-id="${item.book_id}">
+                                    <i class="fa fa-trash delete-icon" aria-hidden="true"></i>
+                                </button>
                             </div>
                         </a>
                     `;
@@ -50,7 +57,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Add event listeners for remove buttons
                 document.querySelectorAll(".remove-btn").forEach(button => {
                     button.addEventListener("click", function (event) {
-                        event.preventDefault(); // Prevent the link from navigating
+                        event.preventDefault(); // Prevent page reload from <a> tag
                         toggleWishlist(this.getAttribute("data-id"));
                     });
                 });
@@ -71,20 +78,9 @@ document.addEventListener("DOMContentLoaded", function () {
             },
             body: JSON.stringify({ book_id: bookId })
         })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Error ${response.status}: Unable to toggle wishlist`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                alert(data.message || "Wishlist updated successfully!");
-                fetchWishlist(); // Refresh wishlist
-            })
-            .catch(error => {
-                console.error("Error toggling wishlist:", error);
-                alert(`Failed to update wishlist: ${error.message}`);
-            });
+            .then(response => response.json())
+            .then(() => fetchWishlist()) // Refresh wishlist and update count
+            .catch(error => console.error("Error toggling wishlist:", error));
     }
 
     fetchWishlist(); // Initial fetch when page loads

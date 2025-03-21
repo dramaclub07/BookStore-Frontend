@@ -134,18 +134,31 @@ function setupEventListeners() {
                 }
             });
 
-            const result = await response.json();
-            if (!response.ok) throw new Error(`Failed to toggle wishlist: ${result.error || "Unknown error"}`);
+        const result = await response.json();
+        if (!response.ok) throw new Error(`Failed to toggle wishlist: ${result.error || "Unknown error"}`);
 
-            alert(result.message || "Wishlist updated successfully!");
+        alert(result.message || "Wishlist updated successfully!");
 
-            // Redirecting to Wishlist page after success
-            window.location.href = "../pages/wishlist.html";
-        } catch (error) {
-            console.error("Error adding to wishlist:", error);
-            alert(`Failed to update wishlist: ${error.message}`);
-        }
-    });
+        // Redirecting to Wishlist page after success
+        // window.location.href = "../pages/wishlist.html";
+
+    } catch (error) {
+        console.error("Error adding to wishlist:", error);
+        alert(`Failed to update wishlist: ${error.message}`);
+    }
+});
+
+// Helper function to check authentication
+function isAuthenticated() {
+    return !!localStorage.getItem("token"); // Checks if token exists in localStorage
+}
+
+// Helper function to get auth token
+function getAuthToken() {
+    return localStorage.getItem("token");
+}
+
+
 
     // Star Rating Logic
     let selectedRating = 0; // Track user-selected rating
