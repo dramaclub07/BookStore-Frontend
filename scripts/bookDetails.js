@@ -5,11 +5,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (bookId) {
         fetchBookDetails(bookId);
         fetchReviews(bookId);
+        checkWishlistStatus(bookId); // Check if the book is already wishlisted
     } else {
         console.error("No book ID found in URL");
         document.querySelector(".book-details").innerHTML = "<p>Book not found.</p>";
     }
-
     setupEventListeners();
 });
 
@@ -47,6 +47,7 @@ async function fetchReviews(bookId) {
         const response = await fetch(`${API_BASE_URL}/books/${bookId}/reviews`);
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch reviews`);
         const reviews = await response.json();
+        console.log("Fetched reviews:", reviews);
         displayReviews(reviews);
     } catch (error) {
         console.error("Error fetching reviews:", error);
@@ -64,16 +65,141 @@ function displayReviews(reviews) {
         return;
     }
 
+    const currentUser = getCurrentUserFromToken();
+    const currentUserId = currentUser?.user_id;
+    console.log("Current user ID from token:", currentUserId);
+
     reviews.forEach(review => {
         const reviewDiv = document.createElement("div");
         reviewDiv.classList.add("review");
+
+        const reviewAuthor = review.user_name || "Anonymous";
+        const isCurrentUserReview = currentUserId && review.user_id === currentUserId;
+
+        let deleteButton = '';
+        if (isCurrentUserReview) {
+            deleteButton = `
+                <button class="delete-review-btn" data-review-id="${review.id}">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>
+            `;
+        }
+
         reviewDiv.innerHTML = `
-            <p class="review-author">${review.user_name}</p>
+            <div class="review-header">
+                <p class="review-author">${reviewAuthor}</p>
+                ${deleteButton}
+            </div>
             <div class="review-stars">${"★".repeat(review.rating)}</div>
             <p class="review-text">${review.comment}</p>
         `;
+
         reviewsList.appendChild(reviewDiv);
+
+        if (isCurrentUserReview) {
+            const deleteBtn = reviewDiv.querySelector(".delete-review-btn");
+            deleteBtn.addEventListener("click", () => deleteReview(review.id));
+        }
     });
+}
+
+// Delete Review
+async function deleteReview(reviewId) {
+    if (!confirm("Are you sure you want to delete this review?")) {
+        return;
+    }
+
+    const bookId = new URLSearchParams(window.location.search).get("id");
+    const token = getAuthToken();
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/books/${bookId}/reviews/${reviewId}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to delete review");
+        }
+
+        alert("Review deleted successfully!");
+        fetchReviews(bookId); // Refresh reviews
+        fetchBookDetails(bookId); // Refresh book rating
+    } catch (error) {
+        console.error("Error deleting review:", error);
+        alert(`Failed to delete review: ${error.message}`);
+    }
+}
+
+// Check Wishlist Status on Page Load
+async function checkWishlistStatus(bookId) {
+    if (!isAuthenticated()) {
+        console.log("User not authenticated, skipping wishlist status check.");
+        return; // Skip if user is not logged in
+    }
+
+    const token = getAuthToken();
+    if (!token) {
+        console.log("No token available for wishlist status check.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/wishlists/fetch`, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to fetch wishlist: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+
+        const wishlist = await response.json();
+        console.log("Fetched wishlist:", wishlist);
+
+        // Check if the current bookId is in the wishlist
+        const isWishlisted = wishlist.some(item => item.book_id === parseInt(bookId));
+        const wishlistButton = document.getElementById("add-to-wishlist");
+
+        if (isWishlisted) {
+            wishlistButton.classList.add("wishlisted");
+            console.log(`Book ${bookId} is wishlisted.`);
+        } else {
+            wishlistButton.classList.remove("wishlisted");
+            console.log(`Book ${bookId} is not wishlisted.`);
+        }
+    } catch (error) {
+        console.error("Error checking wishlist status:", error.message);
+        // Fallback: Ensure the button is in a default state (not wishlisted) if the API call fails
+        const wishlistButton = document.getElementById("add-to-wishlist");
+        wishlistButton.classList.remove("wishlisted");
+    }
+}
+
+// Get Current User from Token
+function getCurrentUserFromToken() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+        console.log("No token found in localStorage");
+        return null;
+    }
+
+    try {
+        const payload = token.split(".")[1];
+        const decodedPayload = atob(payload);
+        const userData = JSON.parse(decodedPayload);
+        console.log("Decoded user data from token:", userData);
+        return userData; // Should include { id, full_name }
+    } catch (error) {
+        console.error("Error decoding token:", error);
+        return null;
+    }
 }
 
 // Setup Event Listeners
@@ -84,16 +210,15 @@ function setupEventListeners() {
         if (event.key === "Enter") fetchBooksBySearch(searchBar.value);
     });
 
-    // Add to Bag
     document.getElementById("add-to-bag")?.addEventListener("click", async () => {
         if (!isAuthenticated()) {
             alert("Please log in to add to bag.");
+            window.location.href = "pleaseLogin.html";
             return;
         }
 
         const bookId = new URLSearchParams(window.location.search).get("id");
         const token = getAuthToken();
-        console.log("Sending Add to Bag request with token:", token);
 
         try {
             const response = await fetch(`${API_BASE_URL}/cart/add`, {
@@ -114,16 +239,16 @@ function setupEventListeners() {
         }
     });
 
-    // Add to Wishlist
     document.getElementById("add-to-wishlist")?.addEventListener("click", async () => {
         if (!isAuthenticated()) {
-            window.location.href = "pleaseLogin.html"; // Redirect to login page
+            window.location.href = "pleaseLogin.html";
             return;
         }
 
         const bookId = new URLSearchParams(window.location.search).get("id");
         const token = getAuthToken();
-        console.log("Sending Wishlist request with token:", token);
+        const wishlistButton = document.getElementById("add-to-wishlist");
+        const wasWishlisted = wishlistButton.classList.contains("wishlisted"); // Store the current state for fallback
 
         try {
             const response = await fetch(`${API_BASE_URL}/wishlists/toggle/${bookId}`, {
@@ -134,34 +259,35 @@ function setupEventListeners() {
                 }
             });
 
-        const result = await response.json();
-        if (!response.ok) throw new Error(`Failed to toggle wishlist: ${result.error || "Unknown error"}`);
+            const result = await response.json();
+            console.log("Toggle wishlist response:", result); // Log the response to debug
 
-        alert(result.message || "Wishlist updated successfully!");
+            if (!response.ok) throw new Error(`Failed to toggle wishlist: ${result.error || "Unknown error"}`);
 
-        // Redirecting to Wishlist page after success
-        // window.location.href = "../pages/wishlist.html";
+            // Check if the book was added or removed
+            // Adjust this condition based on the actual response structure
+            const isWishlisted = result.isWishlisted !== undefined ? result.isWishlisted : !wasWishlisted;
 
-    } catch (error) {
-        console.error("Error adding to wishlist:", error);
-        alert(`Failed to update wishlist: ${error.message}`);
-    }
-});
+            if (isWishlisted) {
+                wishlistButton.classList.add("wishlisted");
+                alert("Book added to wishlist!");
+            } else {
+                wishlistButton.classList.remove("wishlisted");
+                alert("Book removed from wishlist!");
+            }
+        } catch (error) {
+            console.error("Error toggling wishlist:", error);
+            alert(`Failed to update wishlist: ${error.message}`);
+            // Revert the UI state if the API call fails
+            if (wasWishlisted) {
+                wishlistButton.classList.add("wishlisted");
+            } else {
+                wishlistButton.classList.remove("wishlisted");
+            }
+        }
+    });
 
-// Helper function to check authentication
-function isAuthenticated() {
-    return !!localStorage.getItem("token"); // Checks if token exists in localStorage
-}
-
-// Helper function to get auth token
-function getAuthToken() {
-    return localStorage.getItem("token");
-}
-
-
-
-    // Star Rating Logic
-    let selectedRating = 0; // Track user-selected rating
+    let selectedRating = 0;
     const stars = document.querySelectorAll("#rating-stars .star");
     stars.forEach(star => {
         star.addEventListener("click", () => {
@@ -176,11 +302,10 @@ function getAuthToken() {
         });
 
         star.addEventListener("mouseout", () => {
-            updateStarDisplay(selectedRating); // Revert to selected rating
+            updateStarDisplay(selectedRating);
         });
     });
 
-    // Submit Review with Dynamic Rating
     document.getElementById("review-form")?.addEventListener("submit", async (event) => {
         event.preventDefault();
 
@@ -191,7 +316,7 @@ function getAuthToken() {
 
         const bookId = new URLSearchParams(window.location.search).get("id");
         const reviewText = document.getElementById("review-text").value;
-        const rating = selectedRating || 0; // Use selected rating, default to 0 if none selected
+        const rating = selectedRating || 0;
 
         if (rating === 0) {
             alert("Please select a rating.");
@@ -212,11 +337,11 @@ function getAuthToken() {
             if (!response.ok) throw new Error(`Failed to submit review: ${result.error || "Unknown error"}`);
             alert("Review submitted successfully!");
             document.getElementById("review-text").value = "";
-            selectedRating = 0; // Reset rating
-            updateStarDisplay(0); // Clear stars
-            fetchReviews(bookId); // Refresh reviews
-            fetchBookDetails(bookId); // Refresh book details (rating and count)
-            localStorage.setItem("reviewSubmitted", "true"); // Set flag for homepage refresh
+            selectedRating = 0;
+            updateStarDisplay(0);
+            fetchReviews(bookId);
+            fetchBookDetails(bookId);
+            localStorage.setItem("reviewSubmitted", "true");
             console.log("Review submitted, flag set in localStorage");
         } catch (error) {
             console.error("Error submitting review:", error);
