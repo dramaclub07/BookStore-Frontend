@@ -28,6 +28,9 @@ document.addEventListener("DOMContentLoaded", () => {
         dropdownUsernameElement.textContent = `Hello, ${username}`;
     }
 
+    // Initialize cart count on page load
+    updateCartCount();
+
     // Dropdown menu state
     let isDropdownOpen = false;
     const dropdownMenu = document.getElementById("profile-dropdown");
@@ -123,6 +126,49 @@ function handleSignOut() {
 
     alert("Logged out successfully.");
     window.location.href = "../pages/login.html"; // Redirect to login page
+}
+
+// Update Cart Count in Header
+async function updateCartCount() {
+    const cartCountElement = document.getElementById("cart-count");
+    if (!cartCountElement) return;
+
+    const token = localStorage.getItem("token");
+    let totalItems = 0;
+
+    if (token) {
+        try {
+            const response = await fetch("http://127.0.0.1:3000/api/v1/cart/summary", {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to fetch cart summary");
+            }
+
+            const cartData = await response.json();
+            totalItems = cartData.total_items || 0;
+            console.log(`Fetched cart count: ${totalItems}`);
+        } catch (error) {
+            console.error("Error fetching cart count:", error);
+            totalItems = 0; // Fallback to 0 on error
+        }
+    } else {
+        console.log("No token found, setting cart count to 0");
+        totalItems = 0;
+    }
+
+    // Update the cart count and toggle visibility
+    cartCountElement.textContent = totalItems;
+    if (totalItems > 0) {
+        cartCountElement.style.display = "flex"; // Show the badge
+    } else {
+        cartCountElement.style.display = "none"; // Hide the badge
+    }
 }
 
 let currentPage = 1;

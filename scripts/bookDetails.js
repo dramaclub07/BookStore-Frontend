@@ -5,7 +5,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (bookId) {
         fetchBookDetails(bookId);
         fetchReviews(bookId);
-        checkWishlistStatus(bookId); // Check if the book is already wishlisted
+        checkWishlistStatus(bookId);
+        updateCartCount(); // Initialize cart count on page load
     } else {
         console.error("No book ID found in URL");
         document.querySelector(".book-details").innerHTML = "<p>Book not found.</p>";
@@ -176,7 +177,6 @@ async function checkWishlistStatus(bookId) {
         }
     } catch (error) {
         console.error("Error checking wishlist status:", error.message);
-        // Fallback: Ensure the button is in a default state (not wishlisted) if the API call fails
         const wishlistButton = document.getElementById("add-to-wishlist");
         wishlistButton.classList.remove("wishlisted");
     }
@@ -199,6 +199,49 @@ function getCurrentUserFromToken() {
     } catch (error) {
         console.error("Error decoding token:", error);
         return null;
+    }
+}
+
+// Update Cart Count in Header
+async function updateCartCount() {
+    const cartCountElement = document.getElementById("cart-count");
+    if (!cartCountElement) return;
+
+    const token = localStorage.getItem("token");
+    let totalItems = 0;
+
+    if (token) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/cart/summary`, {
+                method: "GET",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to fetch cart summary");
+            }
+
+            const cartData = await response.json();
+            totalItems = cartData.total_items || 0;
+            console.log(`Updated cart count: ${totalItems}`);
+        } catch (error) {
+            console.error("Error fetching cart count:", error);
+            totalItems = 0; // Fallback to 0 on error
+        }
+    } else {
+        console.log("No token found, setting cart count to 0");
+        totalItems = 0;
+    }
+
+    // Update the cart count and toggle visibility
+    cartCountElement.textContent = totalItems;
+    if (totalItems > 0) {
+        cartCountElement.style.display = "flex"; // Show the badge
+    } else {
+        cartCountElement.style.display = "none"; // Hide the badge
     }
 }
 
@@ -233,6 +276,7 @@ function setupEventListeners() {
             const result = await response.json();
             if (!response.ok) throw new Error(`Failed to add to bag: ${result.error || "Unknown error"}`);
             alert("Book added to bag successfully!");
+            updateCartCount(); // Update cart count after adding to bag
         } catch (error) {
             console.error("Error adding to bag:", error);
             alert(`Failed to add to bag: ${error.message}`);
@@ -248,7 +292,7 @@ function setupEventListeners() {
         const bookId = new URLSearchParams(window.location.search).get("id");
         const token = getAuthToken();
         const wishlistButton = document.getElementById("add-to-wishlist");
-        const wasWishlisted = wishlistButton.classList.contains("wishlisted"); // Store the current state for fallback
+        const wasWishlisted = wishlistButton.classList.contains("wishlisted");
 
         try {
             const response = await fetch(`${API_BASE_URL}/wishlists/toggle/${bookId}`, {
@@ -260,14 +304,11 @@ function setupEventListeners() {
             });
 
             const result = await response.json();
-            console.log("Toggle wishlist response:", result); // Log the response to debug
+            console.log("Toggle wishlist response:", result);
 
             if (!response.ok) throw new Error(`Failed to toggle wishlist: ${result.error || "Unknown error"}`);
 
-            // Check if the book was added or removed
-            // Adjust this condition based on the actual response structure
             const isWishlisted = result.isWishlisted !== undefined ? result.isWishlisted : !wasWishlisted;
-
             if (isWishlisted) {
                 wishlistButton.classList.add("wishlisted");
                 alert("Book added to wishlist!");
@@ -278,7 +319,6 @@ function setupEventListeners() {
         } catch (error) {
             console.error("Error toggling wishlist:", error);
             alert(`Failed to update wishlist: ${error.message}`);
-            // Revert the UI state if the API call fails
             if (wasWishlisted) {
                 wishlistButton.classList.add("wishlisted");
             } else {

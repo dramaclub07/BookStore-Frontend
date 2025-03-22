@@ -105,23 +105,56 @@ body {
     display: flex;
     align-items: center;
     flex-shrink: 0;
+    gap: 20px; /* Replace margin-left with gap for consistent spacing */
 }
 
-.nav-links span {
-    margin-left: 20px;
-    cursor: pointer;
+.nav-links .profile-link,
+.nav-links .cart-link {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Space between icon and text/count */
+    color: white;
+    text-decoration: none; /* For cart-link <a> */
     font-size: 15px;
-    white-space: nowrap;
     font-weight: 600;
     transition: color 0.2s ease;
 }
 
-.nav-links span:hover {
+.nav-links .profile-link:hover,
+.nav-links .cart-link:hover {
     color: #ffd700;
 }
 
-.nav-links span:last-child {
-    margin-right: 15px;
+.nav-links .nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-links .username {
+    white-space: nowrap;
+}
+
+.nav-links .cart-count {
+    position: relative;
+    background-color: white;
+    color: rgb(222, 13, 13);
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: bold;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    bottom: 12px;
+    left: -10px;
+    font-size: 12px;
+    top: -8px;
+    width: 3px;
+    height: 19px;
 }
 
 /* Main Content */

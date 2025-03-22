@@ -28,8 +28,36 @@ function getAuthHeaders() {
 function updateCartCount(count) {
     const cartCount = document.querySelector('#cart-link .cart-count');
     const sectionCount = document.getElementById('cart-count');
-    if (cartCount) cartCount.textContent = count;
-    if (sectionCount) sectionCount.textContent = count;
+    const placeOrderButton = document.querySelector('.place-order');
+
+    // Update the header cart count (in the navbar)
+    if (cartCount) {
+        cartCount.textContent = count;
+        if (count > 0) {
+            cartCount.style.display = "flex"; // Show the badge
+        } else {
+            cartCount.style.display = "none"; // Hide the badge
+        }
+    }
+
+    // Update the section cart count (in the cart page)
+    if (sectionCount) {
+        sectionCount.textContent = count;
+        if (count > 0) {
+            sectionCount.style.display = "inline"; // Show the count
+        } else {
+            sectionCount.style.display = "none"; // Hide the count
+        }
+    }
+
+    // Show or hide the Place Order button based on cart count
+    if (placeOrderButton) {
+        if (count > 0) {
+            placeOrderButton.style.display = "block"; // Show the button
+        } else {
+            placeOrderButton.style.display = "none"; // Hide the button
+        }
+    }
 }
 
 // Fetch and display cart items
@@ -246,11 +274,9 @@ async function loadUserProfile() {
         }
         const userData = await response.json();
         if (userData.success) {
-
             const profileElement = document.getElementById('profile-link');
             if (profileElement) {
                 profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
-
             }
         }
     } catch (error) {
@@ -319,6 +345,7 @@ function updateAddressFields(address) {
 }
 
 // Setup location button (direct geolocation)
+// Setup location button (direct geolocation)
 function setupLocationButton() {
     const useLocationButton = document.querySelector('.use-location');
     if (!useLocationButton) {
@@ -332,7 +359,7 @@ function setupLocationButton() {
             return;
         }
 
-        useLocationButton.textContent = '📍 Fetching location...';
+        useLocationButton.innerHTML = '<i class="fa-solid fa-location-dot"></i> Fetching location...';
         useLocationButton.disabled = true;
 
         try {
@@ -373,7 +400,7 @@ function setupLocationButton() {
             localStorage.setItem('selectedAddressId', savedAddress.id);
 
             alert('Latest current location saved successfully!');
-            useLocationButton.textContent = '📍 Use current location';
+            useLocationButton.innerHTML = '<i class="fa-solid fa-location-dot"></i> Use Current Location';
             useLocationButton.disabled = false;
         } catch (error) {
             let errorMessage = 'Unable to fetch or save location: ';
@@ -400,7 +427,7 @@ function setupLocationButton() {
             if (addressContainer) {
                 addressContainer.innerHTML = `<p>No address selected.</p>`;
             }
-            useLocationButton.textContent = '📍 Use current location';
+            useLocationButton.innerHTML = '<i class="fa-solid fa-location-dot"></i> Use Current Location';
             useLocationButton.disabled = false;
         }
     });

@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     document.querySelector('.add-address')?.addEventListener('click', () => {
-        window.location.href = '../pages/address-details.html';
+        window.location.href = '../pages/profile.html';
     });
 });
 
@@ -38,10 +38,27 @@ function getAuthHeaders() {
 function updateCartCount(count) {
     const cartCount = document.querySelector('#cart-link .cart-count');
     const sectionCount = document.getElementById('cart-count');
-    if (cartCount) cartCount.textContent = count;
-    if (sectionCount) sectionCount.textContent = count;
-}
 
+    // Update the header cart count (in the navbar)
+    if (cartCount) {
+        cartCount.textContent = count;
+        if (count > 0) {
+            cartCount.style.display = "flex"; // Show the badge
+        } else {
+            cartCount.style.display = "none"; // Hide the badge
+        }
+    }
+
+    // Update the section cart count (in the cart page)
+    if (sectionCount) {
+        sectionCount.textContent = count;
+        if (count > 0) {
+            sectionCount.style.display = "inline"; // Show the count
+        } else {
+            sectionCount.style.display = "none"; // Hide the count
+        }
+    }
+}
 async function loadUserProfile() {
     try {
 

@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        fetch("http://localhost:3000/api/v1/wishlists/fetch", {
+        fetch("http://127.0.0.1:3000/api/v1/wishlists/fetch", {
             headers: { "Authorization": `Bearer ${token}` }
         })
             .then(response => {
@@ -20,8 +20,6 @@ document.addEventListener("DOMContentLoaded", function () {
             })
             .then(data => {
                 wishlistContainer.innerHTML = ""; // Clear previous data
-                
-                // Update wishlist count dynamically
                 wishlistCountElement.textContent = data.length;
 
                 if (data.length === 0) {
@@ -34,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     bookElement.classList.add("wishlist-item");
 
                     bookElement.innerHTML = `
-                        <a href="bookDetails.html?id=${item.id}" class="wishlist-main-container">
+                        <a href="bookDetails.html?id=${item.book_id}" class="wishlist-main-container">
                             <div class="img-container">
                                 <img src="${item.book_image}" alt="${item.book_name}">
                             </div>
@@ -57,7 +55,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 // Add event listeners for remove buttons
                 document.querySelectorAll(".remove-btn").forEach(button => {
                     button.addEventListener("click", function (event) {
-                        event.preventDefault(); // Prevent page reload from <a> tag
+                        event.preventDefault(); // Prevent redirect
                         toggleWishlist(this.getAttribute("data-id"));
                     });
                 });
@@ -70,7 +68,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function toggleWishlist(bookId) {
         const token = localStorage.getItem("token");
-        fetch(`http://localhost:3000/api/v1/wishlists/toggle/${bookId}`, {
+        fetch(`http://127.0.0.1:3000/api/v1/wishlists/toggle/${bookId}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -79,9 +77,9 @@ document.addEventListener("DOMContentLoaded", function () {
             body: JSON.stringify({ book_id: bookId })
         })
             .then(response => response.json())
-            .then(() => fetchWishlist()) // Refresh wishlist and update count
+            .then(() => fetchWishlist()) // Refresh wishlist
             .catch(error => console.error("Error toggling wishlist:", error));
     }
 
-    fetchWishlist(); // Initial fetch when page loads
+    fetchWishlist(); // Initial fetch
 });
