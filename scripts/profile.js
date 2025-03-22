@@ -74,7 +74,7 @@ async function fetchPersonalDetails() {
     }
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/user/profile`, {
+        const response = await fetch(`${BASE_URL}/api/v1/users/profile`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -140,7 +140,7 @@ async function savePersonalDetails() {
     };
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/user/profile`, {
+        const response = await fetch(`${BASE_URL}/api/v1/users/profile`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -184,7 +184,7 @@ async function fetchAddresses() {
     }
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/user/addresses`, {
+        const response = await fetch(`${BASE_URL}/api/v1/addresses`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -314,7 +314,7 @@ async function saveNewAddress() {
     };
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/user/addresses`, {
+        const response = await fetch(`${BASE_URL}/api/v1/addresses`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -374,7 +374,7 @@ async function saveAddress(addressId) {
     };
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/user/addresses/${addressId}`, {
+        const response = await fetch(`${BASE_URL}/api/v1/addresses/${addressId}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
