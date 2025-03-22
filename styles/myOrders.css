@@ -12,55 +12,6 @@ body {
     line-height: 1.6;
 }
 
-/* Navbar Styling */
-.navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #8B4513;
-    color: white;
-    padding: 15px 5%;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-}
-
-.nav-links {
-    display: flex;
-    align-items: center;
-}
-
-.nav-links a, .nav-links span {
-    color: white;
-    text-decoration: none;
-    margin: 0 18px;
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 16px;
-    position: relative;
-    transition: color 0.3s ease;
-}
-
-.nav-links a:hover, .nav-links span:hover {
-    color: #FFD700;
-}
-
-.nav-links a:after, .nav-links span:after {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 2px;
-    bottom: -5px;
-    left: 0;
-    background-color: #FFD700;
-    transition: width 0.3s ease;
-}
-
-.nav-links a:hover:after, .nav-links span:hover:after {
-    width: 100%;
-}
-
 /* Content Wrapper - INCREASED WIDTH */
 .content-wrapper {
     max-width: 1200px; /* Increased from 900px */
@@ -306,4 +257,23 @@ body {
         margin: 0 10px;
         font-size: 15px;
     }
+}
+/* Breadcrumb Styles */
+.breadcrumb {
+    margin: 20px 0;
+    font-size: 18px;
+    color: #333;
+}
+
+.breadcrumb-link {
+    text-decoration: none;
+}
+
+.breadcrumb-link:hover {
+    color: #007bff;
+}
+
+.breadcrumb-current {
+    color: #333;
+    font-weight: bold;
 }

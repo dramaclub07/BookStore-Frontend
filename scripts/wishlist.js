@@ -1,25 +1,108 @@
+const API_BASE_URL = 'http://127.0.0.1:3000/api/v1';
+
 document.addEventListener("DOMContentLoaded", function () {
     const wishlistContainer = document.getElementById("wishlist-container");
     const wishlistCountElement = document.getElementById("wishlist-count");
 
-    function fetchWishlist() {
-        const token = localStorage.getItem("token");
-        if (!token) {
-            window.location.href = "../pages/login.html"; // Redirect if not logged in
-            return;
-        }
+    const token = localStorage.getItem("token");
+    if (!token) {
+        window.location.href = "../pages/login.html";
+        return;
+    }
 
-        fetch("http://127.0.0.1:3000/api/v1/wishlists/fetch", {
-            headers: { "Authorization": `Bearer ${token}` }
+    // Initial fetches
+    loadUserProfile();
+    loadCartSummary();
+    fetchWishlist();
+    setupHeaderEventListeners();
+
+    function getAuthHeaders() {
+        return {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+    }
+
+    // Fetch and display user profile
+    async function loadUserProfile() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/users/profile`, {
+                headers: getAuthHeaders()
+            });
+            if (!response.ok) {
+                if (response.status === 401) {
+                    alert("Session expired. Please log in again.");
+                    localStorage.removeItem('token');
+                    window.location.href = '../pages/login.html';
+                    return;
+                }
+                throw new Error(`Profile fetch failed with status: ${response.status}`);
+            }
+            const userData = await response.json();
+            if (userData.success) {
+                const profileElement = document.getElementById('profile-link');
+                if (profileElement) {
+                    profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
+                    localStorage.setItem('username', userData.name || 'User'); // Store for dropdown
+                }
+            }
+        } catch (error) {
+            console.error("Profile fetch error:", error.message);
+        }
+    }
+
+    // Update cart count in UI
+    function updateCartCount(count) {
+        const cartCount = document.querySelector('#cart-link .cart-count');
+        if (cartCount) {
+            cartCount.textContent = count;
+            cartCount.style.display = count > 0 ? "flex" : "none"; // Show/hide badge
+        }
+    }
+
+    // Fetch cart summary for count
+    async function loadCartSummary() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/cart/summary`, {
+                headers: getAuthHeaders()
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    alert("Session expired. Please log in again.");
+                    localStorage.removeItem('token');
+                    window.location.href = '../pages/login.html';
+                    return;
+                }
+                throw new Error("Failed to fetch cart summary");
+            }
+
+            const cartData = await response.json();
+            updateCartCount(cartData.total_items || 0);
+        } catch (error) {
+            console.error("Error fetching cart summary:", error);
+        }
+    }
+
+    // Fetch and display wishlist
+    function fetchWishlist() {
+        fetch(`${API_BASE_URL}/wishlists/fetch`, {
+            headers: getAuthHeaders()
         })
             .then(response => {
                 if (!response.ok) {
+                    if (response.status === 401) {
+                        alert("Session expired. Please log in again.");
+                        localStorage.removeItem('token');
+                        window.location.href = '../pages/login.html';
+                        return;
+                    }
                     throw new Error(`Error ${response.status}: Unable to fetch wishlist`);
                 }
                 return response.json();
             })
             .then(data => {
-                wishlistContainer.innerHTML = ""; // Clear previous data
+                wishlistContainer.innerHTML = "";
                 wishlistCountElement.textContent = data.length;
 
                 if (data.length === 0) {
@@ -52,10 +135,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     wishlistContainer.appendChild(bookElement);
                 });
 
-                // Add event listeners for remove buttons
                 document.querySelectorAll(".remove-btn").forEach(button => {
                     button.addEventListener("click", function (event) {
-                        event.preventDefault(); // Prevent redirect
+                        event.preventDefault();
                         toggleWishlist(this.getAttribute("data-id"));
                     });
                 });
@@ -66,20 +148,148 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     }
 
+    // Toggle wishlist item
     function toggleWishlist(bookId) {
-        const token = localStorage.getItem("token");
-        fetch(`http://127.0.0.1:3000/api/v1/wishlists/toggle/${bookId}`, {
+        fetch(`${API_BASE_URL}/wishlists/toggle/${bookId}`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ book_id: bookId })
         })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        alert("Session expired. Please log in again.");
+                        localStorage.removeItem('token');
+                        window.location.href = '../pages/login.html';
+                        return;
+                    }
+                    throw new Error("Failed to toggle wishlist");
+                }
+                return response.json();
+            })
             .then(() => fetchWishlist()) // Refresh wishlist
             .catch(error => console.error("Error toggling wishlist:", error));
     }
 
-    fetchWishlist(); // Initial fetch
+    // Dropdown Functionality
+    function setupHeaderEventListeners() {
+        let dropdownMenu = null;
+        let isDropdownOpen = false;
+        const profileLink = document.getElementById("profile-link");
+        const cartLink = document.getElementById("cart-link");
+
+        if (!profileLink) {
+            console.error("Profile link element (#profile-link) not found in DOM");
+            return;
+        }
+
+        profileLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            if (isDropdownOpen) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            if (
+                isDropdownOpen &&
+                !profileLink.contains(event.target) &&
+                dropdownMenu &&
+                !dropdownMenu.contains(event.target)
+            ) {
+                closeDropdown();
+            }
+        });
+
+        if (cartLink) {
+            cartLink.addEventListener("click", (event) => {
+                event.preventDefault();
+                window.location.href = '../pages/cart.html';
+            });
+        }
+
+        const searchInput = document.getElementById("search");
+        if (searchInput) {
+            searchInput.addEventListener("keypress", (event) => {
+                if (event.key === "Enter") {
+                    const query = event.target.value.trim();
+                    if (query) {
+                        window.location.href = `../pages/homePage.html?query=${encodeURIComponent(query)}`;
+                    }
+                }
+            });
+        }
+
+        function openDropdown() {
+            if (dropdownMenu) dropdownMenu.remove();
+
+            dropdownMenu = document.createElement("div");
+            dropdownMenu.classList.add("dropdown-menu");
+            const username = localStorage.getItem("username") || "User";
+
+            dropdownMenu.innerHTML = `
+                <div class="dropdown-item dropdown-header">Hello ${username},</div>
+                <div class="dropdown-item" id="dropdown-profile">Profile</div>
+                <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+                <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
+                <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
+            `;
+
+            profileLink.parentElement.appendChild(dropdownMenu);
+
+            document.getElementById("dropdown-profile").addEventListener("click", () => {
+                window.location.href = "../pages/profile.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-orders").addEventListener("click", () => {
+                window.location.href = "../pages/myOrders.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-wishlist").addEventListener("click", () => {
+                window.location.href = "../pages/wishlist.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-logout").addEventListener("click", () => {
+                handleSignOut();
+                closeDropdown();
+            });
+
+            isDropdownOpen = true;
+        }
+
+        function closeDropdown() {
+            if (dropdownMenu) {
+                dropdownMenu.remove();
+                dropdownMenu = null;
+            }
+            isDropdownOpen = false;
+        }
+    }
+
+    function handleSignOut() {
+        const provider = localStorage.getItem("socialProvider");
+
+        if (provider === "google" && typeof google !== "undefined" && google.accounts) {
+            google.accounts.id.disableAutoSelect();
+            google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
+                console.log("Google session revoked");
+            });
+        }
+
+        if (provider === "facebook" && typeof FB !== "undefined") {
+            FB.getLoginStatus(function (response) {
+                if (response.status === "connected") {
+                    FB.logout(function (response) {
+                        console.log("Facebook session revoked");
+                    });
+                }
+            });
+        }
+
+        localStorage.clear();
+        alert("Logged out successfully.");
+        window.location.href = "../pages/login.html";
+    }
 });

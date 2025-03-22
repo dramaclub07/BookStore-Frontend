@@ -1,46 +1,65 @@
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("DOM fully loaded, fetching books...");
+// API Base URL and Pagination Settings
+const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
+let currentPage = 1;
+let totalPages = 1;
+const booksPerPage = 12;
 
-    // Check if user just logged in
+// Get auth headers
+function getAuthHeaders() {
+    const token = localStorage.getItem("token");
+    return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+    };
+}
+
+// Authentication Functions
+function isAuthenticated() {
+    const token = localStorage.getItem("token");
+    return token !== null;
+}
+
+function getAuthToken() {
+    return localStorage.getItem("token") || "";
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    console.log("DOM fully loaded, initializing homepage...");
+    console.log("Token on load:", localStorage.getItem("token"));
+
+    // No redirect here; allow unauthenticated users to browse books
+    const isLoggedIn = isAuthenticated();
+
+    // Check for refresh triggers (e.g., after login or review submission)
+    const sortBooks = document.getElementById("sort-books");
+    const initialSortOption = sortBooks?.value || "relevance";
+
     if (localStorage.getItem("justLoggedIn") === "true") {
         console.log("User just logged in, forcing refresh of books...");
         localStorage.removeItem("justLoggedIn");
-        fetchBooks("relevance", 1, true);
+        fetchBooks(initialSortOption, 1, true);
     } else if (localStorage.getItem("reviewSubmitted") === "true") {
         console.log("Review submitted previously, forcing refresh of books...");
         localStorage.removeItem("reviewSubmitted");
-        fetchBooks("relevance", 1, true);
+        fetchBooks(initialSortOption, 1, true);
     } else {
-        fetchBooks();
+        fetchBooks(initialSortOption, 1);
     }
 
+    // Load user profile and cart count
+    await loadUserProfile();
+    await updateCartCount();
+
+    // Dropdown menu state and event listeners
+    let dropdownMenu = null;
+    let isDropdownOpen = false;
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
-    const usernameElement = document.getElementById("username");
-    const dropdownUsernameElement = document.getElementById("dropdown-username");
-
-    // Set the username in the navbar and dropdown
-    const username = localStorage.getItem("username") || "User";
-    if (usernameElement) {
-        usernameElement.textContent = username;
-    }
-    if (dropdownUsernameElement) {
-        dropdownUsernameElement.textContent = `Hello, ${username}`;
-    }
-
-    // Initialize cart count on page load
-    updateCartCount();
-
-    // Dropdown menu state
-    let isDropdownOpen = false;
-    const dropdownMenu = document.getElementById("profile-dropdown");
 
     if (profileLink) {
         profileLink.addEventListener("click", (event) => {
-            event.preventDefault(); // Prevent default link behavior
+            event.preventDefault();
             console.log("Profile link clicked, toggling dropdown");
-
-            // Toggle dropdown visibility
             if (isDropdownOpen) {
                 closeDropdown();
             } else {
@@ -48,7 +67,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        // Close dropdown if clicking outside
         document.addEventListener("click", (event) => {
             if (
                 isDropdownOpen &&
@@ -59,31 +77,180 @@ document.addEventListener("DOMContentLoaded", () => {
                 closeDropdown();
             }
         });
+    } else {
+        console.error("Profile link not found in DOM");
     }
 
     if (cartLink) {
-        cartLink.addEventListener("click", () => {
-            console.log("Redirecting to cart page");
-            window.location.href = "../pages/cart.html";
+        cartLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            if (!isLoggedIn) {
+                console.log("User not logged in, redirecting to please login page");
+                window.location.href = "../pages/pleaseLogin.html";
+            } else {
+                console.log("Redirecting to cart page");
+                window.location.href = "../pages/cart.html";
+            }
         });
     }
 
+    // Simplified search redirect (no fetch)
+    document.getElementById("search")?.addEventListener("keypress", (event) => {
+        if (event.key === "Enter") {
+            const query = event.target.value.trim();
+            if (query) {
+                console.log("Search triggered with query:", query);
+                window.location.href = `homePage.html?query=${encodeURIComponent(query)}`;
+            }
+        }
+    });
+
     // Function to open the dropdown
     function openDropdown() {
-        if (dropdownMenu) {
-            dropdownMenu.style.display = "block";
-            isDropdownOpen = true;
+        if (dropdownMenu) dropdownMenu.remove();
+
+        dropdownMenu = document.createElement("div");
+        dropdownMenu.classList.add("dropdown-menu");
+        const username = localStorage.getItem("username") || "User";
+
+        dropdownMenu.innerHTML = isLoggedIn
+            ? `
+                <div class="dropdown-item dropdown-header">Hello ${username},</div>
+                <div class="dropdown-item" id="dropdown-profile">Profile</div>
+                <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+                <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
+                <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
+            `
+            : `
+                <div class="dropdown-item dropdown-header">Welcome</div>
+                <div class="dropdown-item dropdown-subheader">To access account</div>
+                <div class="dropdown-item"><button id="dropdown-login-signup">LOGIN/SIGNUP</button></div>
+                <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+                <div class="dropdown-item" id="dropdown-wishlist">Wishlist</div>
+            `;
+
+        profileLink.parentElement.appendChild(dropdownMenu);
+
+        if (isLoggedIn) {
+            document.getElementById("dropdown-profile").addEventListener("click", () => {
+                window.location.href = "../pages/profile.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-orders").addEventListener("click", () => {
+                window.location.href = "../pages/myOrders.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-wishlist").addEventListener("click", () => {
+                window.location.href = "../pages/wishlist.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-logout").addEventListener("click", () => {
+                handleSignOut();
+                closeDropdown();
+            });
+        } else {
+            document.getElementById("dropdown-login-signup").addEventListener("click", () => {
+                window.location.href = "../pages/login.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-orders").addEventListener("click", () => {
+                window.location.href = "../pages/pleaseLogin.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-wishlist").addEventListener("click", () => {
+                window.location.href = "../pages/pleaseLogin.html";
+                closeDropdown();
+            });
         }
+
+        isDropdownOpen = true;
     }
 
     // Function to close the dropdown
     function closeDropdown() {
         if (dropdownMenu) {
-            dropdownMenu.style.display = "none";
-            isDropdownOpen = false;
+            dropdownMenu.remove();
+            dropdownMenu = null;
         }
+        isDropdownOpen = false;
     }
 });
+
+// Fetch and display user profile
+async function loadUserProfile() {
+    const profileNameElement = document.querySelector(".profile-name");
+    const isLoggedIn = isAuthenticated();
+
+    if (!profileNameElement) return;
+
+    if (!isLoggedIn) {
+        profileNameElement.textContent = "Profile";
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/profile`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert("Session expired. Please log in again.");
+                localStorage.removeItem("token");
+                window.location.href = "../pages/login.html";
+                return;
+            }
+            throw new Error(`Profile fetch failed with status: ${response.status}`);
+        }
+        const userData = await response.json();
+        if (userData.success) {
+            const username = userData.name || "User";
+            profileNameElement.textContent = username;
+            localStorage.setItem("username", username); // Update localStorage
+        }
+    } catch (error) {
+        console.error("Profile fetch error:", error.message);
+        profileNameElement.textContent = localStorage.getItem("username") || "User";
+    }
+}
+
+// Update cart count in UI
+async function updateCartCount() {
+    const cartCountElement = document.querySelector("#cart-link .cart-count");
+    if (!cartCountElement) return;
+
+    const isLoggedIn = isAuthenticated();
+    if (!isLoggedIn) {
+        console.log("User not authenticated, setting cart count to 0");
+        cartCountElement.textContent = "0";
+        cartCountElement.style.display = "none";
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/cart`, {
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert("Session expired. Please log in again.");
+                localStorage.removeItem("token");
+                window.location.href = "../pages/login.html";
+                return;
+            }
+            throw new Error("Failed to fetch cart");
+        }
+        const cart = await response.json();
+        console.log("Cart API response:", cart);
+        const totalItems = cart.cart?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
+        cartCountElement.textContent = totalItems;
+        cartCountElement.style.display = totalItems > 0 ? "flex" : "none"; // Show/hide based on count
+    } catch (error) {
+        console.error("Error fetching cart count:", error);
+        cartCountElement.textContent = "0";
+        cartCountElement.style.display = "none";
+    }
+}
 
 // Sign Out (Logout) functionality
 function handleSignOut() {
@@ -112,71 +279,15 @@ function handleSignOut() {
     }
 
     // Clear localStorage
-    localStorage.removeItem("token");
-    localStorage.removeItem("username");
-    localStorage.removeItem("socialEmail");
-    localStorage.removeItem("socialProvider");
-    localStorage.removeItem("justLoggedIn");
-
-    // Hide the sign-out container (optional, since we're redirecting)
-    const signoutContainer = document.getElementById("signout-container");
-    if (signoutContainer) {
-        signoutContainer.style.display = "none";
-    }
-
+    localStorage.clear(); // Consistent with navbar.js
     alert("Logged out successfully.");
     window.location.href = "../pages/login.html"; // Redirect to login page
 }
 
-// Update Cart Count in Header
-async function updateCartCount() {
-    const cartCountElement = document.getElementById("cart-count");
-    if (!cartCountElement) return;
-
-    const token = localStorage.getItem("token");
-    let totalItems = 0;
-
-    if (token) {
-        try {
-            const response = await fetch("http://127.0.0.1:3000/api/v1/cart/summary", {
-                method: "GET",
-                headers: {
-                    "Authorization": `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || "Failed to fetch cart summary");
-            }
-
-            const cartData = await response.json();
-            totalItems = cartData.total_items || 0;
-            console.log(`Fetched cart count: ${totalItems}`);
-        } catch (error) {
-            console.error("Error fetching cart count:", error);
-            totalItems = 0; // Fallback to 0 on error
-        }
-    } else {
-        console.log("No token found, setting cart count to 0");
-        totalItems = 0;
-    }
-
-    // Update the cart count and toggle visibility
-    cartCountElement.textContent = totalItems;
-    if (totalItems > 0) {
-        cartCountElement.style.display = "flex"; // Show the badge
-    } else {
-        cartCountElement.style.display = "none"; // Hide the badge
-    }
-}
-
-let currentPage = 1;
-let totalPages = 1;
-const API_BASE_URL = "http://127.0.0.1:3000/api/v1/books";
-
+// Fetch Books with Sorting, Pagination, and Optional Force Refresh
 async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) {
     const bookContainer = document.getElementById("book-list");
+    const bookLoader = document.getElementById("book-loader");
     const prevButton = document.getElementById("prev-page");
     const nextButton = document.getElementById("next-page");
     const totalBooksElement = document.getElementById("total-books");
@@ -186,34 +297,33 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
         return;
     }
 
-    bookContainer.innerHTML = "<p>Loading books...</p>";
+    // Show loader while fetching books
+    bookContainer.innerHTML = ""; // Clear previous content
+    if (bookLoader) bookLoader.style.display = "block"; // Show loader
     if (prevButton) prevButton.disabled = true;
     if (nextButton) nextButton.disabled = true;
 
     try {
-        const url = `${API_BASE_URL}?sort=${sortBy}&page=${page}&force_refresh=${forceRefresh}`;
+        // Construct the API URL with query parameters
+        const searchQuery = new URLSearchParams(window.location.search).get("query") || "";
+        let url = `${API_BASE_URL}/books?page=${page}&per_page=${booksPerPage}&sort=${sortBy}&force_refresh=${forceRefresh}`;
+        if (searchQuery) url += `&query=${encodeURIComponent(searchQuery)}`;
         console.log("Fetching books from:", url);
-
-        // Add authentication token to the request if available
-        const token = localStorage.getItem("token");
-        const headers = {
-            "Content-Type": "application/json",
-        };
-        if (token) {
-            headers["Authorization"] = `Bearer ${token}`;
-            console.log("Including Authorization token in request:", token);
-        } else {
-            console.log("No token found in localStorage, proceeding without Authorization.");
-        }
 
         const response = await fetch(url, {
             method: "GET",
-            headers: headers,
+            headers: getAuthHeaders(),
         });
         console.log("Response status:", response.status);
         console.log("Response headers:", response.headers);
 
         if (!response.ok) {
+            if (response.status === 401) {
+                alert("Session expired. Please log in again.");
+                localStorage.removeItem("token");
+                window.location.href = "../pages/login.html";
+                return;
+            }
             const errorText = await response.text();
             throw new Error(`HTTP Error ${response.status}: ${errorText}`);
         }
@@ -226,30 +336,39 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
             console.warn("No books returned from API.");
             bookContainer.innerHTML = "<p>No books found.</p>";
             updatePagination(1, 1);
+            if (totalBooksElement) totalBooksElement.textContent = "0";
             return;
         }
 
         console.log("Sample books:", data.books.slice(0, 3));
         displayBooks(data.books);
 
-        const totalPagesFromAPI = data.pagination?.total_pages || 1;
-        const totalCount = data.pagination?.total_count || 0;
+        const totalBooks = data.pagination?.total_count || 0;
+        totalPages = data.pagination?.total_pages || 1;
+        currentPage = page;
 
-        if (totalBooksElement) totalBooksElement.textContent = totalCount;
-        updatePagination(totalPagesFromAPI, page);
-
-        if (prevButton) prevButton.disabled = page === 1;
-        if (nextButton) nextButton.disabled = page >= totalPagesFromAPI;
+        if (totalBooksElement) totalBooksElement.textContent = totalBooks;
+        updatePagination(totalPages, currentPage);
     } catch (error) {
         console.error("Error fetching books:", error.message);
         bookContainer.innerHTML = "<p>Failed to load books. Please try again.</p>";
+    } finally {
+        // Hide loader after fetching books
+        if (bookLoader) bookLoader.style.display = "none";
+        if (prevButton) prevButton.disabled = currentPage === 1;
+        if (nextButton) nextButton.disabled = currentPage >= totalPages;
     }
 }
 
+// Display Books with Quick View Button Only
 function displayBooks(books) {
     const bookContainer = document.getElementById("book-list");
-    bookContainer.innerHTML = "";
+    if (!bookContainer) {
+        console.error("Error: 'book-list' element not found in the DOM.");
+        return;
+    }
 
+    bookContainer.innerHTML = ""; // Clear previous books
     console.log("Displaying books:", books.length);
 
     if (!books || books.length === 0) {
@@ -265,25 +384,31 @@ function displayBooks(books) {
 
         bookCard.innerHTML = `
             <img src="${bookImage}" alt="${book.book_name}" class="book-image">
+            <button class="quick-view" data-id="${book.id}">Quick View</button>
             <div class="book-content">
                 <h3>${book.book_name}</h3>
-                <p>by ${book.author_name}</p>
-                <div class="rating">
-                    <span>${book.rating || "0.0"}</span> ★ 
+                <p>${book.author_name}</p>
+                <div>
+                    <span class="rating">${book.rating || "0.0"}</span>
+                    <span class="rating-count">(${book.rating_count || "0"})</span>
                 </div>
-                <span class="rating-count">(${book.rating_count || "0"})</span>
                 <div class="price-info">
                     <span class="price">Rs. ${book.discounted_price}</span>
                     <span class="old-price">Rs. ${book.book_mrp}</span>
                 </div>
-                <button onclick="viewBookDetails(${book.id})">Quick View</button>
             </div>
         `;
 
         bookContainer.appendChild(bookCard);
+
+        // Add event listener for Quick View button
+        bookCard.querySelector(".quick-view").addEventListener("click", () => {
+            viewBookDetails(book.id);
+        });
     });
 }
 
+// Update Pagination UI
 function updatePagination(totalPagesFromAPI, currentPageFromAPI) {
     totalPages = totalPagesFromAPI;
     currentPage = currentPageFromAPI;
@@ -301,86 +426,7 @@ function updatePagination(totalPagesFromAPI, currentPageFromAPI) {
     if (nextButton) nextButton.disabled = currentPage >= totalPages || totalPages === 0;
 }
 
-let debounceTimer;
-document.getElementById("search")?.addEventListener("input", (event) => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-        fetchSearchSuggestions(event.target.value);
-    }, 300);
-});
-
-async function fetchSearchSuggestions(query) {
-    const suggestionsBox = document.getElementById("search-suggestions");
-
-    if (!suggestionsBox || !query.trim()) {
-        if (suggestionsBox) {
-            suggestionsBox.innerHTML = "";
-            suggestionsBox.classList.remove("visible");
-        }
-        return;
-    }
-
-    try {
-        const encodedQuery = encodeURIComponent(query);
-        const response = await fetch(`${API_BASE_URL}/search_suggestions?query=${encodedQuery}`);
-        
-        if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch suggestions`);
-        
-        const data = await response.json();
-        console.log("Search Suggestions:", data);
-        displaySuggestions(data.suggestions);
-    } catch (error) {
-        console.error("Error fetching search suggestions:", error);
-    }
-}
-
-function displaySuggestions(suggestions) {
-    const suggestionsBox = document.getElementById("search-suggestions");
-    suggestionsBox.innerHTML = "";
-
-    if (!suggestions || suggestions.length === 0) {
-        suggestionsBox.innerHTML = "<p>No suggestions found</p>";
-        suggestionsBox.classList.remove("visible");
-        return;
-    }
-
-    suggestionsBox.classList.add("visible");
-
-    suggestions.forEach(suggestion => {
-        const item = document.createElement("div");
-        item.textContent = `${suggestion.book_name} by ${suggestion.author_name}`;
-        item.classList.add("suggestion-item");
-        item.style.cursor = "pointer";
-        item.addEventListener("click", (event) => {
-            event.stopPropagation();
-            event.preventDefault();
-            console.log("Suggestion clicked:", suggestion);
-            if (suggestion.id) viewBookDetails(suggestion.id);
-        });
-        suggestionsBox.appendChild(item);
-    });
-}
-
-// Fetch Books by Search Query
-async function fetchBooksBySearch(query) {
-    const bookContainer = document.getElementById("book-list");
-    bookContainer.innerHTML = "<p>Loading search results...</p>";
-
-    try {
-        const encodedQuery = encodeURIComponent(query);
-        const response = await fetch(`${API_BASE_URL}?query=${encodedQuery}`);
-        
-        if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch books`);
-
-        const data = await response.json();
-        console.log("Search Results:", data);
-        displayBooks(data.books);
-    } catch (error) {
-        console.error("Error fetching search results:", error);
-        bookContainer.innerHTML = "<p>Failed to load search results.</p>";
-    }
-}
-
+// Navigate to Book Details Page
 function viewBookDetails(bookId) {
     console.log("Navigating to book details with ID:", bookId);
     if (bookId) {
@@ -390,6 +436,7 @@ function viewBookDetails(bookId) {
     }
 }
 
+// Event Listeners for Pagination and Sorting
 document.getElementById("prev-page")?.addEventListener("click", () => {
     if (currentPage > 1) {
         console.log("Fetching previous page:", currentPage - 1);
@@ -401,13 +448,6 @@ document.getElementById("next-page")?.addEventListener("click", () => {
     if (currentPage < totalPages) {
         console.log("Fetching next page:", currentPage + 1);
         fetchBooks(document.getElementById("sort-books").value, currentPage + 1);
-    }
-});
-
-document.getElementById("search")?.addEventListener("keypress", (event) => {
-    if (event.key === "Enter") {
-        console.log("Search triggered with query:", event.target.value);
-        fetchBooksBySearch(event.target.value);
     }
 });
 

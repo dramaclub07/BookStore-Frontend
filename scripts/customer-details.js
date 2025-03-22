@@ -12,8 +12,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadCartItems();
     await loadAddresses();
     setupLocationButton();
+    setupHeaderEventListeners(); // Add dropdown functionality
 
-    document.querySelector('.continue').addEventListener('click', () => {
+    document.querySelector('.continue')?.addEventListener('click', () => {
         const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
         if (selectedAddress.id || (selectedAddress.street && selectedAddress.city && selectedAddress.state)) {
             window.location.href = '../pages/order-summary.html';
@@ -39,29 +40,19 @@ function updateCartCount(count) {
     const cartCount = document.querySelector('#cart-link .cart-count');
     const sectionCount = document.getElementById('cart-count');
 
-    // Update the header cart count (in the navbar)
     if (cartCount) {
         cartCount.textContent = count;
-        if (count > 0) {
-            cartCount.style.display = "flex"; // Show the badge
-        } else {
-            cartCount.style.display = "none"; // Hide the badge
-        }
+        cartCount.style.display = count > 0 ? "flex" : "none";
     }
 
-    // Update the section cart count (in the cart page)
     if (sectionCount) {
         sectionCount.textContent = count;
-        if (count > 0) {
-            sectionCount.style.display = "inline"; // Show the count
-        } else {
-            sectionCount.style.display = "none"; // Hide the count
-        }
+        sectionCount.style.display = count > 0 ? "inline" : "none";
     }
 }
+
 async function loadUserProfile() {
     try {
-
         const response = await fetch(`${API_BASE_URL}/users/profile`, {
             headers: getAuthHeaders()
         });
@@ -69,17 +60,17 @@ async function loadUserProfile() {
             if (response.status === 401) {
                 alert("Session expired. Please log in again.");
                 localStorage.removeItem('token');
-                window.location.href = '/pages/login.html';
+                window.location.href = '../pages/login.html'; // Fixed path consistency
                 return;
             }
             throw new Error(`Profile fetch failed with status: ${response.status}`);
-
         }
         const userData = await response.json();
         if (userData.success) {
             const profileElement = document.getElementById('profile-link');
             if (profileElement) {
                 profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
+                localStorage.setItem('username', userData.name || 'User'); // Store username for dropdown
             }
             document.querySelector('input[readonly][value="Poonam Yadav"]').value = userData.name || 'Unknown';
             document.querySelector('input[readonly][value="81678954778"]').value = userData.mobile_number || 'N/A';
@@ -88,6 +79,7 @@ async function loadUserProfile() {
         console.error("Profile fetch error:", error.message);
     }
 }
+
 async function loadCartItems() {
     const cartContainer = document.getElementById('cart-container');
     if (!cartContainer) return;
@@ -220,7 +212,6 @@ async function updateQuantity(button, change) {
 
         await loadCartSummary();
 
-        // Update cart items in localStorage after quantity change
         const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
         const updatedCartItems = cartItems.map(item => {
             if (item.book_id === bookId) {
@@ -265,7 +256,6 @@ async function removeCartItem(button) {
             document.getElementById('cart-container').innerHTML = '<p>Your cart is empty.</p>';
         }
 
-        // Update cart items in localStorage after removal
         const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
         const updatedCartItems = cartItems.filter(item => item.book_id !== bookId);
         localStorage.setItem('cartItems', JSON.stringify(updatedCartItems));
@@ -339,7 +329,7 @@ async function loadAddresses() {
                         addresses.find(addr => addr.is_default) || 
                         addresses[0];
     } else if (selectedAddress.street) {
-        defaultAddress = selectedAddress; // Use the address from cart if not found in backend yet
+        defaultAddress = selectedAddress;
     } else {
         defaultAddress = addresses.find(addr => addr.is_default) || addresses[0];
     }
@@ -380,12 +370,11 @@ function updateAddressFields(address, shouldBlink = false) {
     document.getElementById('address-city').value = address.city || '';
     document.getElementById('address-state').value = address.state || '';
 
-    // Handle radio button blinking for 'other'
     const otherRadio = document.querySelector('input[name="address-type"][value="Other"]');
     if (shouldBlink && otherRadio) {
         otherRadio.checked = true;
         otherRadio.classList.add('blink');
-        setTimeout(() => otherRadio.classList.remove('blink'), 2000); // Blink for 2 seconds
+        setTimeout(() => otherRadio.classList.remove('blink'), 2000);
     } else if (otherRadio) {
         otherRadio.classList.remove('blink');
     }
@@ -467,7 +456,7 @@ function setupLocationButton() {
             };
 
             const savedAddress = await saveCurrentLocationToBackend(address);
-            updateAddressFields(savedAddress, true); // Trigger blinking
+            updateAddressFields(savedAddress, true);
             localStorage.setItem('selectedAddress', JSON.stringify(savedAddress));
             localStorage.setItem('selectedAddressId', savedAddress.id);
             await loadAddresses();
@@ -504,9 +493,130 @@ function setupLocationButton() {
         }
     });
 
-    // Load initial address if already selected
     const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
     if (selectedAddress.street) {
         updateAddressFields(selectedAddress, selectedAddress.address_type === 'other');
     }
+}
+
+// Dropdown Functionality
+function setupHeaderEventListeners() {
+    let dropdownMenu = null;
+    let isDropdownOpen = false;
+    const profileLink = document.getElementById("profile-link");
+    const cartLink = document.getElementById("cart-link");
+
+    if (!profileLink) {
+        console.error("Profile link element (#profile-link) not found in DOM");
+        return;
+    }
+
+    profileLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (isDropdownOpen) {
+            closeDropdown();
+        } else {
+            openDropdown();
+        }
+    });
+
+    document.addEventListener("click", (event) => {
+        if (
+            isDropdownOpen &&
+            !profileLink.contains(event.target) &&
+            dropdownMenu &&
+            !dropdownMenu.contains(event.target)
+        ) {
+            closeDropdown();
+        }
+    });
+
+    if (cartLink) {
+        cartLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            window.location.href = '../pages/cart.html'; // Navigate to cart page
+        });
+    }
+
+    const searchInput = document.getElementById("search");
+    if (searchInput) {
+        searchInput.addEventListener("keypress", (event) => {
+            if (event.key === "Enter") {
+                const query = event.target.value.trim();
+                if (query) {
+                    window.location.href = `../pages/homePage.html?query=${encodeURIComponent(query)}`;
+                }
+            }
+        });
+    }
+
+    function openDropdown() {
+        if (dropdownMenu) dropdownMenu.remove();
+
+        dropdownMenu = document.createElement("div");
+        dropdownMenu.classList.add("dropdown-menu");
+        const username = localStorage.getItem("username") || "User";
+
+        dropdownMenu.innerHTML = `
+            <div class="dropdown-item dropdown-header">Hello ${username},</div>
+            <div class="dropdown-item" id="dropdown-profile">Profile</div>
+            <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+            <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
+            <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
+        `;
+
+        profileLink.parentElement.appendChild(dropdownMenu);
+
+        document.getElementById("dropdown-profile").addEventListener("click", () => {
+            window.location.href = "../pages/profile.html";
+            closeDropdown();
+        });
+        document.getElementById("dropdown-orders").addEventListener("click", () => {
+            window.location.href = "../pages/myOrders.html";
+            closeDropdown();
+        });
+        document.getElementById("dropdown-wishlist").addEventListener("click", () => {
+            window.location.href = "../pages/wishlist.html";
+            closeDropdown();
+        });
+        document.getElementById("dropdown-logout").addEventListener("click", () => {
+            handleSignOut();
+            closeDropdown();
+        });
+
+        isDropdownOpen = true;
+    }
+
+    function closeDropdown() {
+        if (dropdownMenu) {
+            dropdownMenu.remove();
+            dropdownMenu = null;
+        }
+        isDropdownOpen = false;
+    }
+}
+
+function handleSignOut() {
+    const provider = localStorage.getItem("socialProvider");
+
+    if (provider === "google" && typeof google !== "undefined" && google.accounts) {
+        google.accounts.id.disableAutoSelect();
+        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
+            console.log("Google session revoked");
+        });
+    }
+
+    if (provider === "facebook" && typeof FB !== "undefined") {
+        FB.getLoginStatus(function (response) {
+            if (response.status === "connected") {
+                FB.logout(function (response) {
+                    console.log("Facebook session revoked");
+                });
+            }
+        });
+    }
+
+    localStorage.clear();
+    alert("Logged out successfully.");
+    window.location.href = "../pages/login.html";
 }

@@ -1,5 +1,3 @@
-/* bookDetails.css */
-
 /* Reset default styles */
 * {
     margin: 0;
@@ -9,10 +7,11 @@
 
 /* Body */
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Arial', sans-serif;
     margin: 0;
     padding: 0;
     background-color: #f5f5f5;
+    color: #333;
 }
 
 /* Navbar */
@@ -20,164 +19,148 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #A03037;
+    background-color: #A03037; /* Your theme color */
     color: white;
-    padding: 0 15px;
+    padding: 0 20px;
     position: fixed;
     top: 0;
     width: 100%;
-    height: 50px;
-    box-sizing: border-box;
+    height: 60px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     z-index: 1000;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .logo {
     display: flex;
     align-items: center;
-    margin-right: 10px;
-    gap: 5px;
+    margin-right: 15px;
+    gap: 8px;
+    font-size: 20px;
+    font-weight: 700;
 }
 
 .search-container {
-    position: relative;
-    width: 40%;
-    min-width: 200px;
-    max-width: 500px;
-    z-index: 1002;
+    flex-grow: 1;
+    max-width: 400px;
+    margin: 0 20px;
 }
 
 .search-bar {
     width: 100%;
-    padding: 8px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 25px;
+    border: none;
     font-size: 14px;
     background-color: #fff;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-    z-index: 1004;
-    position: relative;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.2s ease;
 }
 
-.suggestions-box {
+.search-bar:focus {
+    outline: none;
+    box-shadow: 0 0 5px rgba(165, 42, 42, 0.5);
+}
+
+
+
+.cart-count {
+    display: flex; /* Default state, JS toggles to 'none' if 0 */
+    align-items: center;
+    justify-content: center;
+    background: #f44336; /* Bright red for visibility */
+    color: white;
+    border-radius: 50%;
+    width: 20px; /* Slightly larger for better readability */
+    height: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 0px; /* Increased spacing from icon */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
     position: absolute;
     top: 100%;
-    left: 0;
-    width: 100%;
-    background: white;
-    border: 1px solid #ddd;
-    border-top: none;
-    border-radius: 0 0 5px 5px;
-    max-height: 150px;
-    overflow-y: auto;
-    z-index: 1003;
-    display: none;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 10px 0;
+    min-width: 180px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    margin-top: 2px;
+    z-index: 1000;
 }
 
-.search-bar:focus + .suggestions-box,
-.search-container.active .suggestions-box {
-    display: block;
-}
-
-.suggestions-box:empty {
-    display: none;
-}
-
-.suggestion-item {
-    padding: 8px;
-    cursor: pointer;
-    color: black;
+.dropdown-item {
+    padding: 8px 15px;
     font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: #f2dede; /* Matches your theme */
+}
+
+.dropdown-header {
+    font-weight: 600;
+    color: #222;
+    padding-bottom: 5px;
     border-bottom: 1px solid #eee;
 }
 
-.suggestion-item:last-child {
-    border-bottom: none;
+.dropdown-subheader {
+    font-style: italic;
+    color: #666;
+    font-size: 13px;
+    padding-bottom: 5px;
 }
 
-.suggestion-item:hover {
-    background-color: #d5e7c3;
-}
-
-.nav-links {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    gap: 20px; /* Replace margin-left with gap for consistent spacing */
-}
-
-.nav-links .profile-link,
-.nav-links .cart-link {
-    display: flex;
-    align-items: center;
-    gap: 5px; /* Space between icon and text/count */
+.dropdown-menu button {
+    width: 100%;
+    padding: 8px 15px;
+    background: #A03037;
     color: white;
-    text-decoration: none; /* For cart-link <a> */
-    font-size: 15px;
-    font-weight: 600;
-    transition: color 0.2s ease;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s ease;
 }
 
-.nav-links .profile-link:hover,
-.nav-links .cart-link:hover {
-    color: #ffd700;
-}
-
-.nav-links .nav-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.nav-links .username {
-    white-space: nowrap;
-}
-
-.nav-links .cart-count {
-    position: relative;
-    background-color: white;
-    color: rgb(222, 13, 13);
-    border-radius: 50%;
-    padding: 2px 6px;
-    font-size: 12px;
-    font-weight: bold;
-    min-width: 20px;
-    height: 20px;
-    display: flex;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    bottom: 12px;
-    left: -10px;
-    font-size: 12px;
-    top: -8px;
-    width: 3px;
-    height: 19px;
+.dropdown-menu button:hover {
+    background: #8b1e1e;
 }
 
 /* Main Content */
 .content-wrapper {
-    margin-top: 70px;
-    padding: 20px;
-    min-height: calc(100vh - 70px);
+    margin-top: 80px; /* Adjusted for navbar height */
+    padding: 30px;
+    min-height: calc(100vh - 80px);
     display: flex;
     flex-direction: column;
+    opacity: 1;
+    transition: opacity 0.5s ease-in;
 }
 
 /* Breadcrumb */
 .breadcrumb {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     font-size: 14px;
+    color: #666;
 }
 
 .breadcrumb a {
     color: #a52a2a;
     text-decoration: none;
+    transition: color 0.2s ease;
 }
 
 .breadcrumb a:hover {
+    color: #8b1e1e;
     text-decoration: underline;
 }
 
@@ -188,9 +171,13 @@ body {
 /* Book Details Section */
 .book-details {
     display: flex;
-    gap: 30px;
-    margin-bottom: 30px;
+    gap: 40px;
+    margin-bottom: 40px;
     flex: 1;
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .book-details-left {
@@ -202,9 +189,9 @@ body {
 
 .image-container {
     display: flex;
-    align-items: center; /* Center the main image */
-    justify-content: center; /* Center the main image */
-    margin-bottom: 20px;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 25px;
 }
 
 .book-image-wrapper {
@@ -215,204 +202,198 @@ body {
 
 .book-image {
     width: 100%;
-    max-width: 350px; /* Increased size to fill the space */
+    max-width: 350px;
     height: auto;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Add shadow for depth */
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s ease;
+}
+
+.book-image:hover {
+    transform: scale(1.05);
 }
 
 .action-buttons {
     display: flex;
-    gap: 15px;
+    gap: 20px;
     width: 100%;
-    max-width: 350px; /* Match the increased image width */
-    margin-top: 10px;
+    max-width: 350px;
+    margin-top: 15px;
     justify-content: center;
 }
 
 .add-to-bag, .wishlist {
     flex: 1;
-    padding: 12px;
+    padding: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     border: none;
-    border-radius: 5px;
-    font-size: 14px;
-    font-weight: 500;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease; /* Smooth transition for background and text color */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .add-to-bag {
     background: linear-gradient(90deg, #a52a2a, #8b1e1e);
     color: white;
-    margin-left: 60px; 
 }
-
-
-
 
 .add-to-bag:hover {
     background: linear-gradient(90deg, #8b1e1e, #6e1515);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .wishlist {
     background: #333333;
     color: #FFFFFF;
     border: 1px solid #a52a2a;
-    transition: background 0.2s ease, color 0.2s ease, border 0.2s ease; /* Smooth transition for background, text color, and border */
 }
 
-/* Hover effect for the Wishlist button */
 .wishlist:hover {
-    background: #ffffff; /* White background on hover */
-    color: #333333; /* Black text color to match the design */
-    border: 1px solid #ff0000; /* Red border to match the heart */
+    background: #ffffff;
+    color: #333333;
+    border: 1px solid #ff0000;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* Style for when the item is wishlisted */
 .wishlist.wishlisted {
-    background: #ffffff; /* White background when wishlisted */
-    color: #333333; /* Dark text color to contrast with white background */
-    border: 1px solid #ff0000; /* Red border to match the heart */
+    background: #ffffff;
+    color: #333333;
+    border: 1px solid #ff0000;
 }
 
 .wishlist i {
-    margin-right: 5px; /* Space between the heart icon and the text */
-    color: #cccccc; /* Default gray color for the heart */
-    transition: color 0.2s ease; /* Smooth color transition for the heart */
+    margin-right: 8px;
+    color: #cccccc;
 }
 
-/* Style for the heart icon when the item is wishlisted */
 .wishlist.wishlisted i {
-    color: #ff0000; /* Red color for the filled heart */
+    color: #ff0000;
 }
 
-/* Change the icon to a filled heart when wishlisted */
 .wishlist.wishlisted i.far.fa-heart {
-    font-weight: 900; /* Switch to the filled heart (fas) */
+    font-weight: 900;
 }
 
 .book-details-right {
     flex: 2;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 25px;
 }
 
 .book-details-right h1 {
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 10px;
+    font-size: 28px;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 5px;
 }
 
 .book-details-right p {
     font-size: 16px;
     color: #666;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
 }
-
 
 .rating {
     display: flex;
     align-items: center;
-    margin-bottom: 10px;
-    font-size: 14px;
+    margin-bottom: 15px;
+    font-size: 16px;
 }
-
 
 #book-rating-value {
-    color:white;
+    color: white;
     font-weight: bold;
-    margin-right: 4px;
+    margin-right: 8px;
     background-color: #388E3C;
-    padding: 5px;
+    padding: 6px 10px;
+    border-radius: 5px;
 }
 
-
 .star {
-    margin-right: 4px;
+    margin-right: 6px;
+    color: #ffd700;
 }
 
 .rating-count {
     color: #666;
 }
 
-
 .price-info {
     display: flex;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
-.price-info.book-price {
-    font-weight:bolder;
-    font-size: 18px;
-    color: #333;
+.price-info #book-price {
+    font-weight: bolder;
+    font-size: 22px;
+    color: #222;
 }
 
 #book-old-price {
     text-decoration: line-through;
     color: #666;
-    font-size: 20px; /* Increased font size for MRP to match the design */
-    margin-left: 8px;
+    font-size: 18px;
+    margin-left: 10px;
     opacity: 0.7;
 }
 
 .book-description h3 {
-    font-size: 20px; /* Increased font size for "Book Detail" heading */
-    margin-bottom: 10px;
+    font-size: 22px;
+    margin-bottom: 15px;
+    color: #222;
+    font-weight: 600;
 }
 
 .book-description p {
-    font-size: 16px; /* Increased font size for the description text */
-    color: #666;
-    line-height: 1.6;
+    font-size: 16px;
+    color: #555;
+    line-height: 1.8;
 }
 
 /* Customer Feedback Section */
 .customer-feedback {
-    background: #ffffff; /* White background */
-    padding: 20px;
-    border-radius: 0; /* Sharp corners */
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    background: #ffffff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .customer-feedback h2 {
-    font-size: 24px; /* Larger heading */
-    color: #000000; /* Black */
-    margin-bottom: 15px; /* Reduced margin */
+    font-size: 26px;
+    color: #222;
+    margin-bottom: 20px;
     font-weight: 600;
 }
 
 .overall-rating {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
 .overall-rating h3 {
-    font-size: 14px; /* Smaller label */
-    color: #000000; /* Black */
-    margin-bottom: 10px;
+    font-size: 16px;
+    color: #222;
+    margin-bottom: 15px;
     font-weight: 500;
 }
 
 .stars {
     display: flex;
-    gap: 5px;
-    margin-bottom: 10px;
-}
-
-.overall-rating .stars {
-    display: flex;
-    gap: 5px;
-    cursor: pointer;
-    font-size: 24px; /* Larger stars */
+    gap: 8px;
+    margin-bottom: 15px;
 }
 
 .overall-rating .stars .star {
-    color: #cccccc; /* Gray for unfilled stars */
+    font-size: 28px;
+    color: #cccccc;
     transition: color 0.2s ease;
 }
 
@@ -420,81 +401,85 @@ body {
     color: #ffd700;
 }
 
-.overall-rating .stars .star:hover {
-    color: #ffd700; /* Gold on hover */
-}
-
 #review-form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 15px;
 }
 
 #review-text {
     width: 100%;
-    min-height: 100px;
-    padding: 10px;
-    margin-top: 10px;
-    border: none; /* No border by default */
-    background: #f5f5f5; /* Light gray background */
-    border-radius: 5px;
+    min-height: 120px;
+    padding: 15px;
+    margin-top: 15px;
+    border: 1px solid #ddd;
+    background: #f9f9f9;
+    border-radius: 8px;
     font-size: 14px;
-    color: #666666; /* Gray text */
-    resize: vertical; /* Allow vertical resizing */
+    color: #333;
+    resize: vertical;
+    transition: border-color 0.2s ease;
 }
 
 #review-text:focus {
     outline: none;
-    border: 1px solid #007bff; /* Blue border on focus */
+    border-color: #a52a2a;
+    box-shadow: 0 0 5px rgba(165, 42, 42, 0.3);
 }
 
 #submit-review {
-    background: #007bff; /* Solid blue */
-    color: #ffffff; /* White text */
+    background: #a52a2a;
+    color: #ffffff;
     border: none;
-    padding: 8px 16px;
-    border-radius: 5px;
+    padding: 10px 20px;
+    border-radius: 8px;
     cursor: pointer;
-    margin-top: 10px;
-    font-size: 14px;
-    align-self: flex-end; /* Align to the right */
-    transition: background 0.2s ease;
+    margin-top: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    align-self: flex-end;
+    transition: all 0.3s ease;
 }
 
 #submit-review:hover {
-    background: #0056b3; /* Darker blue on hover */
+    background: #8b1e1e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .reviews-list {
     display: flex;
     flex-direction: column;
-    gap: 20px; /* Increased gap between reviews */
+    gap: 25px;
 }
 
 .review {
     display: flex;
-    flex-direction: column; /* Stack elements vertically */
-    gap: 0px; /* Reduced gap between name, stars, and comment */
-    padding-bottom: 0; /* Remove padding */
-    border-bottom: none; /* Remove border */
+    flex-direction: column;
+    gap: 5px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.review:last-child {
+    border-bottom: none;
 }
 
 .review-header {
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Space between name and delete button */
+    justify-content: space-between;
 }
 
 .review-author {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
-    color: #007bff; /* Blue for the name */
-    text-decoration: none; /* Remove underline for link */
+    color: #a52a2a;
     transition: color 0.2s ease;
 }
 
 .review-author:hover {
-    color: #0056b3; /* Darker blue on hover */
+    color: #8b1e1e;
 }
 
 .review-author::before {
@@ -504,55 +489,47 @@ body {
     justify-content: center;
     width: 40px;
     height: 40px;
-    background: #cccccc; /* Gray background for avatar */
-    color: #ffffff; /* White text */
+    background: #a52a2a;
+    color: #ffffff;
     border-radius: 50%;
     font-size: 14px;
     font-weight: 600;
-    margin-right: 10px;
+    margin-right: 15px;
 }
 
 .review-stars {
     display: flex;
-    gap: 5px; /* Match the gap of the input stars */
-    margin-left: 50px; /* Add indent to push stars forward */
+    gap: 8px;
+    margin-left: 55px;
     color: #ffd700;
-}
-
-.review-stars .star {
-    font-size: 24px; /* Larger stars, matching the input stars */
-    color: #ffd700; /* Gold for filled stars */
-}
-
-.review-stars .star.empty {
-    color: #cccccc; /* Gray for unfilled stars */
 }
 
 .review-text {
     font-size: 14px;
-    color: #666666; /* Gray text */
-    line-height: 1.5;
-    text-transform: uppercase; /* Uppercase text for the comment */
-    margin-left: 50px; /* Add indent to push comment forward */
+    color: #555;
+    line-height: 1.6;
+    margin-left: 55px;
 }
 
 /* Delete button for logged-in users */
 .delete-review-btn {
     background-color: transparent;
-    color: #a52a2a; /* Brownish-red color */
-    border: 1px solid #a52a2a; /* Brown border */
+    color: #a52a2a;
+    border: 1px solid #a52a2a;
     font-size: 12px;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 5px;
-    padding: 4px 8px;
-    border-radius: 3px;
-    transition: all 0.2s ease;
+    padding: 6px 12px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
 }
 
 .delete-review-btn:hover {
-    background-color: rgba(165, 42, 42, 0.1); /* Light red background on hover */
+    background-color: #a52a2a;
+    color: #fff;
+    border-color: #a52a2a;
 }
 
 .delete-review-btn i {
@@ -562,30 +539,23 @@ body {
 /* Responsive Design */
 @media (max-width: 768px) {
     .content-wrapper {
-        padding: 10px;
+        padding: 15px;
     }
 
     .book-details {
         flex-direction: column;
         align-items: center;
-        gap: 20px;
+        gap: 25px;
+        padding: 20px;
     }
 
     .book-details-left {
-        flex-direction: column;
-        align-items: center;
         width: 100%;
         max-width: 400px;
     }
 
-    .image-container {
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-    }
-
     .book-image {
-        max-width: 300px; /* Slightly smaller for smaller screens */
+        max-width: 300px;
     }
 
     .book-details-right {
@@ -600,7 +570,7 @@ body {
 
 @media (max-width: 480px) {
     .content-wrapper {
-        padding: 5px;
+        padding: 10px;
     }
 
     .book-image {
@@ -609,5 +579,18 @@ body {
 
     .action-buttons {
         max-width: 250px;
+    }
+
+    .navbar {
+        padding: 0 10px;
+    }
+
+    .search-container {
+        max-width: 200px;
+    }
+
+    .nav-links span {
+        margin-left: 10px;
+        font-size: 14px;
     }
 }

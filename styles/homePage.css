@@ -1,5 +1,3 @@
-/* homePage.css */
-
 /* Reset default styles */
 * {
     margin: 0;
@@ -18,7 +16,7 @@ body {
 /* Page Content Wrapper */
 .content-wrapper {
     margin-top: 70px;
-    padding: 20px 35px;
+    padding: 20px 60px;
 }
 
 /* Page Info & Sorting */
@@ -42,41 +40,69 @@ body {
 .book-list {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
     padding: 20px 0;
     justify-items: center;
     background: linear-gradient(180deg, #f5f5f5, #e8e8e8);
+    position: relative; 
+}
+
+/* Loader Animation */
+.loader {
+    display: none; 
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 50px;
+    height: 50px;
+    border: 5px solid #a52a2a;
+    border-top: 5px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
 /* Book Card */
 .book-card {
     background-color: white;
     border-radius: 5px;
-    text-align: center;
     box-shadow: 0 4px 16px rgba(247, 152, 152, 0.1);
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-    width: 250px;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    width: 280px; /* Keep the width of the book card */
     display: flex;
     flex-direction: column;
     align-items: center;
     padding-bottom: 12px;
     overflow: hidden;
     border: 1px solid rgba(0, 0, 0, 0.05);
+    position: relative; /* For positioning the quick view button */
 }
 
 .book-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    background-color: #f2dede;
+}
+
+/* Lighten the book card when hovering over the Quick View button */
+.book-card:hover .quick-view:hover {
+    background-color: #f9f9f9; 
+    color: #A03037;
 }
 
 /* Book Image */
 .book-image {
-    width: 100%;
-    height: 150px;
-    object-fit: contain;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    padding: 8px;
+    width: 100%; 
+    max-width: 280px; /* Increase the max-width to make the image larger */
+    height: 200px; 
+    object-fit: contain; 
+    border-radius: 1px;
+    margin-bottom: 12px; 
+    padding: 4px;
     transition: transform 0.2s ease;
     background-color: #ddd;
 }
@@ -85,10 +111,33 @@ body {
     transform: scale(1.02);
 }
 
+/* Quick View Button */
+.quick-view {
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #A03037;
+    color: #F5F5F5;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s ease;
+}
+
+.book-card:hover .quick-view {
+    opacity: 1; /* Show on hover */
+}
+
 /* Book Content */
 .book-content {
     width: 100%;
-    text-align: center;
+    text-align: left; /* Align text to the left */
+    padding: 0 12px; /* Add padding for better spacing */
 }
 
 /* Book Title */
@@ -131,9 +180,13 @@ body {
 .price-info {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 8px;
     margin-top: 5px;
+}
+
+/* Add margin-bottom to price-info to create space */
+.price-info {
+    margin-bottom: 12px;
 }
 
 .price {
@@ -147,24 +200,6 @@ body {
     color: gray;
     font-size: 12px;
     opacity: 0.7;
-}
-
-/* View Details Button */
-.book-card button {
-    background: linear-gradient(90deg, #a52a2a, #8b1e1e);
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: 8px;
-    font-size: 12px;
-    font-weight: bold;
-    transition: background 0.2s ease;
-}
-
-.book-card button:hover {
-    background: linear-gradient(90deg, #8b1e1e, #6e1515);
 }
 
 /* Pagination */
@@ -202,73 +237,85 @@ body {
 .pagination .active {
     background: #333;
 }
-
-
+/* Ensure the parent container supports absolute positioning */
 .nav-links {
+    position: relative; /* Allows absolute positioning of dropdown relative to this */
     display: flex;
     align-items: center;
-    flex-shrink: 0;
-    gap: 20px; /* Replace margin-left with gap for consistent spacing */
+    gap: 20px; /* Optional: spacing between profile and cart links */
 }
 
-.nav-links .profile-link,
-.nav-links .cart-link {
-    display: flex;
-    align-items: center;
-    gap: 5px; /* Space between icon and text/count */
+/* Dropdown menu styling */
+.dropdown-menu {
+    position: absolute;
+    top: 100%; /* Places it directly below the profile link */
+    right: 0; /* Aligns to the right edge of .nav-links */
+    background: #fff; /* White background */
+    border: 1px solid #ccc; /* Light gray border */
+    border-radius: 4px; /* Slightly rounded corners */
+    padding: 10px 0; /* Vertical padding, no horizontal padding on the container */
+    min-width: 180px; /* Ensures it’s wide enough for content */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    z-index: 1000; /* Ensures it appears above other content */
+}
+
+/* Individual dropdown items */
+.dropdown-item {
+    padding: 8px 15px; /* Comfortable padding for clickable area */
+    font-size: 14px; /* Consistent text size */
+    color: #333; /* Dark gray text */
+    cursor: pointer;
+    transition: background 0.2s ease; /* Smooth hover effect */
+}
+
+.dropdown-item:hover {
+    background: #f2dede; /* Light gray on hover */
+}
+
+/* Header styling */
+.dropdown-header {
+    font-weight: 600; /* Slightly bolder than normal */
+    color: #222; /* Darker for emphasis */
+    padding-bottom: 5px; /* Space below header */
+    border-bottom: 1px solid #eee; /* Subtle separator */
+}
+
+/* Subheader styling */
+.dropdown-subheader {
+    font-style: italic;
+    color: #666; /* Lighter gray for contrast */
+    font-size: 13px; /* Slightly smaller */
+    padding-bottom: 5px; /* Space below subheader */
+}
+
+/* Button styling within dropdown */
+.dropdown-menu button {
+    width: 100%; /* Full width of the dropdown */
+    padding: 8px 15px; /* Matches .dropdown-item padding */
+    background: #f44336; /* Red background for logout/login */
     color: white;
-    text-decoration: none; /* For cart-link <a> */
-    font-size: 15px;
-    font-weight: 600;
-    transition: color 0.2s ease;
+    border: none;
+    border-radius: 4px; /* Rounded corners */
+    font-size: 14px;
+    text-align: left; /* Align text with other items */
+    cursor: pointer;
+    transition: background 0.2s ease; /* Smooth hover effect */
 }
 
-.nav-links .profile-link:hover,
-.nav-links .cart-link:hover {
-    color: #ffd700;
+.dropdown-menu button:hover {
+    background: #d32f2f; /* Darker red on hover */
 }
 
-.nav-links .nav-icon {
-    display: flex;
+/* Ensure cart count visibility works */
+.cart-count {
+    display: flex; /* Default state, overridden by JS if 0 */
     align-items: center;
     justify-content: center;
-}
-
-.nav-links .username {
-    white-space: nowrap;
-}
-
-.nav-links .cart-count {
-    position: relative;
-    background-color: white;
-    color: rgb(222, 13, 13);
-    border-radius: 50%;
-    padding: 2px 6px;
-    font-size: 12px;
-    font-weight: bold;
-    min-width: 20px;
-    height: 20px;
-    display: flex;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    bottom: 12px;
-    left: -10px;
-    font-size: 12px;
-    top: -8px;
-    width: 3px;
-    height: 19px;
-}
-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    background-color: #0d0c0c;
+    background: #f44336; /* Red badge */
     color: white;
-    text-align: center;
-    padding: 10px 0;
-    width: 100%;
-    clear: both;
-    box-sizing: border-box;
-    z-index: 100;
+    border-radius: 50%; /* Circular badge */
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
+    margin-left: 2px; /* Space from cart icon */
 }

@@ -1,4 +1,3 @@
-// order-summary.js
 const API_BASE_URL = 'http://127.0.0.1:3000/api/v1';
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -12,6 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadUserProfile(); // Updates header and form fields
     await loadCartItems();   // Loads and renders cart items in "My cart" section
     await loadOrderSummary(); // Loads order summary and address details
+    setupHeaderEventListeners(); // Add dropdown functionality
 });
 
 function getAuthHeaders() {
@@ -26,8 +26,13 @@ function getAuthHeaders() {
 function updateCartCount(count) {
     const cartCount = document.querySelector('#cart-link .cart-count');
     const sectionCount = document.getElementById('cart-count');
-    if (cartCount) cartCount.textContent = count;
-    if (sectionCount) sectionCount.textContent = count;
+    if (cartCount) {
+        cartCount.textContent = count;
+        cartCount.style.display = count > 0 ? "flex" : "none"; // Show/hide badge
+    }
+    if (sectionCount) {
+        sectionCount.textContent = count;
+    }
 }
 
 // Load user profile and update header/form
@@ -40,7 +45,7 @@ async function loadUserProfile() {
             if (response.status === 401) {
                 alert("Session expired. Please log in again.");
                 localStorage.removeItem('token');
-                window.location.href = '/pages/login.html';
+                window.location.href = '../pages/login.html';
                 return;
             }
             throw new Error(`Profile fetch failed with status: ${response.status}`);
@@ -49,7 +54,8 @@ async function loadUserProfile() {
         if (userData.success) {
             const profileElement = document.getElementById('profile-link');
             if (profileElement) {
-                profileElement.innerHTML = `<i class="fa-solid fa-user"></i> ${userData.name || 'User'}`;
+                profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
+                localStorage.setItem('username', userData.name || 'User'); // Store for dropdown
             }
             document.querySelector('input[readonly][value="Poonam Yadav"]').value = userData.name || 'Unknown';
             document.querySelector('input[readonly][value="81678954778"]').value = userData.mobile_number || 'N/A';
@@ -89,7 +95,6 @@ async function loadCartItems() {
         setupCartEventListeners();
         await loadCartSummary();
 
-        // Save cart items to localStorage for consistency
         localStorage.setItem('cartItems', JSON.stringify(cartItems));
     } catch (error) {
         console.error('Error fetching cart items:', error);
@@ -195,9 +200,8 @@ async function updateQuantity(button, change) {
         if (unitPriceElement) unitPriceElement.textContent = newUnitPrice;
 
         await loadCartSummary();
-        await loadOrderSummary(); // Refresh order summary after quantity change
+        await loadOrderSummary();
 
-        // Update cart items in localStorage
         const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
         const updatedCartItems = cartItems.map(item => {
             if (item.book_id === bookId) {
@@ -238,13 +242,12 @@ async function removeCartItem(button) {
         const remainingItems = document.querySelectorAll('.cart-item').length;
         updateCartCount(remainingItems);
         await loadCartSummary();
-        await loadOrderSummary(); // Refresh order summary after removal
+        await loadOrderSummary();
 
         if (remainingItems === 0) {
             document.getElementById('cart-container').innerHTML = '<p>Your cart is empty.</p>';
         }
 
-        // Update cart items in localStorage
         const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
         const updatedCartItems = cartItems.filter(item => item.book_id !== bookId);
         localStorage.setItem('cartItems', JSON.stringify(updatedCartItems));
@@ -291,7 +294,7 @@ async function loadOrderSummary() {
 
     if (!selectedAddress.id) {
         alert("No address selected. Please select an address.");
-        window.location.href = '../pages/customer-details.html';
+        window.location.href = '../pages.customer-details.html';
         return;
     }
 
@@ -306,7 +309,6 @@ async function loadOrderSummary() {
     const summarySection = document.getElementById('order-summary-section');
     if (!summarySection) return;
 
-    // Calculate total price
     const totalPrice = cartItems.reduce((sum, item) => {
         return sum + (item.discounted_price * (item.quantity || 1));
     }, 0).toFixed(2);
@@ -346,7 +348,7 @@ async function loadOrderSummary() {
             }
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new  new Error(errorData.message || "Failed to place order");
+                throw new Error(errorData.message || "Failed to place order");
             }
 
             const orderData = await response.json();
@@ -360,4 +362,126 @@ async function loadOrderSummary() {
             alert(`Failed to place order: ${error.message}`);
         }
     });
+}
+
+// Dropdown Functionality
+function setupHeaderEventListeners() {
+    let dropdownMenu = null;
+    let isDropdownOpen = false;
+    const profileLink = document.getElementById("profile-link");
+    const cartLink = document.getElementById("cart-link");
+
+    if (!profileLink) {
+        console.error("Profile link element (#profile-link) not found in DOM");
+        return;
+    }
+
+    profileLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (isDropdownOpen) {
+            closeDropdown();
+        } else {
+            openDropdown();
+        }
+    });
+
+    document.addEventListener("click", (event) => {
+        if (
+            isDropdownOpen &&
+            !profileLink.contains(event.target) &&
+            dropdownMenu &&
+            !dropdownMenu.contains(event.target)
+        ) {
+            closeDropdown();
+        }
+    });
+
+    if (cartLink) {
+        cartLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            window.location.href = '../pages/cart.html';
+        });
+    }
+
+    const searchInput = document.getElementById("search");
+    if (searchInput) {
+        searchInput.addEventListener("keypress", (event) => {
+            if (event.key === "Enter") {
+                const query = event.target.value.trim();
+                if (query) {
+                    window.location.href = `../pages/homePage.html?query=${encodeURIComponent(query)}`;
+                }
+            }
+        });
+    }
+
+    function openDropdown() {
+        if (dropdownMenu) dropdownMenu.remove();
+
+        dropdownMenu = document.createElement("div");
+        dropdownMenu.classList.add("dropdown-menu");
+        const username = localStorage.getItem("username") || "User";
+
+        dropdownMenu.innerHTML = `
+            <div class="dropdown-item dropdown-header">Hello ${username},</div>
+            <div class="dropdown-item" id="dropdown-profile">Profile</div>
+            <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+            <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
+            <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
+        `;
+
+        profileLink.parentElement.appendChild(dropdownMenu);
+
+        document.getElementById("dropdown-profile").addEventListener("click", () => {
+            window.location.href = "../pages/profile.html";
+            closeDropdown();
+        });
+        document.getElementById("dropdown-orders").addEventListener("click", () => {
+            window.location.href = "../pages/myOrders.html";
+            closeDropdown();
+        });
+        document.getElementById("dropdown-wishlist").addEventListener("click", () => {
+            window.location.href = "../pages/wishlist.html";
+            closeDropdown();
+        });
+        document.getElementById("dropdown-logout").addEventListener("click", () => {
+            handleSignOut();
+            closeDropdown();
+        });
+
+        isDropdownOpen = true;
+    }
+
+    function closeDropdown() {
+        if (dropdownMenu) {
+            dropdownMenu.remove();
+            dropdownMenu = null;
+        }
+        isDropdownOpen = false;
+    }
+}
+
+function handleSignOut() {
+    const provider = localStorage.getItem("socialProvider");
+
+    if (provider === "google" && typeof google !== "undefined" && google.accounts) {
+        google.accounts.id.disableAutoSelect();
+        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
+            console.log("Google session revoked");
+        });
+    }
+
+    if (provider === "facebook" && typeof FB !== "undefined") {
+        FB.getLoginStatus(function (response) {
+            if (response.status === "connected") {
+                FB.logout(function (response) {
+                    console.log("Facebook session revoked");
+                });
+            }
+        });
+    }
+
+    localStorage.clear();
+    alert("Logged out successfully.");
+    window.location.href = "../pages/login.html";
 }

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wishlist - Bookstore</title>
     <link rel="stylesheet" href="../styles/wishlist.css">
-    <link rel="stylesheet" href="../styles/navbar.css"> <!-- Add navbar.css for styling -->
+    <link rel="stylesheet" href="../styles/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
@@ -21,26 +21,17 @@
                 <div id="search-suggestions" class="suggestions-box"></div>
             </div>
             <div class="nav-links">
-                <div class="profile-link" id="profile-link">
-                    <span class="nav-icon">
-                        <i class="fa-solid fa-user"></i>
-                    </span>
-                    <span class="username" id="username">Profile</span>
-                </div>
-                <a href="../pages/cart.html" class="cart-link" id="cart-link">
-                    <span class="nav-icon">
-                        <i class="fa-solid fa-shopping-cart"></i>
-                    </span>
-                    Cart <span class="cart-count" id="cart-count">0</span>
-                </a>
+                <span id="profile-link"><i class="fa-solid fa-user"></i> <span class="profile-name">Profile</span></span>
+                <span id="cart-link"><i class="fa-solid fa-shopping-cart"></i> <span class="cart-count">0</span></span>
             </div>
         </div>
     </header>
 
     <main class="content-wrapper">
-        <h2 class="wishlist-header">
-            My Wishlist (<span id="wishlist-count" class="wishlist-count">0</span>)
-        </h2>
+        <div class="breadcrumb">
+            <a href="../pages/homepage.html" class="breadcrumb-link">Home</a>/ 
+            <span class="breadcrumb-current">My Wishlist (<span id="wishlist-count" class="wishlist-count">0</span>)</span>
+        </div>
         <section id="wishlist-container" class="wishlist-container">
             <!-- Wishlist books or empty message will be inserted here dynamically -->
         </section>

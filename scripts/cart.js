@@ -1,83 +1,72 @@
 // API Base URL
-const API_BASE_URL = 'http://127.0.0.1:3000/api/v1';
+const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
 
 document.addEventListener("DOMContentLoaded", async () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
 
     if (!token) {
         alert("Please log in to view your cart.");
-        window.location.href = '../pages/login.html';
+        window.location.href = "../pages/login.html";
         return;
     }
 
     await loadUserProfile();
     await loadCartItems();
     setupLocationButton();
+    setupHeaderEventListeners(); // Add this to initialize dropdown
 });
 
 // Get auth headers
 function getAuthHeaders() {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     return {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
     };
 }
 
 // Update cart count in UI
 function updateCartCount(count) {
-    const cartCount = document.querySelector('#cart-link .cart-count');
-    const sectionCount = document.getElementById('cart-count');
-    const placeOrderButton = document.querySelector('.place-order');
+    const cartCount = document.querySelector("#cart-link .cart-count");
+    const sectionCount = document.getElementById("cart-count");
+    const placeOrderButton = document.querySelector(".place-order");
 
     // Update the header cart count (in the navbar)
     if (cartCount) {
         cartCount.textContent = count;
-        if (count > 0) {
-            cartCount.style.display = "flex"; // Show the badge
-        } else {
-            cartCount.style.display = "none"; // Hide the badge
-        }
+        cartCount.style.display = count > 0 ? "flex" : "none"; // Show/hide badge
     }
 
     // Update the section cart count (in the cart page)
     if (sectionCount) {
         sectionCount.textContent = count;
-        if (count > 0) {
-            sectionCount.style.display = "inline"; // Show the count
-        } else {
-            sectionCount.style.display = "none"; // Hide the count
-        }
+        sectionCount.style.display = count > 0 ? "inline" : "none"; // Show/hide count
     }
 
     // Show or hide the Place Order button based on cart count
     if (placeOrderButton) {
-        if (count > 0) {
-            placeOrderButton.style.display = "block"; // Show the button
-        } else {
-            placeOrderButton.style.display = "none"; // Hide the button
-        }
+        placeOrderButton.style.display = count > 0 ? "block" : "none"; // Show/hide button
     }
 }
 
 // Fetch and display cart items
 async function loadCartItems() {
-    const cartContainer = document.getElementById('cart-container');
+    const cartContainer = document.getElementById("cart-container");
     if (!cartContainer) return;
 
-    cartContainer.innerHTML = '<p>Loading cart...</p>';
+    cartContainer.innerHTML = "<p>Loading cart...</p>";
 
     try {
         const response = await fetch(`${API_BASE_URL}/cart`, {
-            method: 'GET',
+            method: "GET",
             headers: getAuthHeaders()
         });
 
         if (!response.ok) {
             if (response.status === 401) {
                 alert("Session expired. Please log in again.");
-                localStorage.removeItem('token');
-                window.location.href = '../pages/login.html';
+                localStorage.removeItem("token");
+                window.location.href = "../pages/login.html";
                 return;
             }
             throw new Error(`Error ${response.status}: Failed to fetch cart items`);
@@ -86,18 +75,18 @@ async function loadCartItems() {
         const data = await response.json();
         const cartItems = data.cart || [];
         renderCartItems(cartItems);
-        updateCartCount(cartItems.length);
+        updateCartCount(cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0)); // Use total quantity
         setupCartEventListeners();
         await loadCartSummary();
     } catch (error) {
-        console.error('Error fetching cart items:', error);
+        console.error("Error fetching cart items:", error);
         cartContainer.innerHTML = `<p>Error loading cart.</p>`;
     }
 }
 
 // Render cart items
 function renderCartItems(cartItems) {
-    const cartContainer = document.getElementById('cart-container');
+    const cartContainer = document.getElementById("cart-container");
     if (!cartContainer) return;
 
     if (!cartItems || cartItems.length === 0) {
@@ -113,9 +102,9 @@ function renderCartItems(cartItems) {
         <div class="cart-item" data-id="${item.book_id}" data-discounted-price="${item.discounted_price}" data-unit-price="${item.unit_price}">
             <img src="${item.image_url}" alt="${item.book_name || 'Unknown'}">
             <div class="cart-item-details">
-                <h3>${item.book_name || 'Untitled'}</h3>
-                <p>by ${item.author_name || 'Unknown'}</p>
-                <p>Rs. <span class="discounted-price">${totalDiscountedPrice}</span> <del>Rs. <span class="unit-price">${totalUnitPrice || ''}</span></del></p>
+                <h3>${item.book_name || "Untitled"}</h3>
+                <p>by ${item.author_name || "Unknown"}</p>
+                <p>Rs. <span class="discounted-price">${totalDiscountedPrice}</span> <del>Rs. <span class="unit-price">${totalUnitPrice || ""}</span></del></p>
                 <div class="quantity">
                     <button class="decrease">-</button>
                     <span class="quantity-value">${item.quantity || 1}</span>
@@ -125,25 +114,25 @@ function renderCartItems(cartItems) {
             </div>
         </div>
     `;
-    }).join('');
+    }).join("");
 }
 
-// Setup event listeners
+// Setup event listeners for cart actions
 function setupCartEventListeners() {
-    document.querySelectorAll('.increase').forEach(button => {
-        button.addEventListener('click', function() {
+    document.querySelectorAll(".increase").forEach(button => {
+        button.addEventListener("click", function () {
             updateQuantity(this, 1);
         });
     });
 
-    document.querySelectorAll('.decrease').forEach(button => {
-        button.addEventListener('click', function() {
+    document.querySelectorAll(".decrease").forEach(button => {
+        button.addEventListener("click", function () {
             updateQuantity(this, -1);
         });
     });
 
-    document.querySelectorAll('.remove').forEach(button => {
-        button.addEventListener('click', function() {
+    document.querySelectorAll(".remove").forEach(button => {
+        button.addEventListener("click", function () {
             removeCartItem(this);
         });
     });
@@ -151,11 +140,11 @@ function setupCartEventListeners() {
 
 // Update quantity
 async function updateQuantity(button, change) {
-    const cartItem = button.closest('.cart-item');
+    const cartItem = button.closest(".cart-item");
     const bookId = cartItem.dataset.id;
-    const quantityElement = cartItem.querySelector('.quantity-value');
-    const discountedPriceElement = cartItem.querySelector('.discounted-price');
-    const unitPriceElement = cartItem.querySelector('.unit-price');
+    const quantityElement = cartItem.querySelector(".quantity-value");
+    const discountedPriceElement = cartItem.querySelector(".discounted-price");
+    const unitPriceElement = cartItem.querySelector(".unit-price");
     let currentQuantity = parseInt(quantityElement.textContent, 10);
 
     if (isNaN(currentQuantity)) {
@@ -176,7 +165,7 @@ async function updateQuantity(button, change) {
 
     try {
         const response = await fetch(`${API_BASE_URL}/cart/update_quantity`, {
-            method: 'PATCH',
+            method: "PATCH",
             headers: getAuthHeaders(),
             body: JSON.stringify({ book_id: bookId, quantity: newQuantity })
         });
@@ -193,6 +182,7 @@ async function updateQuantity(button, change) {
         if (unitPriceElement) unitPriceElement.textContent = newUnitPrice;
 
         await loadCartSummary();
+        await loadCartItems(); // Refresh cart to ensure consistency
     } catch (error) {
         console.error("Error updating quantity:", error);
         alert("Failed to update quantity.");
@@ -202,7 +192,7 @@ async function updateQuantity(button, change) {
 
 // Remove item
 async function removeCartItem(button) {
-    const cartItem = button.closest('.cart-item');
+    const cartItem = button.closest(".cart-item");
     const bookId = cartItem.dataset.id;
 
     if (!bookId) {
@@ -212,7 +202,7 @@ async function removeCartItem(button) {
 
     try {
         const response = await fetch(`${API_BASE_URL}/cart/toggle_remove`, {
-            method: 'PATCH',
+            method: "PATCH",
             headers: getAuthHeaders(),
             body: JSON.stringify({ book_id: bookId })
         });
@@ -222,12 +212,15 @@ async function removeCartItem(button) {
         }
 
         cartItem.remove();
-        const remainingItems = document.querySelectorAll('.cart-item').length;
-        updateCartCount(remainingItems);
+        const remainingItems = document.querySelectorAll(".cart-item");
+        const totalItems = Array.from(remainingItems).reduce((sum, item) => {
+            return sum + parseInt(item.querySelector(".quantity-value").textContent, 10);
+        }, 0);
+        updateCartCount(totalItems);
         await loadCartSummary();
-        
-        if (remainingItems === 0) {
-            document.getElementById('cart-container').innerHTML = '<p>Your cart is empty.</p>';
+
+        if (remainingItems.length === 0) {
+            document.getElementById("cart-container").innerHTML = "<p>Your cart is empty.</p>";
         }
     } catch (error) {
         console.error("Error removing item:", error);
@@ -247,7 +240,7 @@ async function loadCartSummary() {
         }
 
         const cartData = await response.json();
-        const totalPriceElement = document.getElementById('cart-total');
+        const totalPriceElement = document.getElementById("cart-total");
         if (totalPriceElement) {
             totalPriceElement.textContent = cartData.total_price || 0;
         }
@@ -259,6 +252,9 @@ async function loadCartSummary() {
 
 // User profile
 async function loadUserProfile() {
+    const profileNameElement = document.querySelector(".profile-name");
+    if (!profileNameElement) return;
+
     try {
         const response = await fetch(`${API_BASE_URL}/users/profile`, {
             headers: getAuthHeaders()
@@ -266,46 +262,172 @@ async function loadUserProfile() {
         if (!response.ok) {
             if (response.status === 401) {
                 alert("Session expired. Please log in again.");
-                localStorage.removeItem('token');
-                window.location.href = '/pages/login.html';
+                localStorage.removeItem("token");
+                window.location.href = "../pages/login.html";
                 return;
             }
             throw new Error(`Profile fetch failed with status: ${response.status}`);
         }
         const userData = await response.json();
         if (userData.success) {
-            const profileElement = document.getElementById('profile-link');
-            if (profileElement) {
-                profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
-            }
+            const username = userData.name || "User";
+            profileNameElement.textContent = username;
+            localStorage.setItem("username", username);
         }
     } catch (error) {
         console.error("Profile fetch error:", error.message);
+        profileNameElement.textContent = localStorage.getItem("username") || "User";
     }
+}
+
+// Setup header event listeners (dropdown functionality)
+function setupHeaderEventListeners() {
+    let dropdownMenu = null;
+    let isDropdownOpen = false;
+    const profileLink = document.getElementById("profile-link");
+    const cartLink = document.getElementById("cart-link");
+
+    if (profileLink) {
+        profileLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            console.log("Profile link clicked, toggling dropdown");
+            if (isDropdownOpen) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            if (
+                isDropdownOpen &&
+                !profileLink.contains(event.target) &&
+                dropdownMenu &&
+                !dropdownMenu.contains(event.target)
+            ) {
+                closeDropdown();
+            }
+        });
+    } else {
+        console.error("Profile link not found in DOM");
+    }
+
+    if (cartLink) {
+        cartLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            console.log("Cart link clicked, already on cart page");
+            // No redirect needed since we're already on the cart page
+        });
+    }
+
+    // Search functionality
+    document.getElementById("search")?.addEventListener("keypress", (event) => {
+        if (event.key === "Enter") {
+            const query = event.target.value.trim();
+            if (query) {
+                console.log("Search triggered with query:", query);
+                window.location.href = `../pages/homePage.html?query=${encodeURIComponent(query)}`;
+            }
+        }
+    });
+
+    function openDropdown() {
+        if (dropdownMenu) dropdownMenu.remove();
+
+        dropdownMenu = document.createElement("div");
+        dropdownMenu.classList.add("dropdown-menu");
+        const username = localStorage.getItem("username") || "User";
+
+        dropdownMenu.innerHTML = `
+            <div class="dropdown-item dropdown-header">Hello ${username},</div>
+            <div class="dropdown-item" id="dropdown-profile">Profile</div>
+            <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+            <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
+            <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
+        `;
+
+        profileLink.parentElement.appendChild(dropdownMenu);
+
+        document.getElementById("dropdown-profile").addEventListener("click", () => {
+            window.location.href = "../pages/profile.html";
+            closeDropdown();
+        });
+        document.getElementById("dropdown-orders").addEventListener("click", () => {
+            window.location.href = "../pages/myOrders.html";
+            closeDropdown();
+        });
+        document.getElementById("dropdown-wishlist").addEventListener("click", () => {
+            window.location.href = "../pages/wishlist.html";
+            closeDropdown();
+        });
+        document.getElementById("dropdown-logout").addEventListener("click", () => {
+            handleSignOut();
+            closeDropdown();
+        });
+
+        isDropdownOpen = true;
+    }
+
+    function closeDropdown() {
+        if (dropdownMenu) {
+            dropdownMenu.remove();
+            dropdownMenu = null;
+        }
+        isDropdownOpen = false;
+    }
+}
+
+// Sign Out (Logout) functionality
+function handleSignOut() {
+    console.log("Logging out...");
+    const provider = localStorage.getItem("socialProvider");
+
+    if (provider === "google" && typeof google !== "undefined" && google.accounts) {
+        console.log("Logging out from Google");
+        google.accounts.id.disableAutoSelect();
+        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
+            console.log("Google session revoked");
+        });
+    }
+
+    if (provider === "facebook") {
+        console.log("Logging out from Facebook");
+        FB.getLoginStatus(function (response) {
+            if (response.status === "connected") {
+                FB.logout(function (response) {
+                    console.log("Facebook session revoked");
+                });
+            }
+        });
+    }
+
+    localStorage.clear();
+    alert("Logged out successfully.");
+    window.location.href = "../pages/login.html";
 }
 
 // Save current location to backend
 async function saveCurrentLocationToBackend(locationData) {
     try {
         const addressData = {
-            street: locationData.street || 'Unknown Street',
-            city: locationData.city || 'Unknown City',
-            state: locationData.state || 'Unknown State',
-            zip_code: locationData.zip_code || '00000',
-            country: locationData.country || 'Unknown Country',
-            address_type: 'other',
+            street: locationData.street || "Unknown Street",
+            city: locationData.city || "Unknown City",
+            state: locationData.state || "Unknown State",
+            zip_code: locationData.zip_code || "00000",
+            country: locationData.country || "Unknown Country",
+            address_type: "other",
             is_default: false
         };
 
         const response = await fetch(`${API_BASE_URL}/addresses/create`, {
-            method: 'POST',
+            method: "POST",
             headers: getAuthHeaders(),
             body: JSON.stringify(addressData)
         });
 
         const result = await response.json();
         if (!response.ok) {
-            throw new Error(`Failed to save address: ${result.error || 'Unknown error'}`);
+            throw new Error(`Failed to save address: ${result.error || "Unknown error"}`);
         }
 
         return result.address;
@@ -321,8 +443,8 @@ async function fetchAddresses() {
         const response = await fetch(`${API_BASE_URL}/addresses`, { headers: getAuthHeaders() });
         if (response.status === 401) {
             alert("Session expired. Please log in again.");
-            localStorage.removeItem('token');
-            window.location.href = '/pages/login.html';
+            localStorage.removeItem("token");
+            window.location.href = "../pages/login.html";
             return null;
         }
         if (!response.ok) throw new Error(`Failed to fetch addresses: ${response.status}`);
@@ -338,24 +460,23 @@ async function fetchAddresses() {
 
 // Update address display
 function updateAddressFields(address) {
-    const addressContainer = document.getElementById('address-container');
+    const addressContainer = document.getElementById("address-container");
     if (addressContainer) {
         addressContainer.innerHTML = `<p>${address.street}, ${address.city}, ${address.state} ${address.zip_code}, ${address.country}</p>`;
     }
 }
 
-// Setup location button (direct geolocation)
-// Setup location button (direct geolocation)
+// Setup location button
 function setupLocationButton() {
-    const useLocationButton = document.querySelector('.use-location');
+    const useLocationButton = document.querySelector(".use-location");
     if (!useLocationButton) {
-        console.log('Use current location button not found');
+        console.log("Use current location button not found");
         return;
     }
 
-    useLocationButton.addEventListener('click', async function() {
+    useLocationButton.addEventListener("click", async function () {
         if (!("geolocation" in navigator)) {
-            alert('Geolocation is not supported by your browser.');
+            alert("Geolocation is not supported by your browser.");
             return;
         }
 
@@ -373,57 +494,57 @@ function setupLocationButton() {
             const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`;
             const response = await fetch(nominatimUrl, {
                 headers: {
-                    'User-Agent': 'BookstoreApp/1.0 (your-email@example.com)'
+                    "User-Agent": "BookstoreApp/1.0 (your-email@example.com)"
                 }
             });
 
             if (!response.ok) {
-                throw new Error('Failed to fetch address from Nominatim API');
+                throw new Error("Failed to fetch address from Nominatim API");
             }
 
             const data = await response.json();
             if (!data || !data.address) {
-                throw new Error('No address found for the given coordinates');
+                throw new Error("No address found for the given coordinates");
             }
 
             const address = {
-                street: data.address.road || data.address.street || '',
-                city: data.address.city || data.address.town || data.address.village || '',
-                state: data.address.state || data.address.region || '',
-                zip_code: data.address.postcode || '00000',
-                country: data.address.country || ''
+                street: data.address.road || data.address.street || "",
+                city: data.address.city || data.address.town || data.address.village || "",
+                state: data.address.state || data.address.region || "",
+                zip_code: data.address.postcode || "00000",
+                country: data.address.country || ""
             };
 
             const savedAddress = await saveCurrentLocationToBackend(address);
             updateAddressFields(savedAddress);
-            localStorage.setItem('selectedAddress', JSON.stringify(savedAddress));
-            localStorage.setItem('selectedAddressId', savedAddress.id);
+            localStorage.setItem("selectedAddress", JSON.stringify(savedAddress));
+            localStorage.setItem("selectedAddressId", savedAddress.id);
 
-            alert('Latest current location saved successfully!');
+            alert("Latest current location saved successfully!");
             useLocationButton.innerHTML = '<i class="fa-solid fa-location-dot"></i> Use Current Location';
             useLocationButton.disabled = false;
         } catch (error) {
-            let errorMessage = 'Unable to fetch or save location: ';
+            let errorMessage = "Unable to fetch or save location: ";
             if (error.code) {
                 switch (error.code) {
                     case error.PERMISSION_DENIED:
-                        errorMessage += 'User denied the request for Geolocation.';
+                        errorMessage += "User denied the request for Geolocation.";
                         break;
                     case error.POSITION_UNAVAILABLE:
-                        errorMessage += 'Location information is unavailable.';
+                        errorMessage += "Location information is unavailable.";
                         break;
                     case error.TIMEOUT:
-                        errorMessage += 'The request to get user location timed out.';
+                        errorMessage += "The request to get user location timed out.";
                         break;
                     default:
-                        errorMessage += 'An unknown error occurred.';
+                        errorMessage += "An unknown error occurred.";
                         break;
                 }
             } else {
                 errorMessage += error.message;
             }
             alert(errorMessage);
-            const addressContainer = document.getElementById('address-container');
+            const addressContainer = document.getElementById("address-container");
             if (addressContainer) {
                 addressContainer.innerHTML = `<p>No address selected.</p>`;
             }
@@ -433,25 +554,24 @@ function setupLocationButton() {
     });
 
     // Load any previously selected address
-    const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
+    const selectedAddress = JSON.parse(localStorage.getItem("selectedAddress") || "{}");
     if (selectedAddress.street) {
         updateAddressFields(selectedAddress);
     }
 }
 
 // Handle page navigation with address choice
-document.querySelector('.place-order')?.addEventListener('click', async () => {
-    const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
-    
+document.querySelector(".place-order")?.addEventListener("click", async () => {
+    const selectedAddress = JSON.parse(localStorage.getItem("selectedAddress") || "{}");
+
     if (selectedAddress.street) {
-        window.location.href = '/pages/customer-details.html';
+        window.location.href = "../pages/customer-details.html";
     } else {
         const userChoice = confirm("No address selected. Would you like to use your current location? Click 'OK' for yes, or 'Cancel' to set an address manually.");
-        
+
         if (userChoice) {
-            // Use Current Location
             if (!("geolocation" in navigator)) {
-                alert('Geolocation is not supported by your browser.');
+                alert("Geolocation is not supported by your browser.");
                 return;
             }
 
@@ -466,48 +586,48 @@ document.querySelector('.place-order')?.addEventListener('click', async () => {
                 const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`;
                 const response = await fetch(nominatimUrl, {
                     headers: {
-                        'User-Agent': 'BookstoreApp/1.0 (your-email@example.com)'
+                        "User-Agent": "BookstoreApp/1.0 (your-email@example.com)"
                     }
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch address from Nominatim API');
+                    throw new Error("Failed to fetch address from Nominatim API");
                 }
 
                 const data = await response.json();
                 if (!data || !data.address) {
-                    throw new Error('No address found for the given coordinates');
+                    throw new Error("No address found for the given coordinates");
                 }
 
                 const address = {
-                    street: data.address.road || data.address.street || '',
-                    city: data.address.city || data.address.town || data.address.village || '',
-                    state: data.address.state || data.address.region || '',
-                    zip_code: data.address.postcode || '00000',
-                    country: data.address.country || ''
+                    street: data.address.road || data.address.street || "",
+                    city: data.address.city || data.address.town || data.address.village || "",
+                    state: data.address.state || data.address.region || "",
+                    zip_code: data.address.postcode || "00000",
+                    country: data.address.country || ""
                 };
 
                 const savedAddress = await saveCurrentLocationToBackend(address);
                 updateAddressFields(savedAddress);
-                localStorage.setItem('selectedAddress', JSON.stringify(savedAddress));
-                localStorage.setItem('selectedAddressId', savedAddress.id);
+                localStorage.setItem("selectedAddress", JSON.stringify(savedAddress));
+                localStorage.setItem("selectedAddressId", savedAddress.id);
 
-                window.location.href = '/pages/customer-details.html';
+                window.location.href = "../pages/customer-details.html";
             } catch (error) {
-                let errorMessage = 'Unable to fetch or save location: ';
+                let errorMessage = "Unable to fetch or save location: ";
                 if (error.code) {
                     switch (error.code) {
                         case error.PERMISSION_DENIED:
-                            errorMessage += 'User denied the request for Geolocation.';
+                            errorMessage += "User denied the request for Geolocation.";
                             break;
                         case error.POSITION_UNAVAILABLE:
-                            errorMessage += 'Location information is unavailable.';
+                            errorMessage += "Location information is unavailable.";
                             break;
                         case error.TIMEOUT:
-                            errorMessage += 'The request to get user location timed out.';
+                            errorMessage += "The request to get user location timed out.";
                             break;
                         default:
-                            errorMessage += 'An unknown error occurred.';
+                            errorMessage += "An unknown error occurred.";
                             break;
                     }
                 } else {
@@ -516,8 +636,7 @@ document.querySelector('.place-order')?.addEventListener('click', async () => {
                 alert(errorMessage);
             }
         } else {
-            // Set Address Manually
-            window.location.href = '/pages/address-details.html';
+            window.location.href = "../pages/address-details.html";
         }
     }
 });

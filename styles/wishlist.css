@@ -175,7 +175,7 @@ body {
 }
 
 /* Header and Navbar */
-header {
+/* header {
     width: 100%;
     height: 60px;
 }
@@ -268,7 +268,7 @@ header {
 
 .nav-links span:hover:after {
     width: 100%;
-}
+} */
 
 /* Links styling */
 a {
@@ -328,4 +328,24 @@ footer {
         width: 95%;
         padding: 15px;
     }
+}
+/* Breadcrumb Styles */
+.breadcrumb {
+    margin: 20px 0;
+    font-size: 18px;
+    color: #333;
+}
+
+.breadcrumb-link {
+    
+    text-decoration: none;
+}
+
+.breadcrumb-link:hover {
+    color: #007bff;
+}
+
+.breadcrumb-current {
+    color: #333;
+    font-weight: bold;
 }
