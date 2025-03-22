@@ -1,7 +1,11 @@
+// API Base URL
+const API_BASE_URL = 'http://127.0.0.1:3000/api/v1';
+
 document.addEventListener("DOMContentLoaded", () => {
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
     const usernameElement = document.querySelector(".username");
+    const cartCountElement = document.getElementById("cart-count");
 
     // Check if user is logged in
     const token = localStorage.getItem("token");
@@ -21,8 +25,6 @@ document.addEventListener("DOMContentLoaded", () => {
         profileLink.addEventListener("click", (event) => {
             event.preventDefault();
             console.log("Profile link clicked, toggling dropdown");
-
-            // Toggle dropdown visibility
             if (isDropdownOpen) {
                 closeDropdown();
             } else {
@@ -58,16 +60,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Function to open the dropdown
     function openDropdown() {
-        // If dropdown already exists, remove it first
         if (dropdownMenu) {
             dropdownMenu.remove();
         }
 
-        // Create dropdown menu
         dropdownMenu = document.createElement("div");
         dropdownMenu.classList.add("profile-dropdown");
 
-        // Dropdown content based on login state
         if (isLoggedIn) {
             dropdownMenu.innerHTML = `
                 <div class="dropdown-item dropdown-header">Hello ${username},</div>
@@ -85,7 +84,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
                 <div class="dropdown-item">
                     <button id="dropdown-logout" class="logout-button">
-                        <span class="dropdown-icon"><i class="fas fa-sign-out-alt"></i></span>
                         Logout
                     </button>
                 </div>
@@ -108,10 +106,8 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
         }
 
-        // Append dropdown to the profile link's parent
         profileLink.parentElement.appendChild(dropdownMenu);
 
-        // Add event listeners to dropdown items
         if (isLoggedIn) {
             document.getElementById("dropdown-profile").addEventListener("click", () => {
                 console.log("Redirecting to profile page");
@@ -170,40 +166,63 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Search Functionality
-    const API_BASE_URL = "http://127.0.0.1:3000/api/v1/books";
+    const SEARCH_API_BASE_URL = "http://127.0.0.1:3000/api/v1/books";
 
     // Debounced Fetch Search Suggestions
     let debounceTimer;
     document.getElementById("search")?.addEventListener("input", (event) => {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-            fetchSearchSuggestions(event.target.value);
-        }, 300);
-    });
-
-    // Fetch Search Suggestions
-    async function fetchSearchSuggestions(query) {
-        const suggestionsBox = document.getElementById("search-suggestions");
-
-        if (!suggestionsBox || !query.trim()) {
+        const query = event.target.value.trim();
+        if (query.length < 2) { // Minimum query length to reduce unnecessary requests
+            const suggestionsBox = document.getElementById("search-suggestions");
             if (suggestionsBox) {
                 suggestionsBox.innerHTML = "";
                 suggestionsBox.classList.remove("visible");
             }
             return;
         }
+        debounceTimer = setTimeout(() => {
+            fetchSearchSuggestions(query);
+        }, 300);
+    });
+
+    // Fetch Search Suggestions with Error Handling
+    async function fetchSearchSuggestions(query) {
+        const suggestionsBox = document.getElementById("search-suggestions");
+        if (!suggestionsBox) return;
+
+        suggestionsBox.innerHTML = "<div class='suggestion-item'>Loading...</div>";
+        suggestionsBox.classList.add("visible");
 
         try {
             const encodedQuery = encodeURIComponent(query);
-            const response = await fetch(`${API_BASE_URL}/search_suggestions?query=${encodedQuery}`);
-            
-            if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch suggestions`);
-            
+            const response = await fetch(`${SEARCH_API_BASE_URL}/search_suggestions?query=${encodedQuery}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    throw new Error("No suggestions found");
+                } else if (response.status === 500) {
+                    throw new Error("Server error, please try again later");
+                }
+                throw new Error(`Error ${response.status}: Unable to fetch suggestions`);
+            }
+
             const data = await response.json();
             console.log("Search Suggestions:", data);
+            if (!data.suggestions || data.suggestions.length === 0) {
+                suggestionsBox.innerHTML = "<div class='suggestion-item'>No suggestions found</div>";
+                return;
+            }
             displaySuggestions(data.suggestions);
         } catch (error) {
-            console.error("Error fetching search suggestions:", error);
+            console.error("Error fetching search suggestions:", error.message);
+            suggestionsBox.innerHTML = `<div class='suggestion-item'>${error.message}</div>`;
         }
     }
 
@@ -213,7 +232,7 @@ document.addEventListener("DOMContentLoaded", () => {
         suggestionsBox.innerHTML = "";
 
         if (!suggestions || suggestions.length === 0) {
-            suggestionsBox.innerHTML = "<p>No suggestions found</p>";
+            suggestionsBox.innerHTML = "<div class='suggestion-item'>No suggestions found</div>";
             suggestionsBox.classList.remove("visible");
             return;
         }
@@ -239,9 +258,17 @@ document.addEventListener("DOMContentLoaded", () => {
     async function fetchBooksBySearch(query) {
         try {
             const encodedQuery = encodeURIComponent(query);
-            const response = await fetch(`${API_BASE_URL}?query=${encodedQuery}`);
-            
-            if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch books`);
+            const response = await fetch(`${SEARCH_API_BASE_URL}?query=${encodedQuery}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: Unable to fetch books`);
+            }
 
             const data = await response.json();
             console.log("Search Results:", data);
@@ -268,4 +295,57 @@ document.addEventListener("DOMContentLoaded", () => {
             fetchBooksBySearch(event.target.value);
         }
     });
+
+    // Cart Functionality
+
+    // Get auth headers
+    function getAuthHeaders() {
+        const token = localStorage.getItem('token');
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+    }
+
+    // Update cart count in UI
+    function updateCartCount(count) {
+        if (cartCountElement) {
+            cartCountElement.textContent = count;
+        }
+    }
+
+    // Fetch and update cart count
+    async function loadCartItems() {
+        if (!isLoggedIn) {
+            updateCartCount(0);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/cart`, {
+                method: 'GET',
+                headers: getAuthHeaders()
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    console.log("Session expired, redirecting to login.");
+                    localStorage.removeItem('token');
+                    window.location.href = 'login.html';
+                    return;
+                }
+                throw new Error(`Error ${response.status}: Failed to fetch cart items`);
+            }
+
+            const data = await response.json();
+            const cartItems = data.cart || [];
+            updateCartCount(cartItems.length);
+        } catch (error) {
+            console.error('Error fetching cart items:', error);
+            updateCartCount(0);
+        }
+    }
+
+    // Initialize cart count on page load
+    loadCartItems();
 });

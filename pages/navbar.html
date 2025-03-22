@@ -1,27 +1,45 @@
-<div class="navbar">
-    <div class="logo">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
-            <path d="M2 2v13h12V2H2zm11 12H3V3h10v11zM5 5h6v1H5V5zm0 2h6v1H5V7zm0 2h6v1H5V9z" />
-        </svg>
-        Bookstore
-    </div>
-    <div class="search-container">
-        <input type="text" id="search" class="search-bar" placeholder="Search books...">
-        <div id="search-suggestions" class="suggestions-box"></div>
-    </div>
-    <div class="nav-links">
-        <div class="profile-link" id="profile-link">
-            <span class="nav-icon">
-                <i class="fas fa-user"></i>
-            </span>
-            <span class="username">Profile</span>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookstore</title>
+    <link rel="stylesheet" href="../styles/navbar.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo">
+                <img src="../assets/education@2x.png" style="width: 50px; height: 30px;" alt="Bookstore Logo"> Bookstore
+            </div>
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="search" class="search-bar" placeholder="Search...">
+                </div>
+                <div id="search-suggestions" class="suggestions-box"></div>
+            </div>
+            <div class="nav-links">
+                <div class="profile-link" id="profile-link">
+                    <span class="nav-icon">
+                        <i class="fas fa-user"></i>
+                    </span>
+                    <span class="username" id="username">Profile</span>
+                </div>
+                <a href="../pages/cart.html" class="cart-link" id="cart-link">
+                    <span class="nav-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </span>
+                    Cart <span class="cart-count" id="cart-count">0</span>
+                </a>
+            </div>
         </div>
-        <a href="#" class="cart-link" id="cart-link">
-            <span class="nav-icon">
-                <i class="fas fa-shopping-cart"></i>
-            </span>
-            Cart
-            <span class="cart-count" id="cart-count">0</span>
-        </a>
-    </div>
-</div>
+    </header>
+    <!-- Page-specific content goes here -->
+    <script src="../scripts/navbar.js"></script>
+</body>
+
+</html>
