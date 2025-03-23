@@ -5,44 +5,6 @@
     font-family: Arial, sans-serif;
 }
 
-header {
-    background-color: #a32f2f;
-    padding: 15px 30px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    color: white;
-}
-
-.logo-container {
-    display: flex;
-    align-items: center;
-}
-
-.book-icon {
-    font-size: 24px;
-    margin-right: 10px;
-}
-
-.store-name {
-    font-size: 22px;
-    font-weight: bold;
-}
-
-.search-container {
-    flex-grow: 1;
-    margin: 0 20px;
-}
-
-.search-box {
-    width: 100%;
-    max-width: 600px;
-    padding: 8px 15px;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
 .user-controls {
     display: flex;
     align-items: center;
@@ -63,10 +25,12 @@ header {
     margin-bottom: 3px;
 }
 
+/* Main Content */
 main {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
+    padding-top: 80px; /* Add padding to push content below fixed navbar (height + some buffer) */
 }
 
 /* Personal Details Styles */
@@ -345,4 +309,28 @@ main {
 
 .address-form button:last-child:hover {
     background-color: #bbb;
+}
+
+/* Added Styles for Address Actions */
+.action-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.address-select-btn, .address-delete-btn {
+    color: #a32f2f;
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.address-select-btn:hover, .address-delete-btn:hover {
+    color: #6B1631;
+}
+
+.work-address p {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 10px;
 }

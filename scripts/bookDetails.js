@@ -1,20 +1,277 @@
-document.addEventListener("DOMContentLoaded", () => {
+// API Base URL
+const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
+
+document.addEventListener("DOMContentLoaded", async () => {
+    console.log("DOM fully loaded, initializing book details...");
+    console.log("Token on load:", localStorage.getItem("token"));
+
     const urlParams = new URLSearchParams(window.location.search);
     const bookId = urlParams.get("id");
 
     if (bookId) {
         fetchBookDetails(bookId);
         fetchReviews(bookId);
-        checkWishlistStatus(bookId); // Check if the book is already wishlisted
+        checkWishlistStatus(bookId);
     } else {
         console.error("No book ID found in URL");
         document.querySelector(".book-details").innerHTML = "<p>Book not found.</p>";
     }
+
+    // Initialize header functionalities
+    await loadUserProfile();
+    await updateCartCount();
+    setupHeaderEventListeners();
     setupEventListeners();
 });
 
-// API Base URL
-const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
+// Get auth headers
+function getAuthHeaders() {
+    const token = localStorage.getItem("token");
+    return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+    };
+}
+
+// Authentication Functions
+function isAuthenticated() {
+    const token = localStorage.getItem("token");
+    return token !== null;
+}
+
+function getAuthToken() {
+    return localStorage.getItem("token") || "";
+}
+
+// Fetch and display user profile
+async function loadUserProfile() {
+    const profileNameElement = document.querySelector(".profile-name");
+    const isLoggedIn = isAuthenticated();
+
+    if (!profileNameElement) return;
+
+    if (!isLoggedIn) {
+        profileNameElement.textContent = "Profile";
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/profile`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert("Session expired. Please log in again.");
+                localStorage.removeItem("token");
+                window.location.href = "../pages/login.html";
+                return;
+            }
+            throw new Error(`Profile fetch failed with status: ${response.status}`);
+        }
+        const userData = await response.json();
+        if (userData.success) {
+            const username = userData.name || "User";
+            profileNameElement.textContent = username;
+            localStorage.setItem("username", username);
+        }
+    } catch (error) {
+        console.error("Profile fetch error:", error.message);
+        profileNameElement.textContent = localStorage.getItem("username") || "User";
+    }
+}
+
+// Update cart count in UI
+async function updateCartCount() {
+    const cartCountElement = document.querySelector("#cart-link .cart-count");
+    if (!cartCountElement) return;
+
+    const isLoggedIn = isAuthenticated();
+    if (!isLoggedIn) {
+        console.log("User not authenticated, setting cart count to 0");
+        cartCountElement.textContent = "0";
+        cartCountElement.style.display = "none";
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/cart`, {
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert("Session expired. Please log in again.");
+                localStorage.removeItem("token");
+                window.location.href = "../pages/login.html";
+                return;
+            }
+            throw new Error("Failed to fetch cart");
+        }
+        const cart = await response.json();
+        console.log("Cart API response:", cart);
+        const totalItems = cart.cart?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
+        cartCountElement.textContent = totalItems;
+        cartCountElement.style.display = totalItems > 0 ? "flex" : "none";
+    } catch (error) {
+        console.error("Error fetching cart count:", error);
+        cartCountElement.textContent = "0";
+        cartCountElement.style.display = "none";
+    }
+}
+
+// Setup Header Event Listeners
+function setupHeaderEventListeners() {
+    let dropdownMenu = null;
+    let isDropdownOpen = false;
+    const profileLink = document.getElementById("profile-link");
+    const cartLink = document.getElementById("cart-link");
+    const isLoggedIn = isAuthenticated();
+
+    if (profileLink) {
+        profileLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            console.log("Profile link clicked, toggling dropdown");
+            if (isDropdownOpen) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            if (
+                isDropdownOpen &&
+                !profileLink.contains(event.target) &&
+                dropdownMenu &&
+                !dropdownMenu.contains(event.target)
+            ) {
+                closeDropdown();
+            }
+        });
+    } else {
+        console.error("Profile link not found in DOM");
+    }
+
+    if (cartLink) {
+        cartLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            if (!isLoggedIn) {
+                console.log("User not logged in, redirecting to please login page");
+                window.location.href = "../pages/pleaseLogin.html";
+            } else {
+                console.log("Redirecting to cart page");
+                window.location.href = "../pages/cart.html";
+            }
+        });
+    }
+
+    document.getElementById("search")?.addEventListener("keypress", (event) => {
+        if (event.key === "Enter") {
+            const query = event.target.value.trim();
+            if (query) {
+                console.log("Search triggered with query:", query);
+                window.location.href = `../pages/homePage.html?query=${encodeURIComponent(query)}`;
+            }
+        }
+    });
+
+    function openDropdown() {
+        if (dropdownMenu) dropdownMenu.remove();
+
+        dropdownMenu = document.createElement("div");
+        dropdownMenu.classList.add("dropdown-menu");
+        const username = localStorage.getItem("username") || "User";
+
+        dropdownMenu.innerHTML = isLoggedIn
+            ? `
+                <div class="dropdown-item dropdown-header">Hello ${username},</div>
+                <div class="dropdown-item" id="dropdown-profile">Profile</div>
+                <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+                <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
+                <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
+            `
+            : `
+                <div class="dropdown-item dropdown-header">Welcome</div>
+                <div class="dropdown-item dropdown-subheader">To access account</div>
+                <div class="dropdown-item"><button id="dropdown-login-signup">LOGIN/SIGNUP</button></div>
+                <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+                <div class="dropdown-item" id="dropdown-wishlist">Wishlist</div>
+            `;
+
+        profileLink.parentElement.appendChild(dropdownMenu);
+
+        if (isLoggedIn) {
+            document.getElementById("dropdown-profile").addEventListener("click", () => {
+                window.location.href = "../pages/profile.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-orders").addEventListener("click", () => {
+                window.location.href = "../pages/myOrders.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-wishlist").addEventListener("click", () => {
+                window.location.href = "../pages/wishlist.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-logout").addEventListener("click", () => {
+                handleSignOut();
+                closeDropdown();
+            });
+        } else {
+            document.getElementById("dropdown-login-signup").addEventListener("click", () => {
+                window.location.href = "../pages/login.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-orders").addEventListener("click", () => {
+                window.location.href = "../pages/pleaseLogin.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-wishlist").addEventListener("click", () => {
+                window.location.href = "../pages/pleaseLogin.html";
+                closeDropdown();
+            });
+        }
+
+        isDropdownOpen = true;
+    }
+
+    function closeDropdown() {
+        if (dropdownMenu) {
+            dropdownMenu.remove();
+            dropdownMenu = null;
+        }
+        isDropdownOpen = false;
+    }
+}
+
+// Sign Out (Logout) functionality
+function handleSignOut() {
+    console.log("Logging out...");
+    const provider = localStorage.getItem("socialProvider");
+
+    if (provider === "google" && typeof google !== "undefined" && google.accounts) {
+        console.log("Logging out from Google");
+        google.accounts.id.disableAutoSelect();
+        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
+            console.log("Google session revoked");
+        });
+    }
+
+    if (provider === "facebook") {
+        console.log("Logging out from Facebook");
+        FB.getLoginStatus(function (response) {
+            if (response.status === "connected") {
+                FB.logout(function (response) {
+                    console.log("Facebook session revoked");
+                });
+            }
+        });
+    }
+
+    localStorage.clear();
+    alert("Logged out successfully.");
+    window.location.href = "../pages/login.html";
+}
 
 // Fetch Book Details
 async function fetchBookDetails(bookId) {
@@ -67,7 +324,6 @@ function displayReviews(reviews) {
 
     const currentUser = getCurrentUserFromToken();
     const currentUserId = currentUser?.user_id;
-    console.log("Current user ID from token:", currentUserId);
 
     reviews.forEach(review => {
         const reviewDiv = document.createElement("div");
@@ -105,19 +361,13 @@ function displayReviews(reviews) {
 
 // Delete Review
 async function deleteReview(reviewId) {
-    if (!confirm("Are you sure you want to delete this review?")) {
-        return;
-    }
+    if (!confirm("Are you sure you want to delete this review?")) return;
 
     const bookId = new URLSearchParams(window.location.search).get("id");
-    const token = getAuthToken();
-
     try {
         const response = await fetch(`${API_BASE_URL}/books/${bookId}/reviews/${reviewId}`, {
             method: "DELETE",
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
+            headers: getAuthHeaders()
         });
 
         if (!response.ok) {
@@ -126,8 +376,8 @@ async function deleteReview(reviewId) {
         }
 
         alert("Review deleted successfully!");
-        fetchReviews(bookId); // Refresh reviews
-        fetchBookDetails(bookId); // Refresh book rating
+        fetchReviews(bookId);
+        fetchBookDetails(bookId);
     } catch (error) {
         console.error("Error deleting review:", error);
         alert(`Failed to delete review: ${error.message}`);
@@ -136,154 +386,134 @@ async function deleteReview(reviewId) {
 
 // Check Wishlist Status on Page Load
 async function checkWishlistStatus(bookId) {
-    if (!isAuthenticated()) {
-        console.log("User not authenticated, skipping wishlist status check.");
-        return; // Skip if user is not logged in
-    }
-
-    const token = getAuthToken();
-    if (!token) {
-        console.log("No token available for wishlist status check.");
-        return;
-    }
+    if (!isAuthenticated()) return;
 
     try {
         const response = await fetch(`${API_BASE_URL}/wishlists/fetch`, {
-            method: "GET",
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
+            headers: getAuthHeaders()
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch wishlist: ${response.status} ${response.statusText} - ${errorText}`);
-        }
-
+        if (!response.ok) throw new Error(`Failed to fetch wishlist: ${response.status}`);
         const wishlist = await response.json();
-        console.log("Fetched wishlist:", wishlist);
-
-        // Check if the current bookId is in the wishlist
         const isWishlisted = wishlist.some(item => item.book_id === parseInt(bookId));
         const wishlistButton = document.getElementById("add-to-wishlist");
-
-        if (isWishlisted) {
-            wishlistButton.classList.add("wishlisted");
-            console.log(`Book ${bookId} is wishlisted.`);
-        } else {
-            wishlistButton.classList.remove("wishlisted");
-            console.log(`Book ${bookId} is not wishlisted.`);
-        }
+        wishlistButton.classList.toggle("wishlisted", isWishlisted);
     } catch (error) {
-        console.error("Error checking wishlist status:", error.message);
-        // Fallback: Ensure the button is in a default state (not wishlisted) if the API call fails
-        const wishlistButton = document.getElementById("add-to-wishlist");
-        wishlistButton.classList.remove("wishlisted");
+        console.error("Error checking wishlist status:", error);
     }
 }
 
 // Get Current User from Token
 function getCurrentUserFromToken() {
     const token = localStorage.getItem("token");
-    if (!token) {
-        console.log("No token found in localStorage");
-        return null;
-    }
+    if (!token) return null;
 
     try {
         const payload = token.split(".")[1];
         const decodedPayload = atob(payload);
-        const userData = JSON.parse(decodedPayload);
-        console.log("Decoded user data from token:", userData);
-        return userData; // Should include { id, full_name }
+        return JSON.parse(decodedPayload);
     } catch (error) {
         console.error("Error decoding token:", error);
         return null;
     }
 }
 
-// Setup Event Listeners
-function setupEventListeners() {
-    const searchBar = document.getElementById("search");
-    searchBar?.addEventListener("input", () => fetchSearchSuggestions(searchBar.value));
-    searchBar?.addEventListener("keypress", (event) => {
-        if (event.key === "Enter") fetchBooksBySearch(searchBar.value);
-    });
+// Check if item exists in cart and get its quantity
+async function getCartItemQuantity(bookId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/cart`, {
+            headers: getAuthHeaders()
+        });
+        if (!response.ok) throw new Error("Failed to fetch cart");
+        const cart = await response.json();
+        const cartItem = cart.cart?.find(item => item.book_id === parseInt(bookId));
+        return cartItem ? cartItem.quantity : 0;
+    } catch (error) {
+        console.error("Error checking cart item:", error);
+        return 0;
+    }
+}
 
+// Update cart item quantity
+async function updateCartItemQuantity(bookId, newQuantity) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/cart/update_quantity`, {
+            method: "PATCH",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ book_id: bookId, quantity: newQuantity })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(`Failed to update quantity: ${result.error || "Unknown error"}`);
+        return result;
+    } catch (error) {
+        console.error("Error updating cart item quantity:", error);
+        throw error;
+    }
+}
+
+// Setup Event Listeners for Book Details
+function setupEventListeners() {
     document.getElementById("add-to-bag")?.addEventListener("click", async () => {
         if (!isAuthenticated()) {
             alert("Please log in to add to bag.");
-            window.location.href = "pleaseLogin.html";
+            window.location.href = "../pages/pleaseLogin.html";
             return;
         }
 
         const bookId = new URLSearchParams(window.location.search).get("id");
-        const token = getAuthToken();
-
         try {
-            const response = await fetch(`${API_BASE_URL}/cart/add`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ book_id: bookId, quantity: 1 })
-            });
-
-            const result = await response.json();
-            if (!response.ok) throw new Error(`Failed to add to bag: ${result.error || "Unknown error"}`);
-            alert("Book added to bag successfully!");
+            // Check current quantity in cart
+            const currentQuantity = await getCartItemQuantity(bookId);
+            
+            if (currentQuantity > 0) {
+                // Item exists, update quantity
+                const newQuantity = currentQuantity + 1;
+                await updateCartItemQuantity(bookId, newQuantity);
+                alert(`Quantity updated to ${newQuantity}!`);
+            } else {
+                // Item doesn't exist, add it with quantity 1
+                const response = await fetch(`${API_BASE_URL}/cart/add`, {
+                    method: "POST",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ book_id: bookId, quantity: 1 })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(`Failed to add to bag: ${result.error || "Unknown error"}`);
+                alert("Book added to bag successfully!");
+            }
+            
+            updateCartCount();
         } catch (error) {
-            console.error("Error adding to bag:", error);
+            console.error("Error adding/updating cart item:", error);
             alert(`Failed to add to bag: ${error.message}`);
         }
     });
 
     document.getElementById("add-to-wishlist")?.addEventListener("click", async () => {
         if (!isAuthenticated()) {
-            window.location.href = "pleaseLogin.html";
+            window.location.href = "../pages/pleaseLogin.html";
             return;
         }
 
         const bookId = new URLSearchParams(window.location.search).get("id");
-        const token = getAuthToken();
         const wishlistButton = document.getElementById("add-to-wishlist");
-        const wasWishlisted = wishlistButton.classList.contains("wishlisted"); // Store the current state for fallback
+        const wasWishlisted = wishlistButton.classList.contains("wishlisted");
 
         try {
             const response = await fetch(`${API_BASE_URL}/wishlists/toggle/${bookId}`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                }
+                headers: getAuthHeaders()
             });
 
             const result = await response.json();
-            console.log("Toggle wishlist response:", result); // Log the response to debug
-
             if (!response.ok) throw new Error(`Failed to toggle wishlist: ${result.error || "Unknown error"}`);
 
-            // Check if the book was added or removed
-            // Adjust this condition based on the actual response structure
             const isWishlisted = result.isWishlisted !== undefined ? result.isWishlisted : !wasWishlisted;
-
-            if (isWishlisted) {
-                wishlistButton.classList.add("wishlisted");
-                alert("Book added to wishlist!");
-            } else {
-                wishlistButton.classList.remove("wishlisted");
-                alert("Book removed from wishlist!");
-            }
+            wishlistButton.classList.toggle("wishlisted", isWishlisted);
+            alert(isWishlisted ? "Book added to wishlist!" : "Book removed from wishlist!");
         } catch (error) {
             console.error("Error toggling wishlist:", error);
             alert(`Failed to update wishlist: ${error.message}`);
-            // Revert the UI state if the API call fails
-            if (wasWishlisted) {
-                wishlistButton.classList.add("wishlisted");
-            } else {
-                wishlistButton.classList.remove("wishlisted");
-            }
         }
     });
 
@@ -293,7 +523,6 @@ function setupEventListeners() {
         star.addEventListener("click", () => {
             selectedRating = parseInt(star.getAttribute("data-value"));
             updateStarDisplay(selectedRating);
-            console.log("Selected rating:", selectedRating);
         });
 
         star.addEventListener("mouseover", () => {
@@ -311,6 +540,7 @@ function setupEventListeners() {
 
         if (!isAuthenticated()) {
             alert("Please log in to submit a review.");
+            window.location.href = "../pages/pleaseLogin.html";
             return;
         }
 
@@ -326,10 +556,7 @@ function setupEventListeners() {
         try {
             const response = await fetch(`${API_BASE_URL}/books/${bookId}/reviews`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${getAuthToken()}`
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ rating, comment: reviewText })
             });
 
@@ -342,7 +569,6 @@ function setupEventListeners() {
             fetchReviews(bookId);
             fetchBookDetails(bookId);
             localStorage.setItem("reviewSubmitted", "true");
-            console.log("Review submitted, flag set in localStorage");
         } catch (error) {
             console.error("Error submitting review:", error);
             alert(`Failed to submit review: ${error.message}`);
@@ -357,75 +583,4 @@ function updateStarDisplay(rating) {
         const starValue = parseInt(star.getAttribute("data-value"));
         star.classList.toggle("active", starValue <= rating);
     });
-}
-
-// Fetch Search Suggestions
-async function fetchSearchSuggestions(query) {
-    const suggestionsBox = document.getElementById("search-suggestions");
-    if (!query.trim()) {
-        suggestionsBox.innerHTML = "";
-        return;
-    }
-
-    try {
-        const encodedQuery = encodeURIComponent(query);
-        const response = await fetch(`${API_BASE_URL}/books/search_suggestions?query=${encodedQuery}`);
-        if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch suggestions`);
-        const data = await response.json();
-        console.log("Search Suggestions:", data);
-        displaySuggestions(data.suggestions);
-    } catch (error) {
-        console.error("Error fetching search suggestions:", error);
-    }
-}
-
-// Display Search Suggestions
-function displaySuggestions(suggestions) {
-    const suggestionsBox = document.getElementById("search-suggestions");
-    suggestionsBox.innerHTML = "";
-
-    if (!suggestions || suggestions.length === 0) {
-        suggestionsBox.innerHTML = "<p>No suggestions found</p>";
-        return;
-    }
-
-    suggestions.forEach(suggestion => {
-        const item = document.createElement("div");
-        item.textContent = `${suggestion.book_name} by ${suggestion.author_name}`;
-        item.classList.add("suggestion-item");
-        item.style.cursor = "pointer";
-        item.addEventListener("click", () => {
-            console.log("Suggestion clicked:", suggestion);
-            if (suggestion.id) window.location.href = `bookDetails.html?id=${suggestion.id}`;
-        });
-        suggestionsBox.appendChild(item);
-    });
-}
-
-// Fetch Books by Search Query
-async function fetchBooksBySearch(query) {
-    const encodedQuery = encodeURIComponent(query);
-    try {
-        const response = await fetch(`${API_BASE_URL}/books/search?query=${encodedQuery}`);
-        if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch books`);
-        const data = await response.json();
-        if (data.books && data.books.length > 0) {
-            window.location.href = `bookDetails.html?id=${data.books[0].id}`;
-        }
-    } catch (error) {
-        console.error("Error fetching search results:", error);
-    }
-}
-
-// Authentication Functions
-function isAuthenticated() {
-    const token = localStorage.getItem("token");
-    console.log("Checking auth, token:", token);
-    return token !== null;
-}
-
-function getAuthToken() {
-    const token = localStorage.getItem("token") || "";
-    console.log("Retrieved token:", token);
-    return token;
 }

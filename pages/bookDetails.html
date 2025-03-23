@@ -6,13 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bookstore - Book Details</title>
     <link rel="stylesheet" href="../styles/bookDetails.css">
-    <link rel="stylesheet" href="../styles/navbar.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../styles/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
 <body>
-    <!-- Navbar Placeholder -->
-    <div id="navbar-placeholder"></div>
+    <header>
+        <div class="navbar">
+            <div class="logo">
+                <img src="../assets/education@2x.png" style="width: 50px; height: 30px;"> Bookstore
+            </div>
+            <div class="search-container">
+                <input type="text" id="search" class="search-bar" placeholder="Search books...">
+            </div>
+            <div class="nav-links">
+                <span id="profile-link"><i class="fa-solid fa-user"></i> <span class="profile-name">Profile</span></span>
+                <span id="cart-link"><i class="fa-solid fa-shopping-cart"></i> <span class="cart-count">0</span></span>
+            </div>
+        </div>
+    </header>
 
     <main class="content-wrapper">
         <div class="breadcrumb">
@@ -76,7 +88,6 @@
     </main>
 
     <script src="../scripts/bookDetails.js"></script>
-    <script src="../scripts/navbar.js"></script>
 </body>
 
 </html>
