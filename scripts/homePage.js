@@ -248,7 +248,7 @@ function displayBooks(books) {
                 <h3>${book.book_name}</h3>
                 <p>${book.author_name}</p>
                 <div>
-                    <span class="rating">${book.rating || "0.0"}</span>
+                    <span class="rating">★ ${book.rating || "0.0"}</span>
                     <span class="rating-count">(${book.rating_count || "0"})</span>
                 </div>
                 <div class="price-info">

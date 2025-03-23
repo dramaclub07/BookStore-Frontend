@@ -16,7 +16,7 @@ body {
 /* Page Content Wrapper */
 .content-wrapper {
     margin-top: 70px;
-    padding: 20px 35px;
+    padding: 20px 60px;
 }
 
 /* Page Info & Sorting */
@@ -40,16 +40,16 @@ body {
 .book-list {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-    padding: 20px 0;
-    justify-items: center;
+    gap: 10px 0; /* 10px vertical gap between rows, 0px horizontal gap between columns */
+    padding: 5px 0;
+    justify-items: stretch; /* Stretch book cards to fill the grid cell width */
     background: linear-gradient(180deg, #f5f5f5, #e8e8e8);
-    position: relative; 
+    position: relative;
 }
 
 /* Loader Animation */
 .loader {
-    display: none; 
+    display: none;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -73,14 +73,34 @@ body {
     border-radius: 5px;
     box-shadow: 0 4px 16px rgba(247, 152, 152, 0.1);
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
-    width: 280px; /* Keep the width of the book card */
+    width: 100%; /* Make the book card fill the grid cell width */
+    max-width: 280px; /* Keep a max-width to prevent it from growing too large */
     display: flex;
     flex-direction: column;
     align-items: center;
     padding-bottom: 12px;
     overflow: hidden;
     border: 1px solid rgba(0, 0, 0, 0.05);
-    position: relative; /* For positioning the quick view button */
+    position: relative;
+    margin: 0; /* Ensure no margins are adding extra space */
+}
+
+/* Ensure no extra margins or padding on book-card children */
+.book-card * {
+    margin: 0; /* Reset margins on child elements */
+}
+
+/* Book Image */
+.book-image {
+    width: 100%;
+    max-width: 280px;
+    height: 270px;
+    object-fit: contain;
+    border-radius: 1px;
+    margin-bottom: 12px;
+    padding: 2px; /* Reduced padding (from 4px) */
+    transition: transform 0.2s ease;
+    background-color: #ddd;
 }
 
 .book-card:hover {
@@ -91,21 +111,8 @@ body {
 
 /* Lighten the book card when hovering over the Quick View button */
 .book-card:hover .quick-view:hover {
-    background-color: #f9f9f9; 
+    background-color: #f9f9f9;
     color: #A03037;
-}
-
-/* Book Image */
-.book-image {
-    width: 100%; 
-    max-width: 280px; /* Increase the max-width to make the image larger */
-    height: 200px; 
-    object-fit: contain; 
-    border-radius: 1px;
-    margin-bottom: 12px; 
-    padding: 4px;
-    transition: transform 0.2s ease;
-    background-color: #ddd;
 }
 
 .book-card:hover .book-image {
@@ -126,19 +133,19 @@ body {
     cursor: pointer;
     font-size: 12px;
     font-weight: bold;
-    opacity: 0; /* Hidden by default */
+    opacity: 0;
     transition: opacity 0.2s ease;
 }
 
 .book-card:hover .quick-view {
-    opacity: 1; /* Show on hover */
+    opacity: 1;
 }
 
 /* Book Content */
 .book-content {
     width: 100%;
-    text-align: left; /* Align text to the left */
-    padding: 0 12px; /* Add padding for better spacing */
+    text-align: left;
+    padding: 0 12px;
 }
 
 /* Book Title */
@@ -237,4 +244,27 @@ body {
 
 .pagination .active {
     background: #333;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .content-wrapper {
+        padding: 15px;
+    }
+
+    .book-list {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px 0; /* Slightly smaller vertical gap on smaller screens */
+    }
+}
+
+@media (max-width: 480px) {
+    .content-wrapper {
+        padding: 10px;
+    }
+
+    .book-list {
+        grid-template-columns: repeat(1, 1fr);
+        gap: 6px 0; /* Even smaller vertical gap on very small screens */
+    }
 }
