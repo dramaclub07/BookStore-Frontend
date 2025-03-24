@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Orders - Bookstore</title>
     <link rel="stylesheet" href="../styles/myOrders.css">
+    <link rel="stylesheet" href="../styles/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -13,21 +14,29 @@
             <div class="logo">
                 <img src="../assets/education@2x.png" style="width: 50px; height: 30px;"> Bookstore
             </div>
+            <div class="search-container">
+                <input type="text" id="search" class="search-bar" placeholder="Search books...">
+                <div id="search-suggestions" class="suggestions-box"></div>
+            </div>
             <div class="nav-links">
-                <a href="/pages/homePage.html">Home</a>
-                <a href="/pages/wishlist.html">Wishlist</a>
-                <a href="/pages/cart.html">Cart</a>
-                <span id="profile-link"><i class="fa-solid fa-user"></i> Profile</span>
+                <span id="profile-link"><i class="fa-solid fa-user"></i> <span class="profile-name">Profile</span></span>
+                <span id="cart-link"><i class="fa-solid fa-shopping-cart"></i> <span class="cart-count">0</span></span>
             </div>
         </div>
     </header>
 
     <main class="content-wrapper">
-        <h2>My Orders</h2>
+        <div class="breadcrumb">
+            <a href="../pages/homepage.html" class="breadcrumb-link">Home</a> / 
+            <span class="breadcrumb-current">My Orders</span>
+        </div>
         <section id="orders-container" class="orders-container">
             <!-- Orders will be dynamically inserted here -->
         </section>
     </main>
+    <footer>
+        <p>Copyright © 2020, BookstorePrivate Limited. All Rights Reserved</p>
+    </footer>
 
     <script src="../scripts/myOrders.js"></script>
 </body>

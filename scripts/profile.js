@@ -1,18 +1,43 @@
+const BASE_URL = 'http://127.0.0.1:3000';
+
 let isEditingPersonalDetails = false;
 let isEditingAddress = {};
 let isAddressFormVisible = false;
 
-// Base URL for the backend (can be made configurable)
-const BASE_URL = 'http://127.0.0.1:3000';
+document.addEventListener("DOMContentLoaded", async function () {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.log("No token found, redirecting to login.");
+        window.location.href = '../pages/login.html';
+        return;
+    }
 
-// Function to log out and redirect to login page
+    console.log("Token found:", token);
+
+    try {
+        await loadUserProfile();
+        await fetchAddresses();
+        await loadCartSummary();
+        setupHeaderEventListeners();
+    } catch (error) {
+        console.error("Initialization error:", error);
+    }
+});
+
+function getAuthHeaders() {
+    const token = localStorage.getItem('token');
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    };
+}
+
 function logoutAndRedirect() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = 'login.html';
+    window.location.href = '../pages/login.html';
 }
 
-// Toggle edit mode for personal details or addresses
 function toggleEdit(sectionId) {
     if (sectionId === 'personal-details') {
         isEditingPersonalDetails = !isEditingPersonalDetails;
@@ -23,107 +48,67 @@ function toggleEdit(sectionId) {
     } else {
         const addressId = sectionId.split('-')[1];
         isEditingAddress[addressId] = !isEditingAddress[addressId];
-        const addressItem = document.getElementById(`address-${addressId}`);
-        const streetTextarea = document.getElementById(`street-${addressId}`);
-        const cityInput = document.getElementById(`city-${addressId}`);
-        const stateInput = document.getElementById(`state-${addressId}`);
-        const zipCodeInput = document.getElementById(`zip-code-${addressId}`);
-        const countryInput = document.getElementById(`country-${addressId}`);
-        const saveButton = document.getElementById(`save-address-${addressId}`);
-        const typeRadios = document.getElementsByName(`address-type-${addressId}`);
-
-        if (isEditingAddress[addressId]) {
-            const street = addressItem.getAttribute('data-street') || '';
-            streetTextarea.disabled = false;
-            cityInput.disabled = false;
-            stateInput.disabled = false;
-            zipCodeInput.disabled = false;
-            countryInput.disabled = false;
-            typeRadios.forEach(radio => radio.disabled = false);
-        } else {
-            const street = streetTextarea.value;
-            const city = cityInput.value;
-            const state = stateInput.value;
-            const zipCode = zipCodeInput.value;
-            const country = countryInput.value;
-            const selectedType = Array.from(typeRadios).find(radio => radio.checked).value;
-            addressItem.setAttribute('data-street', street);
-            addressItem.setAttribute('data-city', city);
-            addressItem.setAttribute('data-state', state);
-            addressItem.setAttribute('data-zip-code', zipCode);
-            addressItem.setAttribute('data-country', country);
-            addressItem.setAttribute('data-type', selectedType);
-            streetTextarea.disabled = true;
-            cityInput.disabled = true;
-            stateInput.disabled = true;
-            zipCodeInput.disabled = true;
-            countryInput.disabled = true;
-            typeRadios.forEach(radio => radio.disabled = true);
-        }
-        saveButton.style.display = isEditingAddress[addressId] ? 'block' : 'none';
+        fetchAddresses(); // Re-render to show the edited address as a form
     }
 }
 
-// Fetch personal details from backend
-async function fetchPersonalDetails() {
+async function loadUserProfile() {
     const token = localStorage.getItem('token');
-
     if (!token) {
+        console.log("No token in loadUserProfile, redirecting.");
         logoutAndRedirect();
         return;
     }
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/user/profile`, {
+        console.log("Fetching profile from:", `${BASE_URL}/api/v1/users/profile`);
+        const response = await fetch(`${BASE_URL}/api/v1/users/profile`, {
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
+            headers: getAuthHeaders()
         });
 
-        // Check if the response is JSON
-        const contentType = response.headers.get('Content-Type');
-        if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Server returned an unexpected response. Please check if the backend is running on port 3000.');
-        }
+        console.log("Response status:", response.status);
 
-        const data = await response.json();
-        if (response.ok) {
-            document.getElementById('full_name').value = data.full_name || '';
-            document.getElementById('email').value = data.email || '';
-            document.getElementById('password').value = '********';
-            document.getElementById('mobile_number').value = data.mobile_number || '';
-            document.getElementById('user-name').textContent = data.full_name || 'User';
-
-            localStorage.setItem('user', JSON.stringify({
-                full_name: data.full_name,
-                email: data.email,
-                mobile_number: data.mobile_number
-            }));
-        } else {
-            // If user is not found (e.g., deleted), log out
-            if (response.status === 401 || response.status === 404) {
-                alert('User not found. Logging out.');
+        if (!response.ok) {
+            if (response.status === 401) {
+                console.log("Unauthorized (401), logging out.");
+                alert('Session expired or unauthorized. Logging out.');
                 logoutAndRedirect();
                 return;
             }
-            throw new Error(data.errors || 'Failed to fetch personal details');
+            const errorText = await response.text();
+            throw new Error(`Failed to fetch profile: ${response.status} - ${errorText}`);
         }
+
+        const userData = await response.json();
+        console.log("Profile data received:", userData);
+
+        const name = userData.full_name || userData.name || 'User';
+        document.getElementById('full_name').value = name;
+        document.getElementById('email').value = userData.email || '';
+        document.getElementById('password').value = '********';
+        document.getElementById('mobile_number').value = userData.mobile_number || '';
+
+        const profileElement = document.getElementById('profile-link');
+        if (profileElement) {
+            profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${name}</span>`;
+            localStorage.setItem('username', name);
+            console.log("Profile link updated with:", name);
+        } else {
+            console.error("Profile link element (#profile-link) not found in DOM");
+        }
+
+        localStorage.setItem('user', JSON.stringify({
+            full_name: name,
+            email: userData.email,
+            mobile_number: userData.mobile_number
+        }));
     } catch (error) {
-        console.error('Error fetching personal details:', error);
-        alert(error.message);
-        // Clear fields instead of showing cached data
-        document.getElementById('full_name').value = '';
-        document.getElementById('email').value = '';
-        document.getElementById('password').value = '';
-        document.getElementById('mobile_number').value = '';
-        document.getElementById('user-name').textContent = 'User';
-        logoutAndRedirect();
+        console.error("Profile fetch error:", error.message);
+        alert(`Error fetching profile: ${error.message}`);
     }
 }
 
-// Save personal details to backend
 async function savePersonalDetails() {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -140,42 +125,31 @@ async function savePersonalDetails() {
     };
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/user/profile`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+        const response = await fetch(`${BASE_URL}/api/v1/users/profile`, {
+            method: 'PATCH',
+            headers: getAuthHeaders(),
             body: JSON.stringify(updatedData)
         });
 
-        // Check if the response is JSON
-        const contentType = response.headers.get('Content-Type');
-        if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Server returned an unexpected response. Please check if the backend is running on port 3000.');
-        }
-
-        const data = await response.json();
-        if (response.ok) {
-            alert('Personal details updated successfully');
-            toggleEdit('personal-details');
-            await fetchPersonalDetails();
-        } else {
-            // If user is not found (e.g., deleted), log out
-            if (response.status === 401 || response.status === 404) {
-                alert('User not found. Logging out.');
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert('Session expired. Logging out.');
                 logoutAndRedirect();
                 return;
             }
-            throw new Error(data.errors || 'Failed to update personal details');
+            const errorText = await response.text();
+            throw new Error(`Failed to update profile: ${errorText}`);
         }
+
+        alert('Personal details updated successfully');
+        toggleEdit('personal-details');
+        await loadUserProfile();
     } catch (error) {
         console.error('Error saving personal details:', error);
         alert(error.message);
     }
 }
 
-// Fetch addresses from backend
 async function fetchAddresses() {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -184,35 +158,28 @@ async function fetchAddresses() {
     }
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/user/addresses`, {
+        const response = await fetch(`${BASE_URL}/api/v1/addresses`, {
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
+            headers: getAuthHeaders()
         });
 
-        // Check if the response is JSON
-        const contentType = response.headers.get('Content-Type');
-        if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Server returned an unexpected response. Please check if the backend is running on port 3000.');
-        }
-
-        const data = await response.json();
-        if (response.ok && data.addresses && data.addresses.length > 0) {
-            renderAddresses(data.addresses);
-        } else {
-            // If user is not found (e.g., deleted), log out
-            if (response.status === 401 || response.status === 404) {
-                alert('User not found. Logging out.');
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert('Session expired. Logging out.');
                 logoutAndRedirect();
                 return;
             }
-            throw new Error(data.errors || 'No addresses found');
+            throw new Error('Failed to fetch addresses');
+        }
+
+        const data = await response.json();
+        if (data.addresses && data.addresses.length > 0) {
+            renderAddresses(data.addresses);
+        } else {
+            document.getElementById('address-list').innerHTML = '<p>No addresses found.</p>';
         }
     } catch (error) {
         console.error('Error fetching addresses:', error);
-        alert('No address data available.');
         document.getElementById('address-list').innerHTML = '<p>No addresses found.</p>';
     }
 }
@@ -221,65 +188,91 @@ function renderAddresses(addresses) {
     const addressList = document.getElementById('address-list');
     addressList.innerHTML = '';
     addresses.forEach((address, index) => {
+        const addressId = address.id;
         const addressType = address.address_type || 'unknown';
-        addressList.innerHTML += `
-            <div class="work-address" id="address-${address.id}" data-street="${address.street || ''}" data-city="${address.city || ''}" data-state="${address.state || ''}" data-zip-code="${address.zip_code || ''}" data-country="${address.country || ''}" data-type="${addressType}">
-                <div class="work-header">
-                    <div class="work-title">${index + 1}. ${addressType.toUpperCase()}</div>
-                    <a href="#" class="address-edit-btn" onclick="toggleEdit('address-${address.id}')">Edit</a>
+        const isEditing = isEditingAddress[addressId];
+
+        if (index === 0 || isEditing) {
+            // Render as form (first address or being edited)
+            addressList.innerHTML += `
+                <div class="work-address" id="address-${addressId}">
+                    <div class="work-header">
+                        <div class="work-title">${index + 1}. ${addressType.toUpperCase()}</div>
+                        <div class="action-buttons">
+                            <a href="#" class="address-edit-btn" onclick="toggleEdit('address-${addressId}')">${isEditing ? 'Cancel' : 'Edit'}</a>
+                            <a href="#" class="address-select-btn" onclick="selectAddress(${addressId})">Select</a>
+                            <a href="#" class="address-delete-btn" onclick="deleteAddress(${addressId})">Delete</a>
+                        </div>
+                    </div>
+                    <div class="address-details">
+                        <div class="form-group">
+                            <label for="street-${addressId}">Address</label>
+                            <textarea id="street-${addressId}" ${isEditing ? '' : 'disabled'}>${address.street || ''}</textarea>
+                        </div>
+                        <div class="address-row">
+                            <div class="address-col">
+                                <div class="form-group">
+                                    <label for="city-${addressId}">City/Town</label>
+                                    <input type="text" id="city-${addressId}" value="${address.city || ''}" ${isEditing ? '' : 'disabled'}>
+                                </div>
+                            </div>
+                            <div class="address-col">
+                                <div class="form-group">
+                                    <label for="state-${addressId}">State</label>
+                                    <input type="text" id="state-${addressId}" value="${address.state || ''}" ${isEditing ? '' : 'disabled'}>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="address-row">
+                            <div class="address-col">
+                                <div class="form-group">
+                                    <label for="zip-code-${addressId}">Zip Code</label>
+                                    <input type="text" id="zip-code-${addressId}" value="${address.zip_code || ''}" ${isEditing ? '' : 'disabled'}>
+                                </div>
+                            </div>
+                            <div class="address-col">
+                                <div class="form-group">
+                                    <label for="country-${addressId}">Country</label>
+                                    <input type="text" id="country-${addressId}" value="${address.country || ''}" ${isEditing ? '' : 'disabled'}>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group radio-group">
+                            <label>Type</label>
+                            <label><input type="radio" name="address-type-${addressId}" value="home" ${addressType === 'home' ? 'checked' : ''} ${isEditing ? '' : 'disabled'}> Home</label>
+                            <label><input type="radio" name="address-type-${addressId}" value="work" ${addressType === 'work' ? 'checked' : ''} ${isEditing ? '' : 'disabled'}> Work</label>
+                            <label><input type="radio" name="address-type-${addressId}" value="other" ${addressType === 'other' ? 'checked' : ''} ${isEditing ? '' : 'disabled'}> Other</label>
+                        </div>
+                        ${isEditing ? `<button id="save-address-${addressId}" onclick="saveAddress(${addressId})">Save</button>` : ''}
+                    </div>
                 </div>
-                <div class="address-details">
-                    <div class="form-group">
-                        <label for="street-${address.id}">Address</label>
-                        <textarea id="street-${address.id}" disabled>${address.street || ''}</textarea>
-                    </div>
-                    <div class="address-row">
-                        <div class="address-col">
-                            <div class="form-group">
-                                <label for="city-${address.id}">City/Town</label>
-                                <input type="text" id="city-${address.id}" value="${address.city || ''}" disabled>
-                            </div>
-                        </div>
-                        <div class="address-col">
-                            <div class="form-group">
-                                <label for="state-${address.id}">State</label>
-                                <input type="text" id="state-${address.id}" value="${address.state || ''}" disabled>
-                            </div>
+            `;
+        } else {
+            // Render as string
+            const addressString = `${address.street || ''}, ${address.city || ''}, ${address.state || ''}, ${address.zip_code || ''}, ${address.country || ''} (${addressType.toUpperCase()})`;
+            addressList.innerHTML += `
+                <div class="work-address" id="address-${addressId}">
+                    <div class="work-header">
+                        <div class="work-title">${index + 1}. ${addressType.toUpperCase()}</div>
+                        <div class="action-buttons">
+                            <a href="#" class="address-edit-btn" onclick="toggleEdit('address-${addressId}')">Edit</a>
+                            <a href="#" class="address-select-btn" onclick="selectAddress(${addressId})">Select</a>
+                            <a href="#" class="address-delete-btn" onclick="deleteAddress(${addressId})">Delete</a>
                         </div>
                     </div>
-                    <div class="address-row">
-                        <div class="address-col">
-                            <div class="form-group">
-                                <label for="zip-code-${address.id}">Zip Code</label>
-                                <input type="text" id="zip-code-${address.id}" value="${address.zip_code || ''}" disabled>
-                            </div>
-                        </div>
-                        <div class="address-col">
-                            <div class="form-group">
-                                <label for="country-${address.id}">Country</label>
-                                <input type="text" id="country-${address.id}" value="${address.country || ''}" disabled>
-                            </div>
-                        </div>
+                    <div class="address-details">
+                        <p>${addressString}</p>
                     </div>
-                    <div class="form-group radio-group">
-                        <label>Type</label>
-                        <label><input type="radio" name="address-type-${address.id}" value="home" ${addressType === 'home' ? 'checked' : ''} disabled> Home</label>
-                        <label><input type="radio" name="address-type-${address.id}" value="work" ${addressType === 'work' ? 'checked' : ''} disabled> Work</label>
-                        <label><input type="radio" name="address-type-${address.id}" value="other" ${addressType === 'other' ? 'checked' : ''} disabled> Other</label>
-                    </div>
-                    <button style="display: none;" id="save-address-${address.id}" onclick="saveAddress(${address.id})">Save</button>
                 </div>
-            </div>
-        `;
+            `;
+        }
     });
 }
 
-// Toggle address form visibility
 function toggleAddressForm() {
     isAddressFormVisible = !isAddressFormVisible;
     document.getElementById('address-form').classList.toggle('show', isAddressFormVisible);
     if (!isAddressFormVisible) {
-        // Clear form when closing
         document.getElementById('new-street').value = '';
         document.getElementById('new-city').value = '';
         document.getElementById('new-state').value = '';
@@ -289,7 +282,6 @@ function toggleAddressForm() {
     }
 }
 
-// Save new address to backend
 async function saveNewAddress() {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -314,42 +306,30 @@ async function saveNewAddress() {
     };
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/user/addresses`, {
+        const response = await fetch(`${BASE_URL}/api/v1/addresses`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ address: newAddress })
         });
 
-        // Check if the response is JSON
-        const contentType = response.headers.get('Content-Type');
-        if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Server returned an unexpected response. Please check if the backend is running on port 3000.');
-        }
-
-        const data = await response.json();
-        if (response.ok) {
-            alert('Address added successfully');
-            toggleAddressForm();
-            await fetchAddresses();
-        } else {
-            // If user is not found (e.g., deleted), log out
-            if (response.status === 401 || response.status === 404) {
-                alert('User not found. Logging out.');
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert('Session expired. Logging out.');
                 logoutAndRedirect();
                 return;
             }
-            throw new Error(data.errors || 'Failed to add address');
+            throw new Error('Failed to add address');
         }
+
+        alert('Address added successfully');
+        toggleAddressForm();
+        await fetchAddresses();
     } catch (error) {
         console.error('Error adding address:', error);
         alert(error.message);
     }
 }
 
-// Save existing address to backend
 async function saveAddress(addressId) {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -357,7 +337,6 @@ async function saveAddress(addressId) {
         return;
     }
 
-    const addressItem = document.getElementById(`address-${addressId}`);
     const zipCode = document.getElementById(`zip-code-${addressId}`).value;
     if (!zipCode) {
         alert('Zip Code is required.');
@@ -370,52 +349,222 @@ async function saveAddress(addressId) {
         state: document.getElementById(`state-${addressId}`).value,
         zip_code: zipCode,
         country: document.getElementById(`country-${addressId}`).value,
-        address_type: addressItem.getAttribute('data-type')
+        address_type: document.querySelector(`input[name="address-type-${addressId}"]:checked`).value
     };
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/user/addresses/${addressId}`, {
+        const response = await fetch(`${BASE_URL}/api/v1/addresses/${addressId}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ address: updatedAddress })
         });
 
-        // Check if the response is JSON
-        const contentType = response.headers.get('Content-Type');
-        if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Server returned an unexpected response. Please check if the backend is running on port 3000.');
-        }
-
-        const data = await response.json();
-        if (response.ok) {
-            alert('Address updated successfully');
-            toggleEdit(`address-${addressId}`);
-            await fetchAddresses();
-        } else {
-            // If user is not found (e.g., deleted), log out
-            if (response.status === 401 || response.status === 404) {
-                alert('User not found. Logging out.');
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert('Session expired. Logging out.');
                 logoutAndRedirect();
                 return;
             }
-            throw new Error(data.errors || 'Failed to update address');
+            throw new Error('Failed to update address');
         }
+
+        alert('Address updated successfully');
+        isEditingAddress[addressId] = false; // Exit edit mode
+        await fetchAddresses();
     } catch (error) {
         console.error('Error saving address:', error);
         alert(error.message);
     }
 }
 
-// Initial data fetch on page load
-window.onload = async function() {
+async function deleteAddress(addressId) {
     const token = localStorage.getItem('token');
     if (!token) {
-        window.location.href = 'login.html';
+        logoutAndRedirect();
         return;
     }
-    await fetchPersonalDetails();
-    await fetchAddresses();
-};
+
+    if (!confirm('Are you sure you want to delete this address?')) return;
+
+    try {
+        const response = await fetch(`${BASE_URL}/api/v1/addresses/${addressId}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert('Session expired. Logging out.');
+                logoutAndRedirect();
+                return;
+            }
+            throw new Error('Failed to delete address');
+        }
+
+        alert('Address deleted successfully');
+        await fetchAddresses();
+    } catch (error) {
+        console.error('Error deleting address:', error);
+        alert(error.message);
+    }
+}
+
+function selectAddress(addressId) {
+    console.log(`Address ${addressId} selected`);
+    // Add logic here for what "select" should do, e.g., mark as default
+    alert(`Address ${addressId} selected`);
+}
+
+function updateCartCount(count) {
+    const cartCount = document.querySelector('#cart-link .cart-count');
+    if (cartCount) {
+        cartCount.textContent = count;
+        cartCount.style.display = count > 0 ? 'flex' : 'none';
+    } else {
+        console.error("Cart count element not found in DOM");
+    }
+}
+
+async function loadCartSummary() {
+    try {
+        const response = await fetch(`${BASE_URL}/api/v1/cart/summary`, {
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert("Session expired. Please log in again.");
+                logoutAndRedirect();
+                return;
+            }
+            throw new Error("Failed to fetch cart summary");
+        }
+
+        const cartData = await response.json();
+        console.log("Cart summary:", cartData);
+        updateCartCount(cartData.total_items || 0);
+    } catch (error) {
+        console.error("Error fetching cart summary:", error);
+    }
+}
+
+function setupHeaderEventListeners() {
+    let dropdownMenu = null;
+    let isDropdownOpen = false;
+    const profileLink = document.getElementById("profile-link");
+    const cartLink = document.getElementById("cart-link");
+
+    if (!profileLink) {
+        console.error("Profile link element (#profile-link) not found in DOM");
+        return;
+    }
+
+    profileLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (isDropdownOpen) {
+            closeDropdown();
+        } else {
+            openDropdown();
+        }
+    });
+
+    document.addEventListener("click", (event) => {
+        if (
+            isDropdownOpen &&
+            !profileLink.contains(event.target) &&
+            dropdownMenu &&
+            !dropdownMenu.contains(event.target)
+        ) {
+            closeDropdown();
+        }
+    });
+
+    if (cartLink) {
+        cartLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            window.location.href = '../pages/cart.html';
+        });
+    }
+
+    const searchInput = document.getElementById("search");
+    if (searchInput) {
+        searchInput.addEventListener("keypress", (event) => {
+            if (event.key === "Enter") {
+                const query = event.target.value.trim();
+                if (query) {
+                    window.location.href = `../pages/homePage.html?query=${encodeURIComponent(query)}`;
+                }
+            }
+        });
+    }
+
+    function openDropdown() {
+        if (dropdownMenu) dropdownMenu.remove();
+
+        dropdownMenu = document.createElement("div");
+        dropdownMenu.classList.add("dropdown-menu");
+        const username = localStorage.getItem("username") || "User";
+
+        dropdownMenu.innerHTML = `
+            <div class="dropdown-item dropdown-header">Hello ${username},</div>
+            <div class="dropdown-item" id="dropdown-profile">Profile</div>
+            <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+            <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
+            <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
+        `;
+
+        profileLink.parentElement.appendChild(dropdownMenu);
+
+        document.getElementById("dropdown-profile").addEventListener("click", () => {
+            window.location.href = "../pages/profile.html";
+            closeDropdown();
+        });
+        document.getElementById("dropdown-orders").addEventListener("click", () => {
+            window.location.href = "../pages/myOrders.html";
+            closeDropdown();
+        });
+        document.getElementById("dropdown-wishlist").addEventListener("click", () => {
+            window.location.href = "../pages/wishlist.html";
+            closeDropdown();
+        });
+        document.getElementById("dropdown-logout").addEventListener("click", () => {
+            handleSignOut();
+            closeDropdown();
+        });
+
+        isDropdownOpen = true;
+    }
+
+    function closeDropdown() {
+        if (dropdownMenu) {
+            dropdownMenu.remove();
+            dropdownMenu = null;
+        }
+        isDropdownOpen = false;
+    }
+}
+
+function handleSignOut() {
+    const provider = localStorage.getItem("socialProvider");
+
+    if (provider === "google" && typeof google !== "undefined" && google.accounts) {
+        google.accounts.id.disableAutoSelect();
+        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
+            console.log("Google session revoked");
+        });
+    }
+
+    if (provider === "facebook" && typeof FB !== "undefined") {
+        FB.getLoginStatus(function (response) {
+            if (response.status === "connected") {
+                FB.logout(function (response) {
+                    console.log("Facebook session revoked");
+                });
+            }
+        });
+    }
+
+    localStorage.clear();
+    alert("Logged out successfully.");
+    window.location.href = "../pages/login.html";
+}

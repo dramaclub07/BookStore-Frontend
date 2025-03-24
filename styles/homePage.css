@@ -40,9 +40,8 @@ body {
 .book-list {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 10px 0; /* 10px vertical gap between rows, 0px horizontal gap between columns */
-    padding: 5px 0;
-    justify-items: stretch; /* Stretch book cards to fill the grid cell width */
+    padding: 20px 0;
+    justify-items: center;
     background: linear-gradient(180deg, #f5f5f5, #e8e8e8);
     position: relative;
 }
@@ -245,26 +244,85 @@ body {
 .pagination .active {
     background: #333;
 }
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .content-wrapper {
-        padding: 15px;
-    }
-
-    .book-list {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px 0; /* Slightly smaller vertical gap on smaller screens */
-    }
+/* Ensure the parent container supports absolute positioning */
+.nav-links {
+    position: relative; /* Allows absolute positioning of dropdown relative to this */
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Optional: spacing between profile and cart links */
 }
 
-@media (max-width: 480px) {
-    .content-wrapper {
-        padding: 10px;
-    }
+/* Dropdown menu styling */
+.dropdown-menu {
+    position: absolute;
+    top: 100%; /* Places it directly below the profile link */
+    right: 0; /* Aligns to the right edge of .nav-links */
+    background: #fff; /* White background */
+    border: 1px solid #ccc; /* Light gray border */
+    border-radius: 4px; /* Slightly rounded corners */
+    padding: 10px 0; /* Vertical padding, no horizontal padding on the container */
+    min-width: 180px; /* Ensures it’s wide enough for content */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    z-index: 1000; /* Ensures it appears above other content */
+}
 
-    .book-list {
-        grid-template-columns: repeat(1, 1fr);
-        gap: 6px 0; /* Even smaller vertical gap on very small screens */
-    }
+/* Individual dropdown items */
+.dropdown-item {
+    padding: 8px 15px; /* Comfortable padding for clickable area */
+    font-size: 14px; /* Consistent text size */
+    color: #333; /* Dark gray text */
+    cursor: pointer;
+    transition: background 0.2s ease; /* Smooth hover effect */
+}
+
+.dropdown-item:hover {
+    background: #f2dede; /* Light gray on hover */
+}
+
+/* Header styling */
+.dropdown-header {
+    font-weight: 600; /* Slightly bolder than normal */
+    color: #222; /* Darker for emphasis */
+    padding-bottom: 5px; /* Space below header */
+    border-bottom: 1px solid #eee; /* Subtle separator */
+}
+
+/* Subheader styling */
+.dropdown-subheader {
+    font-style: italic;
+    color: #666; /* Lighter gray for contrast */
+    font-size: 13px; /* Slightly smaller */
+    padding-bottom: 5px; /* Space below subheader */
+}
+
+/* Button styling within dropdown */
+.dropdown-menu button {
+    width: 100%; /* Full width of the dropdown */
+    padding: 8px 15px; /* Matches .dropdown-item padding */
+    background: #f44336; /* Red background for logout/login */
+    color: white;
+    border: none;
+    border-radius: 4px; /* Rounded corners */
+    font-size: 14px;
+    text-align: left; /* Align text with other items */
+    cursor: pointer;
+    transition: background 0.2s ease; /* Smooth hover effect */
+}
+
+.dropdown-menu button:hover {
+    background: #d32f2f; /* Darker red on hover */
+}
+
+/* Ensure cart count visibility works */
+.cart-count {
+    display: flex; /* Default state, overridden by JS if 0 */
+    align-items: center;
+    justify-content: center;
+    background: #f44336; /* Red badge */
+    color: white;
+    border-radius: 50%; /* Circular badge */
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
+    margin-left: 2px; /* Space from cart icon */
 }
