@@ -243,9 +243,7 @@ body {
 
 .pagination .active {
     background: #333;
-}
-<<<<<<< HEAD
-=======
+}   
 /* Ensure the parent container supports absolute positioning */
 .nav-links {
     position: relative; /* Allows absolute positioning of dropdown relative to this */
@@ -328,4 +326,3 @@ body {
     font-size: 12px;
     margin-left: 2px; /* Space from cart icon */
 }
->>>>>>> 6f899d013462e34543cde7c5d975eab97eae92fa

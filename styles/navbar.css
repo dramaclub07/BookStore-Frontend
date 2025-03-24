@@ -1,11 +1,10 @@
 /* Reset default styles */
-* {
+/* * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* Navbar */
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -16,13 +15,13 @@
     position: fixed;
     top: 0;
     width: 100%;
-    height: 60px; /* Slightly taller to match the image */
+    height: 60px; 
     z-index: 1000;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     font-family: Arial, sans-serif;
 }
 
-/* Logo */
+
 .logo {
     display: flex;
     align-items: center;
@@ -36,7 +35,6 @@
     margin-right: 10px;
 }
 
-/* Search Container */
 .search-container {
     position: relative;
     width: 40%;
@@ -60,7 +58,7 @@
 
 .search-bar {
     width: 100%;
-    padding: 8px 8px 8px 35px; /* Extra padding-left for the icon */
+    padding: 8px 8px 8px 35px; 
     border-radius: 5px;
     border: 1px solid #ccc;
     font-size: 14px;
@@ -110,7 +108,7 @@
     background-color: #f2dede;
 }
 
-/* Nav Links */
+
 .nav-links {
     display: flex;
     align-items: center;
@@ -135,12 +133,12 @@
 }
 
 .nav-icon i {
-    transition: color 0.3s ease, transform 0.3s ease; /* Animation for hover */
+    transition: color 0.3s ease, transform 0.3s ease; 
 }
 
 .profile-link:hover .nav-icon i, .cart-link:hover .nav-icon i {
     color: #ffd700;
-    transform: scale(1.2); /* Slight scale-up on hover */
+    transform: scale(1.2); 
 }
 
 .username {
@@ -164,7 +162,7 @@
     left: -5px;
 }
 
-/* Profile Dropdown */
+
 .profile-dropdown {
     position: absolute;
     top: 100%;
@@ -176,7 +174,7 @@
     z-index: 1001;
     color: #333;
     padding: 10px 0;
-    min-width: 200px; /* Slightly wider to match the image */
+    min-width: 200px; 
 }
 
 .dropdown-item {
@@ -201,9 +199,8 @@
 
 .dropdown-item:hover .dropdown-icon i {
     color: #ffd700;
-    transform: scale(1.2); /* Same hover animation as navbar icons */
+    transform: scale(1.2); 
 }
-
 .dropdown-header {
     padding: 8px 15px;
     font-size: 14px;
@@ -231,10 +228,10 @@
 }
 
 .logout-button:hover, .login-signup-button:hover {
-    background-color: #8b0000; /* Darker red on hover */
+    background-color: #8b0000; 
 }
 
-/* Responsive Design */
+
 @media (max-width: 992px) {
     .navbar {
         justify-content: space-between;
@@ -279,4 +276,4 @@
         height: 18px;
         font-size: 10px;
     }
-}
+} */
