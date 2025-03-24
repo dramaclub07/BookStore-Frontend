@@ -109,7 +109,7 @@ async function updateCartCount() {
         }
         const cart = await response.json();
         console.log("Cart API response:", cart);
-        const totalItems = cart.cart?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
+        const totalItems = cart.cart?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
         cartCountElement.textContent = totalItems;
         cartCountElement.style.display = totalItems > 0 ? "flex" : "none";
     } catch (error) {
@@ -465,9 +465,10 @@ function setupEventListeners() {
     if (isAuthenticated()) {
         getCartItemQuantity(bookId).then(quantity => {
             currentQuantity = quantity;
-            if (quantity > 0) {
-                updateQuantityUI(quantity);
-            }
+            updateQuantityUI(quantity); // Ensure UI reflects initial state
+        }).catch(error => {
+            console.error("Failed to fetch initial cart quantity:", error);
+            updateQuantityUI(0); // Fallback to 0 on error
         });
     }
 
@@ -480,7 +481,6 @@ function setupEventListeners() {
 
         try {
             if (currentQuantity === 0) {
-                // First time adding to cart
                 const response = await fetch(`${API_BASE_URL}/cart/add`, {
                     method: "POST",
                     headers: getAuthHeaders(),
@@ -491,8 +491,8 @@ function setupEventListeners() {
                 currentQuantity = 1;
                 updateQuantityUI(currentQuantity);
                 alert("Book added to bag successfully!");
+                await updateCartCount(); // Ensure cart count updates
             }
-            updateCartCount();
         } catch (error) {
             console.error("Error adding to cart:", error);
             alert(`Failed to add to bag: ${error.message}`);
@@ -504,38 +504,42 @@ function setupEventListeners() {
             currentQuantity++;
             await updateCartItemQuantity(bookId, currentQuantity);
             updateQuantityUI(currentQuantity);
-            updateCartCount();
+            await updateCartCount(); // Update cart count after increment
         } catch (error) {
             currentQuantity--; // Revert on error
+            updateQuantityUI(currentQuantity); // Ensure UI reflects reverted state
             alert(`Failed to update quantity: ${error.message}`);
         }
     });
 
     decrementBtn.addEventListener("click", async () => {
-        if (currentQuantity <= 1) {
-            // Remove from cart when reaching 0
-            try {
-                await fetch(`${API_BASE_URL}/cart/remove`, {
-                    method: "DELETE",
+        try {
+            if (currentQuantity <= 1) {
+                const response = await fetch(`${API_BASE_URL}/cart/toggle_remove`, {
+                    method: "PATCH",
                     headers: getAuthHeaders(),
                     body: JSON.stringify({ book_id: bookId })
                 });
+                if (!response.ok) {
+                    const result = await response.json();
+                    throw new Error(`Failed to remove from cart: ${result.error || "Unknown error"}`);
+                }
                 currentQuantity = 0;
                 updateQuantityUI(currentQuantity);
-                updateCartCount();
-            } catch (error) {
-                alert(`Failed to remove from cart: ${error.message}`);
-            }
-        } else {
-            try {
+                await updateCartCount(); // Ensure cart count updates after removal
+                alert("Book removed from cart successfully!");
+            } else {
                 currentQuantity--;
                 await updateCartItemQuantity(bookId, currentQuantity);
                 updateQuantityUI(currentQuantity);
-                updateCartCount();
-            } catch (error) {
-                currentQuantity++; // Revert on error
-                alert(`Failed to update quantity: ${error.message}`);
+                await updateCartCount(); // Update cart count after decrement
             }
+        } catch (error) {
+            console.error("Error during decrement:", error);
+            // Revert quantity only if it wasn't a removal operation
+            if (currentQuantity > 1) currentQuantity++;
+            updateQuantityUI(currentQuantity); // Ensure UI reflects correct state
+            alert(`Failed to update cart: ${error.message}`);
         }
     });
 

@@ -116,4 +116,5 @@ signupForm.addEventListener("submit", async (e) => {
         console.error("Signup Error:", error.message);
         errorMessages.forEach(el => (el.textContent = `An error occurred: ${error.message}`));
     }
+    FormData.clear();
 });
