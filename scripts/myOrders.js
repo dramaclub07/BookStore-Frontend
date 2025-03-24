@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     if (!token) {
         alert("Please log in to view your orders.");
-        window.location.href = "../pages/login.html"; // Fixed path consistency
+        window.location.href = "../pages/login.html";
         return;
     }
 
@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                 const profileElement = document.getElementById('profile-link');
                 if (profileElement) {
                     profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
-                    localStorage.setItem('username', userData.name || 'User'); // Store for dropdown
+                    localStorage.setItem('username', userData.name || 'User');
                 }
             }
         } catch (error) {
@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         const cartCount = document.querySelector('#cart-link .cart-count');
         if (cartCount) {
             cartCount.textContent = count;
-            cartCount.style.display = count > 0 ? "flex" : "none"; // Show/hide badge
+            cartCount.style.display = count > 0 ? "flex" : "none";
         }
     }
 
@@ -127,7 +127,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                                 <div class="order-details">
                                     <div class="order-main-details">
                                         <h3>Order #${order.id}</h3>
-                                        <p>Book: <strong>${bookData.book_name}</strong></p>
+                                        <p>Book: <strong>${bookData.book_name}</strong><span class="order-quantity">Qty: ${order.quantity}</span></p>
                                         <p>Author: ${bookData.author_name}</p>
                                         <p>Total Price: ₹${order.total_price}</p>
                                     </div>
@@ -135,10 +135,15 @@ document.addEventListener("DOMContentLoaded", async function () {
                                         <p>Placed on: ${new Date(order.created_at).toLocaleDateString()}</p>
                                     </div>
                                 </div>
+                                <button class="cancel-order-btn" data-order-id="${order.id}">Cancel Order</button>
                             </div>
                         `;
 
                         ordersContainer.appendChild(orderElement);
+
+                        // Add event listener for cancel button
+                        const cancelBtn = orderElement.querySelector('.cancel-order-btn');
+                        cancelBtn.addEventListener('click', () => cancelOrder(order.id));
                     } catch (bookError) {
                         console.error("Error fetching book details:", bookError);
                     }
@@ -149,6 +154,29 @@ document.addEventListener("DOMContentLoaded", async function () {
         } catch (error) {
             console.error("Error fetching orders:", error);
             ordersContainer.innerHTML = `<p>Error loading orders. Please try again later.</p>`;
+        }
+    }
+
+    // Cancel Order Function
+    async function cancelOrder(orderId) {
+        if (!confirm("Are you sure you want to cancel this order?")) return;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Failed to cancel order: ${response.status}`);
+            }
+
+            alert("Order cancelled successfully!");
+            await fetchOrders(); // Refresh orders list
+        } catch (error) {
+            console.error("Error cancelling order:", error);
+            alert(`Failed to cancel order: ${error.message}`);
         }
     }
 

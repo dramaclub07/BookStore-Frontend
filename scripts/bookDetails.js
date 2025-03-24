@@ -453,25 +453,34 @@ async function updateCartItemQuantity(bookId, newQuantity) {
 
 // Setup Event Listeners for Book Details
 function setupEventListeners() {
-    document.getElementById("add-to-bag")?.addEventListener("click", async () => {
+    const addToBagBtn = document.getElementById("add-to-bag");
+    const quantityControl = document.getElementById("quantity-control");
+    const quantityDisplay = document.getElementById("quantity-display");
+    const incrementBtn = document.getElementById("increment");
+    const decrementBtn = document.getElementById("decrement");
+    let currentQuantity = 0;
+    const bookId = new URLSearchParams(window.location.search).get("id");
+
+    // Initial check for existing quantity
+    if (isAuthenticated()) {
+        getCartItemQuantity(bookId).then(quantity => {
+            currentQuantity = quantity;
+            if (quantity > 0) {
+                updateQuantityUI(quantity);
+            }
+        });
+    }
+
+    addToBagBtn.addEventListener("click", async () => {
         if (!isAuthenticated()) {
             alert("Please log in to add to bag.");
             window.location.href = "../pages/pleaseLogin.html";
             return;
         }
 
-        const bookId = new URLSearchParams(window.location.search).get("id");
         try {
-            // Check current quantity in cart
-            const currentQuantity = await getCartItemQuantity(bookId);
-            
-            if (currentQuantity > 0) {
-                // Item exists, update quantity
-                const newQuantity = currentQuantity + 1;
-                await updateCartItemQuantity(bookId, newQuantity);
-                alert(`Quantity updated to ${newQuantity}!`);
-            } else {
-                // Item doesn't exist, add it with quantity 1
+            if (currentQuantity === 0) {
+                // First time adding to cart
                 const response = await fetch(`${API_BASE_URL}/cart/add`, {
                     method: "POST",
                     headers: getAuthHeaders(),
@@ -479,13 +488,54 @@ function setupEventListeners() {
                 });
                 const result = await response.json();
                 if (!response.ok) throw new Error(`Failed to add to bag: ${result.error || "Unknown error"}`);
+                currentQuantity = 1;
+                updateQuantityUI(currentQuantity);
                 alert("Book added to bag successfully!");
             }
-            
             updateCartCount();
         } catch (error) {
-            console.error("Error adding/updating cart item:", error);
+            console.error("Error adding to cart:", error);
             alert(`Failed to add to bag: ${error.message}`);
+        }
+    });
+
+    incrementBtn.addEventListener("click", async () => {
+        try {
+            currentQuantity++;
+            await updateCartItemQuantity(bookId, currentQuantity);
+            updateQuantityUI(currentQuantity);
+            updateCartCount();
+        } catch (error) {
+            currentQuantity--; // Revert on error
+            alert(`Failed to update quantity: ${error.message}`);
+        }
+    });
+
+    decrementBtn.addEventListener("click", async () => {
+        if (currentQuantity <= 1) {
+            // Remove from cart when reaching 0
+            try {
+                await fetch(`${API_BASE_URL}/cart/remove`, {
+                    method: "DELETE",
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ book_id: bookId })
+                });
+                currentQuantity = 0;
+                updateQuantityUI(currentQuantity);
+                updateCartCount();
+            } catch (error) {
+                alert(`Failed to remove from cart: ${error.message}`);
+            }
+        } else {
+            try {
+                currentQuantity--;
+                await updateCartItemQuantity(bookId, currentQuantity);
+                updateQuantityUI(currentQuantity);
+                updateCartCount();
+            } catch (error) {
+                currentQuantity++; // Revert on error
+                alert(`Failed to update quantity: ${error.message}`);
+            }
         }
     });
 
@@ -495,7 +545,6 @@ function setupEventListeners() {
             return;
         }
 
-        const bookId = new URLSearchParams(window.location.search).get("id");
         const wishlistButton = document.getElementById("add-to-wishlist");
         const wasWishlisted = wishlistButton.classList.contains("wishlisted");
 
@@ -544,7 +593,6 @@ function setupEventListeners() {
             return;
         }
 
-        const bookId = new URLSearchParams(window.location.search).get("id");
         const reviewText = document.getElementById("review-text").value;
         const rating = selectedRating || 0;
 
@@ -583,4 +631,20 @@ function updateStarDisplay(rating) {
         const starValue = parseInt(star.getAttribute("data-value"));
         star.classList.toggle("active", starValue <= rating);
     });
+}
+
+// Helper function to update quantity UI
+function updateQuantityUI(quantity) {
+    const addToBagBtn = document.getElementById("add-to-bag");
+    const quantityControl = document.getElementById("quantity-control");
+    const quantityDisplay = document.getElementById("quantity-display");
+
+    if (quantity > 0) {
+        addToBagBtn.style.display = "none";
+        quantityControl.style.display = "flex";
+        quantityDisplay.textContent = quantity;
+    } else {
+        addToBagBtn.style.display = "flex";
+        quantityControl.style.display = "none";
+    }
 }

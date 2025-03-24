@@ -389,6 +389,7 @@ body {
     display: flex;
     gap: 8px;
     margin-bottom: 15px;
+    cursor: pointer;
 }
 
 .overall-rating .stars .star {
@@ -535,6 +536,44 @@ body {
 .delete-review-btn i {
     font-size: 12px;
 }
+
+
+
+/* ADD TO BAG */
+.quantity-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    padding: 5px 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.quantity-control button {
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: #a52a2a;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 20%;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.quantity-control button:hover {
+    background: #8b1e1e;
+}
+
+.quantity-control span {
+    font-size: 16px;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
+}
+
 
 /* Responsive Design */
 @media (max-width: 768px) {
