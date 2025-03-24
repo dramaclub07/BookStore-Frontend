@@ -375,7 +375,10 @@ body {
     margin-left: 2px; /* Space from cart icon */
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> feature-vishal
 /* Responsive Media Queries */
 
 /* Large tablets and small desktops */
@@ -515,4 +518,3 @@ body {
         font-size: 13px;
     }
 }
-

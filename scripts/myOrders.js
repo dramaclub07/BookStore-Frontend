@@ -157,6 +157,17 @@ document.addEventListener("DOMContentLoaded", async function () {
             console.error("Logo element not found in DOM");
         }
 
+        // Add logo click event listener
+        if (logo) {
+            logo.addEventListener("click", (event) => {
+                event.preventDefault();
+                console.log("Logo clicked, redirecting to homepage");
+                window.location.href = "../pages/homePage.html";
+            });
+        } else {
+            console.error("Logo element not found in DOM");
+        }
+
         try {
             const response = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel`, {
                 method: 'PATCH',  // PATCH method for updating order status
