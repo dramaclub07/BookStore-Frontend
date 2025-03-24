@@ -93,11 +93,21 @@ body {
 
 /* Order Details */
 .order-details {
+    /* border: 1px solid green; */
     flex-grow: 1;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     gap: 20px;
+}
+
+.order-other-details{
+    /* border: 1px solid yellow; */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    gap: 75px;
 }
 
 .order-main-details {
