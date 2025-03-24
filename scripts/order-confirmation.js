@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     try {
         await loadUserProfile();
         await fetchOrderDetails();
-        setupHeaderEventListeners(); // Add dropdown functionality
+        setupHeaderEventListeners();
 
         document.querySelector('.continue-button')?.addEventListener('click', function() {
             window.location.href = '../pages/homePage.html';
@@ -51,7 +51,7 @@ async function loadUserProfile() {
             const profileElement = document.getElementById('profile-link');
             if (profileElement) {
                 profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
-                localStorage.setItem('username', userData.name || 'User'); // Store for dropdown
+                localStorage.setItem('username', userData.name || 'User');
             }
         }
     } catch (error) {
@@ -89,7 +89,6 @@ async function fetchOrderDetails() {
                 console.error("Order ID element not found");
             }
 
-            // Update status to "processing" if not already a completed status
             if (!["processing", "shipped", "delivered"].includes(latestOrder.status)) {
                 const statusResponse = await fetch(`${API_BASE_URL}/orders/${latestOrder.id}/update_status`, {
                     method: "PATCH",
@@ -155,12 +154,23 @@ function handleUnauthorized() {
     window.location.href = '../pages/login.html';
 }
 
-// Dropdown Functionality
 function setupHeaderEventListeners() {
     let dropdownMenu = null;
     let isDropdownOpen = false;
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
+    const logo = document.querySelector(".logo"); // Added logo selector
+
+    // Add logo click event listener
+    if (logo) {
+        logo.addEventListener("click", (event) => {
+            event.preventDefault();
+            console.log("Logo clicked, redirecting to homepage");
+            window.location.href = "../pages/homePage.html";
+        });
+    } else {
+        console.error("Logo element not found in DOM");
+    }
 
     if (!profileLink) {
         console.error("Profile link element (#profile-link) not found in DOM");

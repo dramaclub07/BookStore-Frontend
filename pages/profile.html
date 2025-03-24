@@ -7,6 +7,24 @@
     <link rel="stylesheet" href="../styles/profile.css">
     <link rel="stylesheet" href="../styles/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .password-field {
+            display: none;
+        }
+        .password-field.visible {
+            display: block;
+        }
+        #current_password:disabled {
+            color: #303030;
+            font-size: 16px;
+            letter-spacing: 2px;
+        }
+        #current_password:disabled::placeholder {
+            color: #444343;
+            font-size: 16px;
+            letter-spacing: 2px;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -42,8 +60,16 @@
                     <input type="email" id="email" disabled>
                 </div>
                 <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="password" disabled>
+                    <label>Current Password</label>
+                    <input type="password" id="current_password" disabled placeholder="••••••••">
+                </div>
+                <div class="form-group password-field" id="new-password-field">
+                    <label>New Password</label>
+                    <input type="password" id="new_password" disabled placeholder="Enter new password">
+                </div>
+                <div class="form-group password-field" id="confirm-password-field">
+                    <label>Confirm New Password</label>
+                    <input type="password" id="confirm_password" disabled placeholder="Confirm new password">
                 </div>
                 <div class="form-group">
                     <label>Mobile Number</label>
@@ -99,7 +125,7 @@
         </div>
     </main>
     <footer>
-        <p>Copyright © 2020, BookstorePrivate Limited. All Rights Reserved</p>
+        <p>Copyright ©️ 2020, BookstorePrivate Limited. All Rights Reserved</p>
     </footer>
 
     <script src="../scripts/profile.js"></script>

@@ -129,6 +129,8 @@ body {
     font-weight: bold;
     letter-spacing: 0.5px;
     transition: transform var(--transition-fast);
+    cursor: pointer;
+    user-select: none;
 }
 
 .logo:hover {

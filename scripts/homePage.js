@@ -478,10 +478,11 @@ async function fetchSearchSuggestions(query) {
         const data = await response.json();
         console.log("Raw API response:", data);
 
-        // Parse the suggestions: extract book_name and author_name
+        // Parse the suggestions: expecting id, book_name, and author_name
         let suggestions = [];
         if (data.success && data.suggestions && Array.isArray(data.suggestions)) {
             suggestions = data.suggestions.map(suggestion => ({
+                id: suggestion.id,  // Ensure your API returns book ID
                 book_name: suggestion.book_name,
                 author_name: suggestion.author_name
             }));
@@ -528,10 +529,17 @@ function displaySearchSuggestions(suggestions) {
         `;
 
         suggestionItem.addEventListener("click", () => {
-            console.log("Suggestion clicked:", suggestion.book_name);
+            console.log("Suggestion clicked:", suggestion.book_name, "ID:", suggestion.id);
             searchInput.value = suggestion.book_name;
             closeSearchDropdown();
-            window.location.href = `homePage.html?query=${encodeURIComponent(suggestion.book_name)}`;
+            // Redirect to book details page using book ID
+            if (suggestion.id) {
+                window.location.href = `../pages/bookDetails.html?id=${suggestion.id}`;
+            } else {
+                // Fallback to search if no ID is available
+                console.warn("No book ID in suggestion, falling back to search");
+                window.location.href = `homePage.html?query=${encodeURIComponent(suggestion.book_name)}`;
+            }
         });
 
         searchDropdown.appendChild(suggestionItem);
