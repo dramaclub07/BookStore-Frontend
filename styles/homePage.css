@@ -13,10 +13,53 @@ body {
     background-color: #f5f5f5;
 }
 
+.search-dropdown-menu {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    width: 100%;
+    max-width: 400px;
+    position: absolute;
+}
+
+.search-dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    border-bottom: 1px solid #eee;
+}
+
+.search-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.search-dropdown-item:hover {
+    background-color: #f5f5f5;
+}
+
+.suggestion-book-name {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.suggestion-author-name {
+    font-size: 12px;
+    color: #666;
+}
+
 /* Page Content Wrapper */
 .content-wrapper {
     margin-top: 70px;
-    padding: 20px 60px;
+    padding: 20px;
+    width: 100%;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Page Info & Sorting */
@@ -26,6 +69,8 @@ body {
     align-items: center;
     padding: 15px 0;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .sort-dropdown {
@@ -40,10 +85,11 @@ body {
 .book-list {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
+    gap: 30px 20px; /* 30px between rows, 20px between columns */
     padding: 20px 0;
     justify-items: center;
     background: linear-gradient(180deg, #f5f5f5, #e8e8e8);
-    position: relative; 
+    position: relative;
 }
 
 /* Loader Animation */
@@ -59,6 +105,7 @@ body {
     border-top: 5px solid transparent;
     border-radius: 50%;
     animation: spin 1s linear infinite;
+    z-index: 10;
 }
 
 @keyframes spin {
@@ -72,7 +119,8 @@ body {
     border-radius: 5px;
     box-shadow: 0 4px 16px rgba(247, 152, 152, 0.1);
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
-    width: 280px; /* Keep the width of the book card */
+    width: 100%;
+    max-width: 280px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -97,7 +145,6 @@ body {
 /* Book Image */
 .book-image {
     width: 100%; 
-    max-width: 280px; /* Increase the max-width to make the image larger */
     height: 200px; 
     object-fit: contain; 
     border-radius: 1px;
@@ -127,6 +174,14 @@ body {
     font-weight: bold;
     opacity: 0; /* Hidden by default */
     transition: opacity 0.2s ease;
+}
+
+/* Make quick view button always visible on touch devices */
+@media (hover: none) {
+    .quick-view {
+        opacity: 1;
+        background-color: rgba(160, 48, 55, 0.8);
+    }
 }
 
 .book-card:hover .quick-view {
@@ -182,11 +237,8 @@ body {
     align-items: center;
     gap: 8px;
     margin-top: 5px;
-}
-
-/* Add margin-bottom to price-info to create space */
-.price-info {
     margin-bottom: 12px;
+    flex-wrap: wrap;
 }
 
 .price {
@@ -208,6 +260,8 @@ body {
     justify-content: center;
     margin: 30px 0;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
 }
 
 .pagination span {
@@ -237,8 +291,7 @@ body {
 .pagination .active {
     background: #333;
 }
-<<<<<<< HEAD
-=======
+
 /* Ensure the parent container supports absolute positioning */
 .nav-links {
     position: relative; /* Allows absolute positioning of dropdown relative to this */
@@ -256,7 +309,7 @@ body {
     border: 1px solid #ccc; /* Light gray border */
     border-radius: 4px; /* Slightly rounded corners */
     padding: 10px 0; /* Vertical padding, no horizontal padding on the container */
-    min-width: 180px; /* Ensures it’s wide enough for content */
+    min-width: 180px; /* Ensures it's wide enough for content */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
     z-index: 1000; /* Ensures it appears above other content */
 }
@@ -321,4 +374,145 @@ body {
     font-size: 12px;
     margin-left: 2px; /* Space from cart icon */
 }
->>>>>>> 6f899d013462e34543cde7c5d975eab97eae92fa
+
+
+/* Responsive Media Queries */
+
+/* Large tablets and small desktops */
+@media screen and (max-width: 1200px) {
+    .content-wrapper {
+        padding: 20px 40px;
+    }
+    
+    .book-list {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 25px 15px; /* Adjusted: 25px row, 15px column */
+    }
+}
+
+/* Tablets and large mobile */
+@media screen and (max-width: 992px) {
+    .content-wrapper {
+        padding: 20px 30px;
+    }
+    
+    .book-list {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px 15px; /* Adjusted: 20px row, 15px column */
+    }
+    
+    .book-card {
+        max-width: 250px;
+    }
+}
+
+/* Small tablets and large phones */
+@media screen and (max-width: 768px) {
+    .content-wrapper {
+        margin-top: 60px;
+        padding: 15px 20px;
+    }
+    
+    .page-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .page-info h1 {
+        font-size: 1.5rem;
+    }
+    
+    .book-list {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px 10px; /* Adjusted: 15px row, 10px column */
+    }
+    
+    .book-card {
+        max-width: 200px;
+    }
+    
+    .book-image {
+        height: 180px;
+    }
+}
+
+/* Mobile phones */
+@media screen and (max-width: 576px) {
+    .content-wrapper {
+        margin-top: 50px;
+        padding: 10px 15px;
+    }
+    
+    .book-list {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px 8px; /* Adjusted: 10px row, 8px column */
+    }
+    
+    .book-card {
+        max-width: 170px;
+    }
+    
+    .book-image {
+        height: 160px;
+    }
+    
+    .book-card h3 {
+        font-size: 13px;
+    }
+    
+    .book-card p {
+        font-size: 11px;
+    }
+    
+    .price {
+        font-size: 13px;
+    }
+    
+    .pagination button {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+    
+    .pagination span {
+        margin: 0 5px;
+        font-size: 12px;
+    }
+}
+
+/* Very small mobile phones */
+@media screen and (max-width: 400px) {
+    .content-wrapper {
+        padding: 10px;
+    }
+    
+    .book-list {
+        grid-template-columns: 1fr;
+        gap: 10px 0; /* Adjusted: 10px row, 0px column (single column) */
+    }
+    
+    .book-card {
+        max-width: 150px;
+    }
+    
+    .book-image {
+        height: 140px;
+    }
+    
+    .quick-view {
+        padding: 6px 10px;
+        font-size: 10px;
+    }
+    
+    /* Make dropdown handle small screens */
+    .dropdown-menu {
+        min-width: 150px;
+        right: -10px;
+    }
+    
+    .dropdown-item {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+}
+

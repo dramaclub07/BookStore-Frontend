@@ -23,7 +23,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         };
     }
 
-    // Fetch and display user profile
     async function loadUserProfile() {
         try {
             const response = await fetch(`${API_BASE_URL}/users/profile`, {
@@ -44,7 +43,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
-    // Update cart count in UI
     function updateCartCount(count) {
         const cartCount = document.querySelector('#cart-link .cart-count');
         if (cartCount) {
@@ -53,7 +51,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
-    // Fetch cart summary for count
     async function loadCartSummary() {
         try {
             const response = await fetch(`${API_BASE_URL}/cart/summary`, {
@@ -69,7 +66,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
-    // Fetch and display orders
     async function fetchOrders() {
         try {
             const response = await fetch(`${API_BASE_URL}/orders`, {
@@ -143,6 +139,23 @@ document.addEventListener("DOMContentLoaded", async function () {
     // Cancel Order Function
     async function cancelOrder(orderId) {
         if (!confirm("Are you sure you want to cancel this order?")) return;
+    function setupHeaderEventListeners() {
+        let dropdownMenu = null;
+        let isDropdownOpen = false;
+        const profileLink = document.getElementById("profile-link");
+        const cartLink = document.getElementById("cart-link");
+        const logo = document.querySelector(".logo"); // Added logo selector
+
+        // Add logo click event listener
+        if (logo) {
+            logo.addEventListener("click", (event) => {
+                event.preventDefault();
+                console.log("Logo clicked, redirecting to homepage");
+                window.location.href = "../pages/homePage.html";
+            });
+        } else {
+            console.error("Logo element not found in DOM");
+        }
 
         try {
             const response = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel`, {

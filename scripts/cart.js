@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadUserProfile();
     await loadCartItems();
     setupLocationButton();
-    setupHeaderEventListeners(); // Add this to initialize dropdown
+    setupHeaderEventListeners();
 });
 
 // Get auth headers
@@ -31,21 +31,18 @@ function updateCartCount(count) {
     const sectionCount = document.getElementById("cart-count");
     const placeOrderButton = document.querySelector(".place-order");
 
-    // Update the header cart count (in the navbar)
     if (cartCount) {
         cartCount.textContent = count;
-        cartCount.style.display = count > 0 ? "flex" : "none"; // Show/hide badge
+        cartCount.style.display = count > 0 ? "flex" : "none";
     }
 
-    // Update the section cart count (in the cart page)
     if (sectionCount) {
         sectionCount.textContent = count;
-        sectionCount.style.display = count > 0 ? "inline" : "none"; // Show/hide count
+        sectionCount.style.display = count > 0 ? "inline" : "none";
     }
 
-    // Show or hide the Place Order button based on cart count
     if (placeOrderButton) {
-        placeOrderButton.style.display = count > 0 ? "block" : "none"; // Show/hide button
+        placeOrderButton.style.display = count > 0 ? "block" : "none";
     }
 }
 
@@ -74,8 +71,23 @@ async function loadCartItems() {
 
         const data = await response.json();
         const cartItems = data.cart || [];
-        renderCartItems(cartItems);
-        updateCartCount(cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0)); // Use total quantity
+        // Remove out-of-stock items from cart
+        for (const item of cartItems) {
+            const bookResponse = await fetch(`${API_BASE_URL}/books/${item.book_id}`);
+            const book = await bookResponse.json();
+            if (book.quantity === 0) {
+                await removeCartItem(item.book_id);
+            }
+        }
+        // Reload cart after removing out-of-stock items
+        const updatedResponse = await fetch(`${API_BASE_URL}/cart`, {
+            method: "GET",
+            headers: getAuthHeaders()
+        });
+        const updatedData = await updatedResponse.json();
+        const updatedCartItems = updatedData.cart || [];
+        renderCartItems(updatedCartItems);
+        updateCartCount(updatedCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0));
         setupCartEventListeners();
         await loadCartSummary();
     } catch (error) {
@@ -133,7 +145,7 @@ function setupCartEventListeners() {
 
     document.querySelectorAll(".remove").forEach(button => {
         button.addEventListener("click", function () {
-            removeCartItem(this);
+            removeCartItem(this.closest(".cart-item").dataset.id);
         });
     });
 }
@@ -156,8 +168,18 @@ async function updateQuantity(button, change) {
     const newQuantity = currentQuantity + change;
 
     if (newQuantity <= 0) {
-        await removeCartItem(button);
+        await removeCartItem(bookId);
         return;
+    }
+
+    // Check stock before increasing quantity
+    if (change > 0) {
+        const bookResponse = await fetch(`${API_BASE_URL}/books/${bookId}`);
+        const book = await bookResponse.json();
+        if (book.quantity < newQuantity) {
+            alert("Cannot increase quantity: insufficient stock!");
+            return;
+        }
     }
 
     const perUnitDiscountedPrice = parseFloat(cartItem.dataset.discountedPrice);
@@ -171,7 +193,8 @@ async function updateQuantity(button, change) {
         });
 
         if (!response.ok) {
-            throw new Error("Failed to update quantity");
+            const result = await response.json();
+            throw new Error(result.error || "Failed to update quantity");
         }
 
         quantityElement.textContent = newQuantity;
@@ -182,24 +205,16 @@ async function updateQuantity(button, change) {
         if (unitPriceElement) unitPriceElement.textContent = newUnitPrice;
 
         await loadCartSummary();
-        await loadCartItems(); // Refresh cart to ensure consistency
+        await loadCartItems();
     } catch (error) {
         console.error("Error updating quantity:", error);
-        alert("Failed to update quantity.");
+        alert(`Failed to update quantity: ${error.message}`);
         quantityElement.textContent = currentQuantity;
     }
 }
 
 // Remove item
-async function removeCartItem(button) {
-    const cartItem = button.closest(".cart-item");
-    const bookId = cartItem.dataset.id;
-
-    if (!bookId) {
-        console.error("Book ID not found");
-        return;
-    }
-
+async function removeCartItem(bookId) {
     try {
         const response = await fetch(`${API_BASE_URL}/cart/toggle_remove`, {
             method: "PATCH",
@@ -207,24 +222,19 @@ async function removeCartItem(button) {
             body: JSON.stringify({ book_id: bookId })
         });
 
-        if (!response.ok) {
-            throw new Error("Failed to remove item");
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            console.warn("Failed to remove item from cart:", result.error || "Unknown error");
+            console.log("Full response from /cart/toggle_remove:", result);
+            // Continue with UI update even if removal fails
         }
 
-        cartItem.remove();
-        const remainingItems = document.querySelectorAll(".cart-item");
-        const totalItems = Array.from(remainingItems).reduce((sum, item) => {
-            return sum + parseInt(item.querySelector(".quantity-value").textContent, 10);
-        }, 0);
-        updateCartCount(totalItems);
-        await loadCartSummary();
-
-        if (remainingItems.length === 0) {
-            document.getElementById("cart-container").innerHTML = "<p>Your cart is empty.</p>";
-        }
+        await loadCartItems(); // Refresh cart
     } catch (error) {
         console.error("Error removing item:", error);
-        alert("Failed to remove item.");
+        console.log("Error details:", error.message);
+        // Do not show alert to user since this is not critical
+        await loadCartItems(); // Refresh cart even on error
     }
 }
 
@@ -286,6 +296,17 @@ function setupHeaderEventListeners() {
     let isDropdownOpen = false;
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
+    const logo = document.querySelector(".logo");
+
+    if (logo) {
+        logo.addEventListener("click", (event) => {
+            event.preventDefault();
+            console.log("Logo clicked, redirecting to homepage");
+            window.location.href = "../pages/homePage.html";
+        });
+    } else {
+        console.error("Logo element not found in DOM");
+    }
 
     if (profileLink) {
         profileLink.addEventListener("click", (event) => {
@@ -316,11 +337,9 @@ function setupHeaderEventListeners() {
         cartLink.addEventListener("click", (event) => {
             event.preventDefault();
             console.log("Cart link clicked, already on cart page");
-            // No redirect needed since we're already on the cart page
         });
     }
 
-    // Search functionality
     document.getElementById("search")?.addEventListener("keypress", (event) => {
         if (event.key === "Enter") {
             const query = event.target.value.trim();
@@ -553,7 +572,6 @@ function setupLocationButton() {
         }
     });
 
-    // Load any previously selected address
     const selectedAddress = JSON.parse(localStorage.getItem("selectedAddress") || "{}");
     if (selectedAddress.street) {
         updateAddressFields(selectedAddress);
@@ -636,7 +654,7 @@ document.querySelector(".place-order")?.addEventListener("click", async () => {
                 alert(errorMessage);
             }
         } else {
-            window.location.href = "../pages/address-details.html";
+            window.location.href = "../pages/customer-details.html";
         }
     }
 });
