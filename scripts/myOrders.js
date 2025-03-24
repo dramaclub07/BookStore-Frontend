@@ -6,11 +6,11 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     if (!token) {
         alert("Please log in to view your orders.");
-        window.location.href = "../pages/login.html"; // Fixed path consistency
+        window.location.href = "../pages/login.html";
         return;
     }
 
-    // Initial fetches
+    // Load user profile, cart summary, and orders
     await loadUserProfile();
     await loadCartSummary();
     await fetchOrders();
@@ -29,21 +29,14 @@ document.addEventListener("DOMContentLoaded", async function () {
             const response = await fetch(`${API_BASE_URL}/users/profile`, {
                 headers: getAuthHeaders()
             });
-            if (!response.ok) {
-                if (response.status === 401) {
-                    alert("Session expired. Please log in again.");
-                    localStorage.removeItem('token');
-                    window.location.href = '../pages/login.html';
-                    return;
-                }
-                throw new Error(`Profile fetch failed with status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Profile fetch failed: ${response.status}`);
+
             const userData = await response.json();
             if (userData.success) {
                 const profileElement = document.getElementById('profile-link');
                 if (profileElement) {
                     profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
-                    localStorage.setItem('username', userData.name || 'User'); // Store for dropdown
+                    localStorage.setItem('username', userData.name || 'User');
                 }
             }
         } catch (error) {
@@ -56,7 +49,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         const cartCount = document.querySelector('#cart-link .cart-count');
         if (cartCount) {
             cartCount.textContent = count;
-            cartCount.style.display = count > 0 ? "flex" : "none"; // Show/hide badge
+            cartCount.style.display = count > 0 ? "flex" : "none";
         }
     }
 
@@ -67,15 +60,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                 headers: getAuthHeaders()
             });
 
-            if (!response.ok) {
-                if (response.status === 401) {
-                    alert("Session expired. Please log in again.");
-                    localStorage.removeItem('token');
-                    window.location.href = '../pages/login.html';
-                    return;
-                }
-                throw new Error("Failed to fetch cart summary");
-            }
+            if (!response.ok) throw new Error("Failed to fetch cart summary");
 
             const cartData = await response.json();
             updateCartCount(cartData.total_items || 0);
@@ -91,35 +76,28 @@ document.addEventListener("DOMContentLoaded", async function () {
                 headers: getAuthHeaders()
             });
 
-            if (!response.ok) {
-                if (response.status === 401) {
-                    alert("Session expired. Please log in again.");
-                    localStorage.removeItem('token');
-                    window.location.href = '../pages/login.html';
-                    return;
-                }
-                throw new Error(`Error fetching orders: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Error fetching orders: ${response.status}`);
 
             const data = await response.json();
-            console.log("Orders Data:", data);
+            ordersContainer.innerHTML = ""; // Clear previous content
 
             if (data.success && data.orders.length > 0) {
-                ordersContainer.innerHTML = "";
-
                 for (const order of data.orders) {
                     try {
                         const bookResponse = await fetch(`${API_BASE_URL}/books/${order.book_id}`, {
                             headers: getAuthHeaders()
                         });
-                        if (!bookResponse.ok) {
-                            throw new Error(`Failed to fetch book: ${bookResponse.status}`);
-                        }
+                        if (!bookResponse.ok) throw new Error(`Failed to fetch book: ${bookResponse.status}`);
+
                         const bookData = await bookResponse.json();
-                        console.log("Book Data:", bookData);
 
                         const orderElement = document.createElement("div");
                         orderElement.classList.add("order-item");
+
+                        // Display "Cancelled" status if order is canceled
+                        const orderStatus = order.status === "cancelled"
+                            ? `<p class="order-status cancelled">Cancelled</p>`
+                            : `<button class="cancel-order-btn" data-order-id="${order.id}">Cancel Order</button>`;
 
                         orderElement.innerHTML = `
                             <div class="order-item-container">
@@ -127,18 +105,28 @@ document.addEventListener("DOMContentLoaded", async function () {
                                 <div class="order-details">
                                     <div class="order-main-details">
                                         <h3>Order #${order.id}</h3>
-                                        <p>Book: <strong>${bookData.book_name}</strong></p>
+                                        <p>Book: <strong>${bookData.book_name}</strong><span class="order-quantity">Qty: ${order.quantity}</span></p>
                                         <p>Author: ${bookData.author_name}</p>
                                         <p>Total Price: ₹${order.total_price}</p>
                                     </div>
-                                    <div class="order-date">
-                                        <p>Placed on: ${new Date(order.created_at).toLocaleDateString()}</p>
+                                    <div class="order-other-details">
+                                        <div class="order-date">
+                                            <p>Placed on: ${new Date(order.created_at).toLocaleDateString()}</p>
+                                        </div>
+                                        <div class="order-actions">
+                                            ${orderStatus}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         `;
 
                         ordersContainer.appendChild(orderElement);
+
+                        // Add event listener for cancel button (if order is not already canceled)
+                        if (order.status !== "cancelled") {
+                            orderElement.querySelector('.cancel-order-btn').addEventListener('click', () => cancelOrder(order.id));
+                        }
                     } catch (bookError) {
                         console.error("Error fetching book details:", bookError);
                     }
@@ -152,125 +140,38 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
-    // Dropdown Functionality
-    function setupHeaderEventListeners() {
-        let dropdownMenu = null;
-        let isDropdownOpen = false;
-        const profileLink = document.getElementById("profile-link");
-        const cartLink = document.getElementById("cart-link");
+    // Cancel Order Function
+    async function cancelOrder(orderId) {
+        if (!confirm("Are you sure you want to cancel this order?")) return;
 
-        if (!profileLink) {
-            console.error("Profile link element (#profile-link) not found in DOM");
-            return;
-        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel`, {
+                method: 'PATCH',  // PATCH method for updating order status
+                headers: getAuthHeaders()
+            });
 
-        profileLink.addEventListener("click", (event) => {
-            event.preventDefault();
-            if (isDropdownOpen) {
-                closeDropdown();
-            } else {
-                openDropdown();
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Failed to cancel order: ${response.status}`);
             }
-        });
 
-        document.addEventListener("click", (event) => {
-            if (
-                isDropdownOpen &&
-                !profileLink.contains(event.target) &&
-                dropdownMenu &&
-                !dropdownMenu.contains(event.target)
-            ) {
-                closeDropdown();
-            }
-        });
-
-        if (cartLink) {
-            cartLink.addEventListener("click", (event) => {
-                event.preventDefault();
-                window.location.href = '../pages/cart.html';
-            });
-        }
-
-        const searchInput = document.getElementById("search");
-        if (searchInput) {
-            searchInput.addEventListener("keypress", (event) => {
-                if (event.key === "Enter") {
-                    const query = event.target.value.trim();
-                    if (query) {
-                        window.location.href = `../pages/homePage.html?query=${encodeURIComponent(query)}`;
-                    }
-                }
-            });
-        }
-
-        function openDropdown() {
-            if (dropdownMenu) dropdownMenu.remove();
-
-            dropdownMenu = document.createElement("div");
-            dropdownMenu.classList.add("dropdown-menu");
-            const username = localStorage.getItem("username") || "User";
-
-            dropdownMenu.innerHTML = `
-                <div class="dropdown-item dropdown-header">Hello ${username},</div>
-                <div class="dropdown-item" id="dropdown-profile">Profile</div>
-                <div class="dropdown-item" id="dropdown-orders">My Orders</div>
-                <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
-                <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
-            `;
-
-            profileLink.parentElement.appendChild(dropdownMenu);
-
-            document.getElementById("dropdown-profile").addEventListener("click", () => {
-                window.location.href = "../pages/profile.html";
-                closeDropdown();
-            });
-            document.getElementById("dropdown-orders").addEventListener("click", () => {
-                window.location.href = "../pages/myOrders.html";
-                closeDropdown();
-            });
-            document.getElementById("dropdown-wishlist").addEventListener("click", () => {
-                window.location.href = "../pages/wishlist.html";
-                closeDropdown();
-            });
-            document.getElementById("dropdown-logout").addEventListener("click", () => {
-                handleSignOut();
-                closeDropdown();
-            });
-
-            isDropdownOpen = true;
-        }
-
-        function closeDropdown() {
-            if (dropdownMenu) {
-                dropdownMenu.remove();
-                dropdownMenu = null;
-            }
-            isDropdownOpen = false;
+            alert("Order cancelled successfully!");
+            await fetchOrders(); // Refresh orders list
+        } catch (error) {
+            console.error("Error cancelling order:", error);
+            alert(`Failed to cancel order: ${error.message}`);
         }
     }
 
+    // Logout Function
     function handleSignOut() {
-        const provider = localStorage.getItem("socialProvider");
-
-        if (provider === "google" && typeof google !== "undefined" && google.accounts) {
-            google.accounts.id.disableAutoSelect();
-            google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
-                console.log("Google session revoked");
-            });
-        }
-
-        if (provider === "facebook" && typeof FB !== "undefined") {
-            FB.getLoginStatus(function (response) {
-                if (response.status === "connected") {
-                    FB.logout(function (response) {
-                        console.log("Facebook session revoked");
-                    });
-                }
-            });
-        }
-
         localStorage.clear();
         alert("Logged out successfully.");
         window.location.href = "../pages/login.html";
+    }
+
+    // Header Event Listeners
+    function setupHeaderEventListeners() {
+        document.getElementById("logout-button")?.addEventListener("click", handleSignOut);
     }
 });
