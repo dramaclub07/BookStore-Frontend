@@ -1,0 +1,282 @@
+/* Reset default styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Navbar */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #A03037;
+    color: white;
+    padding: 0 20px;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    height: 60px; /* Slightly taller to match the image */
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+}
+
+/* Logo */
+.logo {
+    display: flex;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.logo img {
+    width: 50px;
+    height: 30px;
+    margin-right: 10px;
+}
+
+/* Search Container */
+.search-container {
+    position: relative;
+    width: 40%;
+    min-width: 200px;
+    max-width: 500px;
+    z-index: 1002;
+}
+
+.search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 10px;
+    color: #666;
+    transition: color 0.3s ease;
+}
+
+.search-bar {
+    width: 100%;
+    padding: 8px 8px 8px 35px; /* Extra padding-left for the icon */
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    background-color: #fff;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+    z-index: 1004;
+    outline: none;
+}
+
+.search-bar:focus {
+    border-color: #ffd700;
+}
+
+.suggestions-box {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 0 0 5px 5px;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 1003;
+    display: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 2px;
+}
+
+.suggestions-box.visible {
+    display: block;
+}
+
+.suggestion-item {
+    padding: 8px;
+    cursor: pointer;
+    color: black;
+    font-size: 14px;
+    border-bottom: 1px solid #eee;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background-color: #f2dede;
+}
+
+/* Nav Links */
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-shrink: 0;
+}
+
+.profile-link, .cart-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    color: white;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.profile-link:hover, .cart-link:hover {
+    color: #ffd700;
+}
+
+.nav-icon i {
+    transition: color 0.3s ease, transform 0.3s ease; /* Animation for hover */
+}
+
+.profile-link:hover .nav-icon i, .cart-link:hover .nav-icon i {
+    color: #ffd700;
+    transform: scale(1.2); /* Slight scale-up on hover */
+}
+
+.username {
+    white-space: nowrap;
+}
+
+.cart-count {
+    position: relative;
+    background-color: white;
+    color: #de0d0d;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: bold;
+    min-width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    top: -10px;
+    left: -5px;
+}
+
+/* Profile Dropdown */
+.profile-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 47px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1001;
+    color: #333;
+    padding: 10px 0;
+    min-width: 200px; /* Slightly wider to match the image */
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #666;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f5f5f5;
+    color: #A03037;
+}
+
+.dropdown-item .dropdown-icon i {
+    margin-right: 10px;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.dropdown-item:hover .dropdown-icon i {
+    color: #ffd700;
+    transform: scale(1.2); /* Same hover animation as navbar icons */
+}
+
+.dropdown-header {
+    padding: 8px 15px;
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.dropdown-subheader {
+    padding: 0 15px 8px;
+    font-size: 12px;
+    color: #999;
+}
+
+.logout-button, .login-signup-button {
+    background: #A03037;
+    border: none;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 15px;
+    width: 100%;
+    text-align: centre;
+    border-radius: 3px;
+    transition: background-color 0.3s ease;
+}
+
+.logout-button:hover, .login-signup-button:hover {
+    background-color: #8b0000; /* Darker red on hover */
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+    .navbar {
+        justify-content: space-between;
+    }
+}
+
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        height: auto;
+        padding: 10px 15px;
+    }
+
+    .search-container {
+        margin: 10px 0;
+        width: 100%;
+    }
+
+    .nav-links {
+        width: 100%;
+        justify-content: space-around;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo {
+        font-size: 2vh;
+    }
+
+    .logo img {
+        width: 8vw;
+        height: 3vh;
+    }
+
+    .nav-links span {
+        font-size: 1.4vh;
+    }
+
+    .cart-count {
+        min-width: 18px;
+        height: 18px;
+        font-size: 10px;
+    }
+}
