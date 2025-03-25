@@ -139,34 +139,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     // Cancel Order Function
     async function cancelOrder(orderId) {
         if (!confirm("Are you sure you want to cancel this order?")) return;
-    function setupHeaderEventListeners() {
-        let dropdownMenu = null;
-        let isDropdownOpen = false;
-        const profileLink = document.getElementById("profile-link");
-        const cartLink = document.getElementById("cart-link");
-        const logo = document.querySelector(".logo"); // Added logo selector
-
-        // Add logo click event listener
-        if (logo) {
-            logo.addEventListener("click", (event) => {
-                event.preventDefault();
-                console.log("Logo clicked, redirecting to homepage");
-                window.location.href = "../pages/homePage.html";
-            });
-        } else {
-            console.error("Logo element not found in DOM");
-        }
-
-        // Add logo click event listener
-        if (logo) {
-            logo.addEventListener("click", (event) => {
-                event.preventDefault();
-                console.log("Logo clicked, redirecting to homepage");
-                window.location.href = "../pages/homePage.html";
-            });
-        } else {
-            console.error("Logo element not found in DOM");
-        }
 
         try {
             const response = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel`, {
@@ -191,11 +163,102 @@ document.addEventListener("DOMContentLoaded", async function () {
     function handleSignOut() {
         localStorage.clear();
         alert("Logged out successfully.");
-        window.location.href = "../pages/login.html";
+        window.location.href = "../pages/homePage.html";
     }
 
     // Header Event Listeners
     function setupHeaderEventListeners() {
+        let dropdownMenu = null;
+        let isDropdownOpen = false;
+        const profileLink = document.getElementById("profile-link");
+        const cartLink = document.getElementById("cart-link");
+        const logo = document.querySelector(".logo");
+
+        // Add logo click event listener
+        if (logo) {
+            logo.addEventListener("click", (event) => {
+                event.preventDefault();
+                console.log("Logo clicked, redirecting to homepage");
+                window.location.href = "../pages/homePage.html";
+            });
+        } else {
+            console.error("Logo element not found in DOM");
+        }
+
+        // Profile link dropdown
+        if (profileLink) {
+            profileLink.addEventListener("click", (event) => {
+                event.preventDefault();
+                if (isDropdownOpen) {
+                    closeDropdown();
+                } else {
+                    openDropdown();
+                }
+            });
+
+            document.addEventListener("click", (event) => {
+                if (
+                    isDropdownOpen &&
+                    !profileLink.contains(event.target) &&
+                    dropdownMenu &&
+                    !dropdownMenu.contains(event.target)
+                ) {
+                    closeDropdown();
+                }
+            });
+        }
+
+        // Cart link
+        if (cartLink) {
+            cartLink.addEventListener("click", (event) => {
+                event.preventDefault();
+                window.location.href = "../pages/cart.html";
+            });
+        }
+
+        // Logout button
         document.getElementById("logout-button")?.addEventListener("click", handleSignOut);
+
+        function openDropdown() {
+            if (dropdownMenu) dropdownMenu.remove();
+
+            dropdownMenu = document.createElement("div");
+            dropdownMenu.classList.add("dropdown-menu");
+            dropdownMenu.innerHTML = `
+                <div class="dropdown-item" id="dropdown-profile">Profile</div>
+                <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+                <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
+                <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
+            `;
+
+            profileLink.appendChild(dropdownMenu);
+
+            document.getElementById("dropdown-profile").addEventListener("click", () => {
+                window.location.href = "../pages/profile.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-orders").addEventListener("click", () => {
+                window.location.href = "../pages/myOrders.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-wishlist").addEventListener("click", () => {
+                window.location.href = "../pages/wishlist.html";
+                closeDropdown();
+            });
+            document.getElementById("dropdown-logout").addEventListener("click", () => {
+                handleSignOut();
+                closeDropdown();
+            });
+
+            isDropdownOpen = true;
+        }
+
+        function closeDropdown() {
+            if (dropdownMenu) {
+                dropdownMenu.remove();
+                dropdownMenu = null;
+            }
+            isDropdownOpen = false;
+        }
     }
 });

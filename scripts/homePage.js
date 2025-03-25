@@ -181,6 +181,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 closeDropdown();
             });
             document.getElementById("dropdown-logout").addEventListener("click", () => {
+                console.log("Logout button clicked");
                 handleSignOut();
                 closeDropdown();
             });
@@ -288,6 +289,7 @@ async function updateCartCount() {
 function handleSignOut() {
     console.log("Logging out...");
     const provider = localStorage.getItem("socialProvider");
+    const loginPath = "../pages/homePage.html";
 
     if (provider === "google" && typeof google !== "undefined" && google.accounts) {
         console.log("Logging out from Google");
@@ -295,10 +297,8 @@ function handleSignOut() {
         google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
             console.log("Google session revoked");
         });
-    }
-
-    if (provider === "facebook") {
-        console.log("Logging out from Facebook");
+    } else if (provider === "facebook" && typeof FB !== "undefined") {
+        console.log("Attempting Facebook logout");
         FB.getLoginStatus(function (response) {
             if (response.status === "connected") {
                 FB.logout(function (response) {
@@ -572,7 +572,7 @@ document.getElementById("next-page")?.addEventListener("click", () => {
     }
 });
 
-document.getElementById("sort-books")?.addEventListener("change", (event) => {
+document.getElementById("sort-books")?.addEventListener("click", (event) => {
     console.log("Sorting books by:", event.target.value);
     fetchBooks(event.target.value, 1);
 });
