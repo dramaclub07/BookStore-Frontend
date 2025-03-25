@@ -181,6 +181,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 closeDropdown();
             });
             document.getElementById("dropdown-logout").addEventListener("click", () => {
+                console.log("Logout button clicked");
                 handleSignOut();
                 closeDropdown();
             });
@@ -285,32 +286,76 @@ async function updateCartCount() {
     }
 }
 
-function handleSignOut() {
-    console.log("Logging out...");
+async function handleSignOut() {
+    console.log("=== Starting logout process ===");
     const provider = localStorage.getItem("socialProvider");
+    const loginPath = "../pages/homePage.html";
 
-    if (provider === "google" && typeof google !== "undefined" && google.accounts) {
-        console.log("Logging out from Google");
-        google.accounts.id.disableAutoSelect();
-        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
-            console.log("Google session revoked");
-        });
-    }
-
-    if (provider === "facebook") {
-        console.log("Logging out from Facebook");
-        FB.getLoginStatus(function (response) {
-            if (response.status === "connected") {
-                FB.logout(function (response) {
-                    console.log("Facebook session revoked");
+    try {
+        // Handle Google logout
+        if (provider === "google" && typeof google !== "undefined" && google.accounts) {
+            console.log("Attempting Google logout");
+            google.accounts.id.disableAutoSelect();
+            await new Promise((resolve) => {
+                google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
+                    console.log("Google session revoked");
+                    resolve();
                 });
-            }
-        });
-    }
+            });
+        }
+        // Handle Facebook logout
+        else if (provider === "facebook" && typeof FB !== "undefined") {
+            console.log("Attempting Facebook logout");
+            await new Promise((resolve) => {
+                FB.getLoginStatus(function (response) {
+                    if (response.status === "connected") {
+                        FB.logout(function (response) {
+                            console.log("Facebook session revoked");
+                            resolve();
+                        });
+                    } else {
+                        resolve();
+                    }
+                });
+            });
+        }
 
-    localStorage.clear();
-    alert("Logged out successfully.");
-    window.location.href = "../pages/login.html";
+        // Clear local storage and redirect
+        console.log("Clearing local storage");
+        localStorage.clear();
+        
+        console.log("Attempting redirect to:", loginPath);
+        // Try multiple redirect methods
+        window.location.replace(loginPath);
+        
+        // Fallback if replace doesn't work
+        setTimeout(() => {
+            console.log("Checking current location after 500ms:", window.location.pathname);
+            if (!window.location.pathname.includes("login.html")) {
+                console.warn("First redirect attempt failed, trying alternate method");
+                window.location.href = loginPath;
+                
+                // Final fallback
+                setTimeout(() => {
+                    if (!window.location.pathname.includes("login.html")) {
+                        console.error("Second redirect failed, forcing navigation");
+                        window.location = loginPath;
+                    }
+                    console.log("Final location:", window.location.pathname);
+                    alert("Logged out successfully.");
+                }, 500);
+            } else {
+                alert("Logged out successfully.");
+            }
+        }, 500);
+
+    } catch (error) {
+        console.error("Logout error:", error);
+        // Force redirect on error
+        localStorage.clear();
+        window.location = loginPath;
+        alert("Logged out successfully (with error handling)");
+    }
 }
 
 async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) {
@@ -478,11 +523,10 @@ async function fetchSearchSuggestions(query) {
         const data = await response.json();
         console.log("Raw API response:", data);
 
-        // Parse the suggestions: expecting id, book_name, and author_name
         let suggestions = [];
         if (data.success && data.suggestions && Array.isArray(data.suggestions)) {
             suggestions = data.suggestions.map(suggestion => ({
-                id: suggestion.id,  // Ensure your API returns book ID
+                id: suggestion.id,
                 book_name: suggestion.book_name,
                 author_name: suggestion.author_name
             }));
@@ -522,7 +566,6 @@ function displaySearchSuggestions(suggestions) {
         const suggestionItem = document.createElement("div");
         suggestionItem.classList.add("search-dropdown-item");
 
-        // Display both book name and author name
         suggestionItem.innerHTML = `
             <div class="suggestion-book-name">${suggestion.book_name}</div>
             <div class="suggestion-author-name">${suggestion.author_name}</div>
@@ -532,11 +575,9 @@ function displaySearchSuggestions(suggestions) {
             console.log("Suggestion clicked:", suggestion.book_name, "ID:", suggestion.id);
             searchInput.value = suggestion.book_name;
             closeSearchDropdown();
-            // Redirect to book details page using book ID
             if (suggestion.id) {
                 window.location.href = `../pages/bookDetails.html?id=${suggestion.id}`;
             } else {
-                // Fallback to search if no ID is available
                 console.warn("No book ID in suggestion, falling back to search");
                 window.location.href = `homePage.html?query=${encodeURIComponent(suggestion.book_name)}`;
             }
@@ -572,7 +613,7 @@ document.getElementById("next-page")?.addEventListener("click", () => {
     }
 });
 
-document.getElementById("sort-books")?.addEventListener("change", (event) => {
+document.getElementById("sort-books")?.addEventListener("click", (event) => {
     console.log("Sorting books by:", event.target.value);
     fetchBooks(event.target.value, 1);
 });

@@ -7,30 +7,20 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8f5f2; /* Warmer background */
+    background-color: #f8f5f2;
     color: #333;
     line-height: 1.6;
 }
 
-/* Content Wrapper - INCREASED WIDTH */
+/* Content Wrapper */
 .content-wrapper {
-    max-width: 1200px; /* Increased from 900px */
+    max-width: 1200px;
     width: 90%;
     margin: 50px auto;
     padding: 40px;
     background-color: white;
     border-radius: 12px;
     box-shadow: 0 10px 25px rgba(139, 69, 19, 0.08);
-}
-
-/* Page Title */
-.page-title {
-    font-size: 28px;
-    color: #8B4513;
-    margin-bottom: 30px;
-    padding-bottom: 15px;
-    border-bottom: 3px solid #f0e6dd;
-    text-align: center;
 }
 
 /* Orders Container */
@@ -67,12 +57,6 @@ body {
     align-items: center;
 }
 
-.order-id {
-    font-size: 16px;
-    color: #777;
-    font-weight: normal;
-}
-
 /* Order Item Container */
 .order-item-container {
     display: flex;
@@ -84,16 +68,14 @@ body {
     margin-bottom: 25px;
     background-color: #faf8f6;
     transition: all 0.3s ease;
+    position: relative; /* For positioning cancel button */
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
 }
 
 .order-item-container:hover {
     border-color: #8B4513;
     background-color: #fcf9f6;
     transform: translateX(5px);
-}
-
-.order-item-container:last-child {
-    margin-bottom: 0;
 }
 
 /* Book Image */
@@ -109,14 +91,9 @@ body {
     transition: all 0.3s ease;
 }
 
-.order-item-container:hover .book-image {
-    transform: scale(1.05) rotate(1deg);
-    border-color: #8B4513;
-    box-shadow: 0 8px 15px rgba(139, 69, 19, 0.2);
-}
-
 /* Order Details */
 .order-details {
+    /* border: 1px solid green; */
     flex-grow: 1;
     display: flex;
     justify-content: space-between;
@@ -124,14 +101,17 @@ body {
     gap: 20px;
 }
 
-.order-main-details {
-    flex-grow: 1;
+.order-other-details{
+    /* border: 1px solid yellow; */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: end;
+    gap: 75px;
 }
 
-.order-main-details h4 {
-    font-size: 20px;
-    color: #333;
-    margin-bottom: 10px;
+.order-main-details {
+    flex-grow: 1;
 }
 
 .order-main-details p {
@@ -139,22 +119,6 @@ body {
     margin-bottom: 8px;
     font-size: 16px;
     line-height: 1.5;
-}
-
-.order-main-details .price {
-    font-weight: 600;
-    color: #8B4513;
-    font-size: 20px;
-    margin-top: 15px;
-    display: inline-block;
-    padding: 5px 15px;
-    background-color: #fcf1e6;
-    border-radius: 20px;
-}
-
-.order-main-details .author {
-    font-style: italic;
-    color: #777;
 }
 
 .order-quantity {
@@ -172,43 +136,36 @@ body {
     text-align: right;
     color: #777;
     font-size: 15px;
-    min-width: 220px; /* Increased width */
+    min-width: 220px;
     background-color: #f9f7f5;
     padding: 15px;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
-/* Order Date Paragraph */
-.order-date p {
-    margin: 5px 0;
-}
-
-.order-date .date-label {
-    font-weight: bold;
-    color: #8B4513;
-    margin-bottom: 8px;
-}
-
-.order-date .delivery-status {
-    margin-top: 10px;
-    padding: 5px 10px;
-    border-radius: 20px;
+/* Cancel Button */
+.cancel-order-btn {
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
     font-size: 14px;
-    font-weight: 500;
-    background-color: #e6f7e6;
-    color: #006400;
-    display: inline-block;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 15px;
+    align-self: flex-end; /* Align to the right on larger screens */
 }
 
-.order-date .delivery-status.shipped {
-    background-color: #e6f0ff;
-    color: #0047AB;
+.cancel-order-btn:hover {
+    background-color: #cc0000;
 }
 
-.order-date .delivery-status.processing {
-    background-color: #fff8e6;
-    color: #b8860b;
+/* Breadcrumb Styles */
+.breadcrumb {
+    margin: 20px 0;
+    font-size: 18px;
+    color: #333;
 }
 
 /* Responsive Design */
@@ -229,6 +186,7 @@ body {
         flex-direction: column;
         align-items: flex-start;
         gap: 20px;
+        padding-bottom: 60px; /* Ensure space for cancel button */
     }
     
     .book-image {
@@ -245,35 +203,27 @@ body {
     
     .order-date {
         text-align: left;
-        margin-top: 15px;
         min-width: 100%;
     }
     
-    .navbar {
-        padding: 12px 15px;
+    .cancel-order-btn {
+        width: 100%; /* Full width on smaller screens */
+        margin-top: 10px;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .order-main-details h3 {
+        font-size: 18px;
     }
     
-    .nav-links a, .nav-links span {
-        margin: 0 10px;
-        font-size: 15px;
+    .order-main-details p, .order-date p {
+        font-size: 14px;
     }
-}
-/* Breadcrumb Styles */
-.breadcrumb {
-    margin: 20px 0;
-    font-size: 18px;
-    color: #333;
-}
-
-.breadcrumb-link {
-    text-decoration: none;
-}
-
-.breadcrumb-link:hover {
-    color: #007bff;
-}
-
-.breadcrumb-current {
-    color: #333;
-    font-weight: bold;
+    
+    .cancel-order-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
 }

@@ -99,10 +99,9 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             const data = await response.json();
             console.log("Orders Data:", data);
+            ordersContainer.innerHTML = ""; // Clear previous content
 
             if (data.success && data.orders.length > 0) {
-                ordersContainer.innerHTML = "";
-
                 for (const order of data.orders) {
                     try {
                         const bookResponse = await fetch(`${API_BASE_URL}/books/${order.book_id}`, {
@@ -117,24 +116,39 @@ document.addEventListener("DOMContentLoaded", async function () {
                         const orderElement = document.createElement("div");
                         orderElement.classList.add("order-item");
 
+                        // Display "Cancelled" status if order is canceled
+                        const orderStatus = order.status === "cancelled"
+                            ? `<p class="order-status cancelled">Cancelled</p>`
+                            : `<button class="cancel-order-btn" data-order-id="${order.id}">Cancel Order</button>`;
+
                         orderElement.innerHTML = `
                             <div class="order-item-container">
                                 <img class="book-image" src="${bookData.book_image || '../assets/1.png'}" alt="${bookData.book_name}" />
                                 <div class="order-details">
                                     <div class="order-main-details">
                                         <h3>Order #${order.id}</h3>
-                                        <p>Book: <strong>${bookData.book_name}</strong></p>
+                                        <p>Book: <strong>${bookData.book_name}</strong><span class="order-quantity">Qty: ${order.quantity}</span></p>
                                         <p>Author: ${bookData.author_name}</p>
                                         <p>Total Price: ₹${order.total_price}</p>
                                     </div>
-                                    <div class="order-date">
-                                        <p>Placed on: ${new Date(order.created_at).toLocaleDateString()}</p>
+                                    <div class="order-other-details">
+                                        <div class="order-date">
+                                            <p>Placed on: ${new Date(order.created_at).toLocaleDateString()}</p>
+                                        </div>
+                                        <div class="order-actions">
+                                            ${orderStatus}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         `;
 
                         ordersContainer.appendChild(orderElement);
+
+                        // Add event listener for cancel button (if order is not already canceled)
+                        if (order.status !== "cancelled") {
+                            orderElement.querySelector('.cancel-order-btn').addEventListener('click', () => cancelOrder(order.id));
+                        }
                     } catch (bookError) {
                         console.error("Error fetching book details:", bookError);
                     }
@@ -148,22 +162,42 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
+    // Cancel Order Function
+    async function cancelOrder(orderId) {
+        if (!confirm("Are you sure you want to cancel this order?")) return;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel`, {
+                method: 'PATCH',
+                headers: getAuthHeaders()
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Failed to cancel order: ${response.status}`);
+            }
+
+            alert("Order cancelled successfully!");
+            await fetchOrders(); // Refresh orders list
+        } catch (error) {
+            console.error("Error cancelling order:", error);
+            alert(`Failed to cancel order: ${error.message}`);
+        }
+    }
+
     function setupHeaderEventListeners() {
         let dropdownMenu = null;
         let isDropdownOpen = false;
         const profileLink = document.getElementById("profile-link");
         const cartLink = document.getElementById("cart-link");
-        const logo = document.querySelector(".logo"); // Added logo selector
+        const logo = document.querySelector(".logo");
 
-        // Add logo click event listener
         if (logo) {
             logo.addEventListener("click", (event) => {
                 event.preventDefault();
                 console.log("Logo clicked, redirecting to homepage");
                 window.location.href = "../pages/homePage.html";
             });
-        } else {
-            console.error("Logo element not found in DOM");
         }
 
         if (!profileLink) {
@@ -278,6 +312,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         localStorage.clear();
         alert("Logged out successfully.");
-        window.location.href = "../pages/login.html";
+        window.location.href = "../pages/homePage.html";
     }
 });
