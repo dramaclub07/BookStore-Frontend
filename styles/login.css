@@ -290,12 +290,12 @@ label {
 .btn-social {
     flex: 1;
     min-width: 120px;
-    padding: 12px;
+    padding: 2px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-weight: 700;
-    font-size: 14px;
+    font-weight: 800;
+    font-size: 12px;
     transition: background 0.3s, transform 0.1s;
     display: flex;
     align-items: center;
@@ -310,10 +310,16 @@ label {
 }
 
 .btn-google {
-    background: white;
+    /* background: white;
     color: #1f2937;
-    border: 1px solid #d1d5db;
+    border: 1wh solid #d1d5db; */
 }
+
+.g_id_signin {
+    width: 100%;
+    
+}
+
 
 .btn-signout {
     background: linear-gradient(135deg, #b91c1c, #dc2626);
