@@ -310,7 +310,7 @@ function handleSignOut() {
 
     localStorage.clear();
     alert("Logged out successfully.");
-    window.location.href = "../pages/login.html";
+    window.location.href = "../pages/homePage.html";
 }
 
 async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) {
@@ -478,11 +478,10 @@ async function fetchSearchSuggestions(query) {
         const data = await response.json();
         console.log("Raw API response:", data);
 
-        // Parse the suggestions: expecting id, book_name, and author_name
         let suggestions = [];
         if (data.success && data.suggestions && Array.isArray(data.suggestions)) {
             suggestions = data.suggestions.map(suggestion => ({
-                id: suggestion.id,  // Ensure your API returns book ID
+                id: suggestion.id,
                 book_name: suggestion.book_name,
                 author_name: suggestion.author_name
             }));
@@ -522,7 +521,6 @@ function displaySearchSuggestions(suggestions) {
         const suggestionItem = document.createElement("div");
         suggestionItem.classList.add("search-dropdown-item");
 
-        // Display both book name and author name
         suggestionItem.innerHTML = `
             <div class="suggestion-book-name">${suggestion.book_name}</div>
             <div class="suggestion-author-name">${suggestion.author_name}</div>
@@ -532,11 +530,9 @@ function displaySearchSuggestions(suggestions) {
             console.log("Suggestion clicked:", suggestion.book_name, "ID:", suggestion.id);
             searchInput.value = suggestion.book_name;
             closeSearchDropdown();
-            // Redirect to book details page using book ID
             if (suggestion.id) {
                 window.location.href = `../pages/bookDetails.html?id=${suggestion.id}`;
             } else {
-                // Fallback to search if no ID is available
                 console.warn("No book ID in suggestion, falling back to search");
                 window.location.href = `homePage.html?query=${encodeURIComponent(suggestion.book_name)}`;
             }
@@ -572,7 +568,7 @@ document.getElementById("next-page")?.addEventListener("click", () => {
     }
 });
 
-document.getElementById("sort-books")?.addEventListener("click", (event) => {
+document.getElementById("sort-books")?.addEventListener("change", (event) => {
     console.log("Sorting books by:", event.target.value);
     fetchBooks(event.target.value, 1);
 });
