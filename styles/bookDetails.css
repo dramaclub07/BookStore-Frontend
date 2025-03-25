@@ -19,16 +19,15 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #A03037;
+    background-color: #A03037; /* Your theme color */
     color: white;
     padding: 0 20px;
     position: fixed;
     top: 0;
     width: 100%;
-    height: 60px; /* Increased height for better appearance */
-    box-sizing: border-box;
-    z-index: 1000;
+    height: 60px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
 }
 
 .logo {
@@ -41,23 +40,19 @@ body {
 }
 
 .search-container {
-    position: relative;
-    width: 40%;
-    min-width: 200px;
-    max-width: 500px;
-    z-index: 1002;
+    flex-grow: 1;
+    max-width: 400px;
+    margin: 0 20px;
 }
 
 .search-bar {
     width: 100%;
     padding: 10px;
-    border-radius: 25px; /* Rounded corners for a modern look */
+    border-radius: 25px;
     border: none;
     font-size: 14px;
     background-color: #fff;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-    z-index: 1004;
-    position: relative;
     transition: box-shadow 0.2s ease;
 }
 
@@ -66,81 +61,89 @@ body {
     box-shadow: 0 0 5px rgba(165, 42, 42, 0.5);
 }
 
-.suggestions-box {
+
+
+.cart-count {
+    display: flex; /* Default state, JS toggles to 'none' if 0 */
+    align-items: center;
+    justify-content: center;
+    background: #f44336; /* Bright red for visibility */
+    color: white;
+    border-radius: 50%;
+    width: 20px; /* Slightly larger for better readability */
+    height: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 0px; /* Increased spacing from icon */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
     position: absolute;
     top: 100%;
-    left: 0;
-    width: 100%;
-    background: white;
-    border: 1px solid #ddd;
-    border-top: none;
-    border-radius: 0 0 25px 25px;
-    max-height: 150px;
-    overflow-y: auto;
-    z-index: 1003;
-    display: none;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 10px 0;
+    min-width: 180px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    margin-top: 2px;
+    z-index: 1000;
 }
 
-.search-bar:focus + .suggestions-box,
-.search-container.active .suggestions-box {
-    display: block;
-}
-
-.suggestions-box:empty {
-    display: none;
-}
-
-.suggestion-item {
-    padding: 10px 15px;
-    cursor: pointer;
-    color: #333;
+.dropdown-item {
+    padding: 8px 15px;
     font-size: 14px;
-    border-bottom: 1px solid #eee;
-    transition: background-color 0.2s ease;
-}
-
-.suggestion-item:last-child {
-    border-bottom: none;
-}
-
-.suggestion-item:hover {
-    background-color: #f2dede; /* Match the theme color */
-}
-
-.nav-links {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-}
-
-.nav-links span {
-    margin-left: 20px;
+    color: #333;
     cursor: pointer;
-    font-size: 16px;
-    white-space: nowrap;
+    transition: background 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: #f2dede; /* Matches your theme */
+}
+
+.dropdown-header {
     font-weight: 600;
-    transition: color 0.2s ease;
+    color: #222;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
 }
 
-.nav-links span:hover {
-    color: #ffd700;
+.dropdown-subheader {
+    font-style: italic;
+    color: #666;
+    font-size: 13px;
+    padding-bottom: 5px;
 }
 
-.nav-links span:last-child {
-    margin-right: 15px;
+.dropdown-menu button {
+    width: 100%;
+    padding: 8px 15px;
+    background: #A03037;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.dropdown-menu button:hover {
+    background: #8b1e1e;
 }
 
 /* Main Content */
 .content-wrapper {
-    margin-top: 80px; /* Adjusted for taller navbar */
+    margin-top: 80px; /* Adjusted for navbar height */
     padding: 30px;
     min-height: calc(100vh - 80px);
     display: flex;
     flex-direction: column;
-    opacity: 1; /* Ensure content is visible by default */
-    transition: opacity 0.5s ease-in; /* Subtle fade-in for the entire page */
+    opacity: 1;
+    transition: opacity 0.5s ease-in;
 }
 
 /* Breadcrumb */
@@ -175,7 +178,6 @@ body {
     padding: 30px;
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    opacity: 1; /* Ensure visibility */
 }
 
 .book-details-left {
@@ -204,7 +206,7 @@ body {
     height: auto;
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transition: transform 0.3s ease; /* Subtle zoom on hover */
+    transition: transform 0.3s ease;
 }
 
 .book-image:hover {
@@ -330,7 +332,7 @@ body {
     margin-bottom: 25px;
 }
 
-.price-info.book-price {
+.price-info #book-price {
     font-weight: bolder;
     font-size: 22px;
     color: #222;
@@ -389,23 +391,13 @@ body {
     margin-bottom: 15px;
 }
 
-.overall-rating .stars {
-    display: flex;
-    gap: 8px;
-    cursor: pointer;
-    font-size: 28px;
-}
-
 .overall-rating .stars .star {
+    font-size: 28px;
     color: #cccccc;
     transition: color 0.2s ease;
 }
 
 .overall-rating .stars .star.active {
-    color: #ffd700;
-}
-
-.overall-rating .stars .star:hover {
     color: #ffd700;
 }
 
@@ -483,7 +475,6 @@ body {
     font-size: 16px;
     font-weight: 600;
     color: #a52a2a;
-    text-decoration: none;
     transition: color 0.2s ease;
 }
 
@@ -513,20 +504,10 @@ body {
     color: #ffd700;
 }
 
-.review-stars .star {
-    font-size: 24px;
-    color: #ffd700;
-}
-
-.review-stars .star.empty {
-    color: #cccccc;
-}
-
 .review-text {
     font-size: 14px;
     color: #555;
     line-height: 1.6;
-    text-transform: none; /* Removed uppercase for better readability */
     margin-left: 55px;
 }
 
@@ -569,16 +550,8 @@ body {
     }
 
     .book-details-left {
-        flex-direction: column;
-        align-items: center;
         width: 100%;
         max-width: 400px;
-    }
-
-    .image-container {
-        align-items: center;
-        justify-content: center;
-        width: 100%;
     }
 
     .book-image {
@@ -606,5 +579,18 @@ body {
 
     .action-buttons {
         max-width: 250px;
+    }
+
+    .navbar {
+        padding: 0 10px;
+    }
+
+    .search-container {
+        max-width: 200px;
+    }
+
+    .nav-links span {
+        margin-left: 10px;
+        font-size: 14px;
     }
 }
