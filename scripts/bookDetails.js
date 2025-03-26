@@ -125,7 +125,19 @@ function setupHeaderEventListeners() {
     let isDropdownOpen = false;
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
+    const logo = document.querySelector(".logo"); // Added logo selector
     const isLoggedIn = isAuthenticated();
+
+    // Add logo click event listener
+    if (logo) {
+        logo.addEventListener("click", (event) => {
+            event.preventDefault();
+            console.log("Logo clicked, redirecting to homepage");
+            window.location.href = "../pages/homePage.html";
+        });
+    } else {
+        console.error("Logo element not found in DOM");
+    }
 
     if (profileLink) {
         profileLink.addEventListener("click", (event) => {
@@ -219,7 +231,7 @@ function setupHeaderEventListeners() {
             });
         } else {
             document.getElementById("dropdown-login-signup").addEventListener("click", () => {
-                window.location.href = "../pages/login.html";
+                window.location.href = "../pages/homePage.html";
                 closeDropdown();
             });
             document.getElementById("dropdown-orders").addEventListener("click", () => {

@@ -43,12 +43,35 @@ function toggleEdit(sectionId) {
         isEditingPersonalDetails = !isEditingPersonalDetails;
         const inputs = document.querySelectorAll('#personal-details input');
         const saveButton = document.getElementById('save-personal-details');
+        const newPasswordField = document.getElementById('new-password-field');
+        const confirmPasswordField = document.getElementById('confirm-password-field');
+        const currentPasswordInput = document.getElementById('current_password');
+
+        // Enable/disable inputs
         inputs.forEach(input => input.disabled = !isEditingPersonalDetails);
         saveButton.style.display = isEditingPersonalDetails ? 'block' : 'none';
+
+        // Show/hide password fields
+        if (isEditingPersonalDetails) {
+            newPasswordField.classList.add('visible');
+            confirmPasswordField.classList.add('visible');
+            // Clear the current password field for user input
+            currentPasswordInput.value = '';
+            currentPasswordInput.placeholder = 'Enter current password';
+        } else {
+            newPasswordField.classList.remove('visible');
+            confirmPasswordField.classList.remove('visible');
+            // Restore dummy dots in current password field
+            currentPasswordInput.value = '';
+            currentPasswordInput.placeholder = '••••••••';
+            // Clear other password fields
+            document.getElementById('new_password').value = '';
+            document.getElementById('confirm_password').value = '';
+        }
     } else {
         const addressId = sectionId.split('-')[1];
         isEditingAddress[addressId] = !isEditingAddress[addressId];
-        fetchAddresses(); // Re-render to show the edited address as a form
+        fetchAddresses();
     }
 }
 
@@ -86,7 +109,10 @@ async function loadUserProfile() {
         const name = userData.full_name || userData.name || 'User';
         document.getElementById('full_name').value = name;
         document.getElementById('email').value = userData.email || '';
-        document.getElementById('password').value = '********';
+        document.getElementById('current_password').value = ''; // Clear current password
+        document.getElementById('current_password').placeholder = '••••••••'; // Set dummy dots
+        document.getElementById('new_password').value = '';     // Clear new password
+        document.getElementById('confirm_password').value = ''; // Clear confirm password
         document.getElementById('mobile_number').value = userData.mobile_number || '';
 
         const profileElement = document.getElementById('profile-link');
@@ -116,6 +142,30 @@ async function savePersonalDetails() {
         return;
     }
 
+    const currentPassword = document.getElementById('current_password').value;
+    const newPassword = document.getElementById('new_password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+
+    // Validate passwords if any are filled
+    if (newPassword || confirmPassword || currentPassword) {
+        if (!currentPassword) {
+            alert('Please enter your current password');
+            return;
+        }
+        if (!newPassword) {
+            alert('Please enter a new password');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            alert('New password and confirmation do not match');
+            return;
+        }
+        if (newPassword.length < 6) {
+            alert('New password must be at least 6 characters long');
+            return;
+        }
+    }
+
     const updatedData = {
         user: {
             full_name: document.getElementById('full_name').value,
@@ -124,6 +174,12 @@ async function savePersonalDetails() {
         }
     };
 
+    // Only include password fields if they are filled
+    if (currentPassword && newPassword) {
+        updatedData.user.current_password = currentPassword;
+        updatedData.user.new_password = newPassword;
+    }
+
     try {
         const response = await fetch(`${BASE_URL}/api/v1/users/profile`, {
             method: 'PATCH',
@@ -131,14 +187,42 @@ async function savePersonalDetails() {
             body: JSON.stringify(updatedData)
         });
 
+        console.log("Update profile response status:", response.status);
+        console.log("Update profile response headers:", [...response.headers.entries()]);
+
         if (!response.ok) {
             if (response.status === 401) {
                 alert('Session expired. Logging out.');
                 logoutAndRedirect();
                 return;
             }
-            const errorText = await response.text();
-            throw new Error(`Failed to update profile: ${errorText}`);
+
+            let errorMessage = 'Failed to update profile';
+            try {
+                const errorData = await response.json();
+                console.log("Error response data:", errorData);
+
+                // Handle different error response formats
+                if (errorData && errorData.errors) {
+                    if (Array.isArray(errorData.errors)) {
+                        errorMessage = errorData.errors.join(', ');
+                    } else {
+                        errorMessage = errorData.errors.toString();
+                    }
+                } else if (errorData && errorData.error) {
+                    errorMessage = errorData.error;
+                } else {
+                    errorMessage = response.statusText || 'Unknown error';
+                }
+            } catch (jsonError) {
+                // If response is not JSON, fall back to text
+                console.error("Failed to parse error response as JSON:", jsonError);
+                const errorText = await response.text();
+                console.log("Error response text:", errorText);
+                errorMessage = errorText || 'Unknown error';
+            }
+
+            throw new Error(`Failed to update profile: ${errorMessage}`);
         }
 
         alert('Personal details updated successfully');
@@ -193,7 +277,6 @@ function renderAddresses(addresses) {
         const isEditing = isEditingAddress[addressId];
 
         if (index === 0 || isEditing) {
-            // Render as form (first address or being edited)
             addressList.innerHTML += `
                 <div class="work-address" id="address-${addressId}">
                     <div class="work-header">
@@ -248,7 +331,6 @@ function renderAddresses(addresses) {
                 </div>
             `;
         } else {
-            // Render as string
             const addressString = `${address.street || ''}, ${address.city || ''}, ${address.state || ''}, ${address.zip_code || ''}, ${address.country || ''} (${addressType.toUpperCase()})`;
             addressList.innerHTML += `
                 <div class="work-address" id="address-${addressId}">
@@ -306,7 +388,7 @@ async function saveNewAddress() {
     };
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/addresses`, {
+        const response = await fetch(`${BASE_URL}/api/v1/addresses`, { // Updated endpoint from /create
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ address: newAddress })
@@ -369,7 +451,7 @@ async function saveAddress(addressId) {
         }
 
         alert('Address updated successfully');
-        isEditingAddress[addressId] = false; // Exit edit mode
+        isEditingAddress[addressId] = false;
         await fetchAddresses();
     } catch (error) {
         console.error('Error saving address:', error);
@@ -409,10 +491,51 @@ async function deleteAddress(addressId) {
     }
 }
 
-function selectAddress(addressId) {
-    console.log(`Address ${addressId} selected`);
-    // Add logic here for what "select" should do, e.g., mark as default
-    alert(`Address ${addressId} selected`);
+async function selectAddress(addressId) {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        logoutAndRedirect();
+        return;
+    }
+
+    try {
+        const response = await fetch(`${BASE_URL}/api/v1/addresses/${addressId}`, {
+            method: 'GET',
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                alert('Session expired. Logging out.');
+                logoutAndRedirect();
+                return;
+            }
+            throw new Error('Failed to fetch address details');
+        }
+
+        const data = await response.json();
+        const selectedAddress = data.address;
+
+        // Store the selected address consistently with customer details
+        localStorage.setItem('selectedAddress', JSON.stringify({
+            id: selectedAddress.id,
+            street: selectedAddress.street,
+            city: selectedAddress.city,
+            state: selectedAddress.state,
+            zip_code: selectedAddress.zip_code,
+            country: selectedAddress.country,
+            address_type: selectedAddress.address_type
+        }));
+        localStorage.setItem('selectedAddressId', selectedAddress.id);
+
+        console.log(`Address ${addressId} selected and stored:`, selectedAddress);
+        alert(`Address ${addressId} selected`);
+
+        window.location.href = '../pages/customer-details.html';
+    } catch (error) {
+        console.error('Error selecting address:', error);
+        alert(error.message);
+    }
 }
 
 function updateCartCount(count) {
@@ -453,6 +576,17 @@ function setupHeaderEventListeners() {
     let isDropdownOpen = false;
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
+    const logo = document.querySelector(".logo");
+
+    if (logo) {
+        logo.addEventListener("click", (event) => {
+            event.preventDefault();
+            console.log("Logo clicked, redirecting to homepage");
+            window.location.href = "../pages/homePage.html";
+        });
+    } else {
+        console.error("Logo element not found in DOM");
+    }
 
     if (!profileLink) {
         console.error("Profile link element (#profile-link) not found in DOM");
@@ -566,5 +700,5 @@ function handleSignOut() {
 
     localStorage.clear();
     alert("Logged out successfully.");
-    window.location.href = "../pages/login.html";
+    window.location.href = "../pages/homePage.html";
 }

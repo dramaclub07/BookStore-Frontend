@@ -537,8 +537,6 @@ body {
     font-size: 12px;
 }
 
-
-
 /* ADD TO BAG */
 .quantity-control {
     display: flex;
@@ -573,7 +571,6 @@ body {
     min-width: 20px;
     text-align: center;
 }
-
 
 /* Responsive Design */
 @media (max-width: 768px) {
