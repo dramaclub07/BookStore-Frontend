@@ -1,18 +1,18 @@
-const BASE_URL = 'http://127.0.0.1:3000';
+const BASE_URL = 'http://127.0.0.1:3000/api/v1'; // Updated to include /api/v1 in BASE_URL
 
 let isEditingPersonalDetails = false;
 let isEditingAddress = {};
 let isAddressFormVisible = false;
 
 document.addEventListener("DOMContentLoaded", async function () {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) {
         console.log("No token found, redirecting to login.");
         window.location.href = '../pages/login.html';
         return;
     }
 
-    console.log("Token found:", token);
+    console.log("Access token found:", accessToken);
 
     try {
         await loadUserProfile();
@@ -24,16 +24,82 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 });
 
+// Get auth headers
 function getAuthHeaders() {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('access_token');
     return {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
     };
 }
 
+// Token Refresh Logic
+async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (!refreshToken) {
+        console.error("No refresh token available");
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${BASE_URL}/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: refreshToken })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.access_token) {
+            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
+            console.log("Access token refreshed successfully");
+            return true;
+        } else {
+            console.error("Failed to refresh token:", data.error);
+            localStorage.clear();
+            alert("Session expired. Please log in again.");
+            window.location.href = "../pages/login.html";
+            return false;
+        }
+    } catch (error) {
+        console.error("Error refreshing token:", error);
+        localStorage.clear();
+        window.location.href = "../pages/login.html";
+        return false;
+    }
+}
+
+async function fetchWithAuth(url, options = {}) {
+    if (!localStorage.getItem("access_token")) {
+        window.location.href = "../pages/login.html";
+        return null;
+    }
+
+    const expiresIn = localStorage.getItem("token_expires_in");
+    if (expiresIn && Date.now() >= expiresIn) {
+        const refreshed = await refreshAccessToken();
+        if (!refreshed) return null;
+    }
+
+    options.headers = { ...options.headers, ...getAuthHeaders() };
+    let response = await fetch(url, options);
+
+    if (response.status === 401) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+            options.headers = { ...options.headers, ...getAuthHeaders() };
+            response = await fetch(url, options);
+        } else {
+            return null;
+        }
+    }
+
+    return response;
+}
+
 function logoutAndRedirect() {
-    localStorage.removeItem('token');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     window.location.href = '../pages/login.html';
 }
@@ -47,24 +113,19 @@ function toggleEdit(sectionId) {
         const confirmPasswordField = document.getElementById('confirm-password-field');
         const currentPasswordInput = document.getElementById('current_password');
 
-        // Enable/disable inputs
         inputs.forEach(input => input.disabled = !isEditingPersonalDetails);
         saveButton.style.display = isEditingPersonalDetails ? 'block' : 'none';
 
-        // Show/hide password fields
         if (isEditingPersonalDetails) {
             newPasswordField.classList.add('visible');
             confirmPasswordField.classList.add('visible');
-            // Clear the current password field for user input
             currentPasswordInput.value = '';
             currentPasswordInput.placeholder = 'Enter current password';
         } else {
             newPasswordField.classList.remove('visible');
             confirmPasswordField.classList.remove('visible');
-            // Restore dummy dots in current password field
             currentPasswordInput.value = '';
             currentPasswordInput.placeholder = '••••••••';
-            // Clear other password fields
             document.getElementById('new_password').value = '';
             document.getElementById('confirm_password').value = '';
         }
@@ -75,33 +136,17 @@ function toggleEdit(sectionId) {
     }
 }
 
+// Load User Profile
 async function loadUserProfile() {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        console.log("No token in loadUserProfile, redirecting.");
-        logoutAndRedirect();
-        return;
-    }
-
     try {
-        console.log("Fetching profile from:", `${BASE_URL}/api/v1/users/profile`);
-        const response = await fetch(`${BASE_URL}/api/v1/users/profile`, {
-            method: 'GET',
-            headers: getAuthHeaders()
-        });
-
-        console.log("Response status:", response.status);
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                console.log("Unauthorized (401), logging out.");
-                alert('Session expired or unauthorized. Logging out.');
-                logoutAndRedirect();
-                return;
-            }
-            const errorText = await response.text();
-            throw new Error(`Failed to fetch profile: ${response.status} - ${errorText}`);
+        const response = await fetchWithAuth(`${BASE_URL}/users/profile`);
+        if (!response) {
+            console.log("Unauthorized or no response in loadUserProfile, redirecting.");
+            logoutAndRedirect();
+            return;
         }
+
+        if (!response.ok) throw new Error(`Failed to fetch profile: ${response.status}`);
 
         const userData = await response.json();
         console.log("Profile data received:", userData);
@@ -109,10 +154,10 @@ async function loadUserProfile() {
         const name = userData.full_name || userData.name || 'User';
         document.getElementById('full_name').value = name;
         document.getElementById('email').value = userData.email || '';
-        document.getElementById('current_password').value = ''; // Clear current password
-        document.getElementById('current_password').placeholder = '••••••••'; // Set dummy dots
-        document.getElementById('new_password').value = '';     // Clear new password
-        document.getElementById('confirm_password').value = ''; // Clear confirm password
+        document.getElementById('current_password').value = '';
+        document.getElementById('current_password').placeholder = '••••••••';
+        document.getElementById('new_password').value = '';
+        document.getElementById('confirm_password').value = '';
         document.getElementById('mobile_number').value = userData.mobile_number || '';
 
         const profileElement = document.getElementById('profile-link');
@@ -135,18 +180,12 @@ async function loadUserProfile() {
     }
 }
 
+// Save Personal Details
 async function savePersonalDetails() {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        logoutAndRedirect();
-        return;
-    }
-
     const currentPassword = document.getElementById('current_password').value;
     const newPassword = document.getElementById('new_password').value;
     const confirmPassword = document.getElementById('confirm_password').value;
 
-    // Validate passwords if any are filled
     if (newPassword || confirmPassword || currentPassword) {
         if (!currentPassword) {
             alert('Please enter your current password');
@@ -167,61 +206,34 @@ async function savePersonalDetails() {
     }
 
     const updatedData = {
-        user: {
-            full_name: document.getElementById('full_name').value,
-            email: document.getElementById('email').value,
-            mobile_number: document.getElementById('mobile_number').value
-        }
+        full_name: document.getElementById('full_name').value,
+        email: document.getElementById('email').value,
+        mobile_number: document.getElementById('mobile_number').value
     };
 
-    // Only include password fields if they are filled
     if (currentPassword && newPassword) {
-        updatedData.user.current_password = currentPassword;
-        updatedData.user.new_password = newPassword;
+        updatedData.current_password = currentPassword;
+        updatedData.password = newPassword; // Changed to 'password' as per typical Rails convention
     }
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/users/profile`, {
+        const response = await fetchWithAuth(`${BASE_URL}/users/profile`, {
             method: 'PATCH',
-            headers: getAuthHeaders(),
             body: JSON.stringify(updatedData)
         });
-
-        console.log("Update profile response status:", response.status);
-        console.log("Update profile response headers:", [...response.headers.entries()]);
+        if (!response) {
+            logoutAndRedirect();
+            return;
+        }
 
         if (!response.ok) {
-            if (response.status === 401) {
-                alert('Session expired. Logging out.');
-                logoutAndRedirect();
-                return;
-            }
-
+            const errorData = await response.json();
             let errorMessage = 'Failed to update profile';
-            try {
-                const errorData = await response.json();
-                console.log("Error response data:", errorData);
-
-                // Handle different error response formats
-                if (errorData && errorData.errors) {
-                    if (Array.isArray(errorData.errors)) {
-                        errorMessage = errorData.errors.join(', ');
-                    } else {
-                        errorMessage = errorData.errors.toString();
-                    }
-                } else if (errorData && errorData.error) {
-                    errorMessage = errorData.error;
-                } else {
-                    errorMessage = response.statusText || 'Unknown error';
-                }
-            } catch (jsonError) {
-                // If response is not JSON, fall back to text
-                console.error("Failed to parse error response as JSON:", jsonError);
-                const errorText = await response.text();
-                console.log("Error response text:", errorText);
-                errorMessage = errorText || 'Unknown error';
+            if (errorData && errorData.errors) {
+                errorMessage = Array.isArray(errorData.errors) ? errorData.errors.join(', ') : errorData.errors.toString();
+            } else if (errorData && errorData.error) {
+                errorMessage = errorData.error;
             }
-
             throw new Error(`Failed to update profile: ${errorMessage}`);
         }
 
@@ -234,27 +246,16 @@ async function savePersonalDetails() {
     }
 }
 
+// Fetch Addresses
 async function fetchAddresses() {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        logoutAndRedirect();
-        return;
-    }
-
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/addresses`, {
-            method: 'GET',
-            headers: getAuthHeaders()
-        });
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert('Session expired. Logging out.');
-                logoutAndRedirect();
-                return;
-            }
-            throw new Error('Failed to fetch addresses');
+        const response = await fetchWithAuth(`${BASE_URL}/addresses`);
+        if (!response) {
+            logoutAndRedirect();
+            return;
         }
+
+        if (!response.ok) throw new Error('Failed to fetch addresses');
 
         const data = await response.json();
         if (data.addresses && data.addresses.length > 0) {
@@ -268,6 +269,7 @@ async function fetchAddresses() {
     }
 }
 
+// Render Addresses
 function renderAddresses(addresses) {
     const addressList = document.getElementById('address-list');
     addressList.innerHTML = '';
@@ -364,13 +366,8 @@ function toggleAddressForm() {
     }
 }
 
+// Save New Address
 async function saveNewAddress() {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        logoutAndRedirect();
-        return;
-    }
-
     const zipCode = document.getElementById('new-zip-code').value;
     if (!zipCode) {
         alert('Zip Code is required.');
@@ -388,19 +385,18 @@ async function saveNewAddress() {
     };
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/addresses`, { // Updated endpoint from /create
+        const response = await fetchWithAuth(`${BASE_URL}/addresses/create`, {
             method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ address: newAddress })
+            body: JSON.stringify(newAddress) // Removed unnecessary nesting
         });
+        if (!response) {
+            logoutAndRedirect();
+            return;
+        }
 
         if (!response.ok) {
-            if (response.status === 401) {
-                alert('Session expired. Logging out.');
-                logoutAndRedirect();
-                return;
-            }
-            throw new Error('Failed to add address');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to add address');
         }
 
         alert('Address added successfully');
@@ -412,13 +408,8 @@ async function saveNewAddress() {
     }
 }
 
+// Save Existing Address
 async function saveAddress(addressId) {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        logoutAndRedirect();
-        return;
-    }
-
     const zipCode = document.getElementById(`zip-code-${addressId}`).value;
     if (!zipCode) {
         alert('Zip Code is required.');
@@ -435,19 +426,18 @@ async function saveAddress(addressId) {
     };
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/addresses/${addressId}`, {
-            method: 'PUT',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ address: updatedAddress })
+        const response = await fetchWithAuth(`${BASE_URL}/addresses/${addressId}`, {
+            method: 'PATCH', // Changed to PATCH as per route
+            body: JSON.stringify(updatedAddress) // Removed unnecessary nesting
         });
+        if (!response) {
+            logoutAndRedirect();
+            return;
+        }
 
         if (!response.ok) {
-            if (response.status === 401) {
-                alert('Session expired. Logging out.');
-                logoutAndRedirect();
-                return;
-            }
-            throw new Error('Failed to update address');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to update address');
         }
 
         alert('Address updated successfully');
@@ -459,28 +449,22 @@ async function saveAddress(addressId) {
     }
 }
 
+// Delete Address
 async function deleteAddress(addressId) {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        logoutAndRedirect();
-        return;
-    }
-
     if (!confirm('Are you sure you want to delete this address?')) return;
 
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/addresses/${addressId}`, {
-            method: 'DELETE',
-            headers: getAuthHeaders()
+        const response = await fetchWithAuth(`${BASE_URL}/addresses/${addressId}`, {
+            method: 'DELETE'
         });
+        if (!response) {
+            logoutAndRedirect();
+            return;
+        }
 
         if (!response.ok) {
-            if (response.status === 401) {
-                alert('Session expired. Logging out.');
-                logoutAndRedirect();
-                return;
-            }
-            throw new Error('Failed to delete address');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to delete address');
         }
 
         alert('Address deleted successfully');
@@ -491,32 +475,23 @@ async function deleteAddress(addressId) {
     }
 }
 
+// Select Address
 async function selectAddress(addressId) {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        logoutAndRedirect();
-        return;
-    }
-
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/addresses/${addressId}`, {
-            method: 'GET',
-            headers: getAuthHeaders()
-        });
+        const response = await fetchWithAuth(`${BASE_URL}/addresses/${addressId}`);
+        if (!response) {
+            logoutAndRedirect();
+            return;
+        }
 
         if (!response.ok) {
-            if (response.status === 401) {
-                alert('Session expired. Logging out.');
-                logoutAndRedirect();
-                return;
-            }
-            throw new Error('Failed to fetch address details');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to fetch address details');
         }
 
         const data = await response.json();
-        const selectedAddress = data.address;
+        const selectedAddress = data.address || data; // Handle potential nesting
 
-        // Store the selected address consistently with customer details
         localStorage.setItem('selectedAddress', JSON.stringify({
             id: selectedAddress.id,
             street: selectedAddress.street,
@@ -531,13 +506,14 @@ async function selectAddress(addressId) {
         console.log(`Address ${addressId} selected and stored:`, selectedAddress);
         alert(`Address ${addressId} selected`);
 
-        window.location.href = '../pages/customer-details.html';
+        window.location.href = '../pages/cart.html'; // Changed to cart.html for checkout flow
     } catch (error) {
         console.error('Error selecting address:', error);
         alert(error.message);
     }
 }
 
+// Update Cart Count
 function updateCartCount(count) {
     const cartCount = document.querySelector('#cart-link .cart-count');
     if (cartCount) {
@@ -548,29 +524,24 @@ function updateCartCount(count) {
     }
 }
 
+// Load Cart Summary
 async function loadCartSummary() {
     try {
-        const response = await fetch(`${BASE_URL}/api/v1/cart/summary`, {
-            headers: getAuthHeaders()
-        });
+        const response = await fetchWithAuth(`${BASE_URL}/carts/summary`);
+        if (!response) return;
 
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                logoutAndRedirect();
-                return;
-            }
-            throw new Error("Failed to fetch cart summary");
-        }
+        if (!response.ok) throw new Error("Failed to fetch cart summary");
 
         const cartData = await response.json();
         console.log("Cart summary:", cartData);
         updateCartCount(cartData.total_items || 0);
     } catch (error) {
         console.error("Error fetching cart summary:", error);
+        updateCartCount(0); // Fallback to 0 on error
     }
 }
 
+// Setup Header Event Listeners
 function setupHeaderEventListeners() {
     let dropdownMenu = null;
     let isDropdownOpen = false;
@@ -678,6 +649,7 @@ function setupHeaderEventListeners() {
     }
 }
 
+// Sign Out Function
 function handleSignOut() {
     const provider = localStorage.getItem("socialProvider");
 

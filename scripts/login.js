@@ -1,5 +1,5 @@
 // Base URL for API
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'http://localhost:3000'; // Consistent with your setup
 
 console.log('login.js running');
 
@@ -17,11 +17,7 @@ window.fbAsyncInit = function() {
 // Function to handle Google Sign-In response
 function handleCredentialResponse(response) {
     console.log("Google Sign-In successful!");
-    
-    // Google Sign-In returns a credential with an ID token
     const id_token = response.credential;
-    
-    // Send the token to your backend for verification
     verifySocialToken(id_token, 'google');
 }
 
@@ -44,11 +40,8 @@ function facebookSignIn() {
 async function verifySocialToken(token, provider) {
     try {
         console.log(`Sending ${provider} token to backend for verification`);
-        
-        // Determine the endpoint based on the provider
         const endpoint = provider === 'google' ? '/api/v1/google_auth' : '/api/v1/facebook_auth';
         
-        // Send the token to your Rails backend for verification
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'POST',
             headers: {
@@ -59,17 +52,20 @@ async function verifySocialToken(token, provider) {
         
         const data = await response.json();
         
-        if (response.ok && data.message === 'Authentication successful') {
+        if (response.ok) {
             console.log("User authenticated successfully:", data.user);
             
-            // Store user info in localStorage
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('username', data.user.name || data.user.email.split('@')[0]);
+            // Store tokens and user info in localStorage
+            localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('refresh_token', data.refresh_token);
+            localStorage.setItem('username', data.user.full_name || data.user.email.split('@')[0]);
             localStorage.setItem('socialEmail', data.user.email);
             localStorage.setItem('socialProvider', provider);
+            localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000)); // Store expiration time in milliseconds
             
-            // Redirect to home page
-            alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login successful! Welcome, ${data.user.name || data.user.email.split('@')[0]}`);
+            localStorage.setItem('justLoggedIn', 'true'); // Flag for homepage refresh
+            
+            alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login successful! Welcome, ${data.user.full_name || data.user.email.split('@')[0]}`);
             window.location.href = '../pages/homePage.html';
         } else {
             console.error(`${provider} authentication failed:`, data.error || "Unknown error");
@@ -79,6 +75,54 @@ async function verifySocialToken(token, provider) {
         console.error(`Error verifying ${provider} token:`, error);
         alert(`Failed to verify ${provider} token: ${error.message}`);
     }
+}
+
+// Function to refresh the access token
+async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) {
+        console.error('No refresh token available');
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/v1/refresh`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ refresh_token: refreshToken })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.access_token) {
+            localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
+            console.log('Access token refreshed successfully');
+            return true;
+        } else {
+            console.error('Failed to refresh token:', data.error);
+            localStorage.clear();
+            alert('Session expired. Please log in again.');
+            window.location.href = '../pages/login.html';
+            return false;
+        }
+    } catch (error) {
+        console.error('Error refreshing token:', error);
+        localStorage.clear();
+        window.location.href = '../pages/login.html';
+        return false;
+    }
+}
+
+// Function to check if token is expired and refresh if needed
+async function ensureValidToken() {
+    const expiresIn = localStorage.getItem('token_expires_in');
+    if (!expiresIn || Date.now() >= expiresIn) {
+        console.log('Token expired or not set, attempting to refresh');
+        return await refreshAccessToken();
+    }
+    return true;
 }
 
 // Fallback quotes in case the API fails
@@ -95,21 +139,14 @@ let fallbackQuoteIndex = 0;
 // Function to fetch a random quote from Quotable API
 async function fetchRandomQuote() {
     try {
-        // Fetch a random quote with tags related to books, literature, or motivation
         const response = await fetch('https://api.quotable.io/random?tags=books|literature|motivation|inspirational');
-        if (!response.ok) {
-            throw new Error(`Error ${response.status}: Unable to fetch quote`);
-        }
+        if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch quote`);
         const data = await response.json();
-        return {
-            quote: data.content,
-            author: data.author
-        };
+        return { quote: data.content, author: data.author };
     } catch (error) {
         console.error('Error fetching random quote:', error);
-        // Return a fallback quote and increment the index
         const quote = fallbackQuotes[fallbackQuoteIndex];
-        fallbackQuoteIndex = (fallbackQuoteIndex + 1) % fallbackQuotes.length; // Cycle through fallback quotes
+        fallbackQuoteIndex = (fallbackQuoteIndex + 1) % fallbackQuotes.length;
         return quote;
     }
 }
@@ -123,48 +160,37 @@ function displayRandomQuote() {
         return;
     }
 
-    // Function to update the quote
     const updateQuote = async () => {
         const { quote, author } = await fetchRandomQuote();
-        // Fade out the current quote
         quoteText.style.opacity = '0';
         quoteAuthor.style.opacity = '0';
-        
         setTimeout(() => {
-            // Update the text and fade in
             quoteText.textContent = `"${quote}"`;
             quoteAuthor.textContent = `— ${author}`;
             quoteText.style.opacity = '1';
             quoteAuthor.style.opacity = '1';
-        }, 500); // Match the fade transition duration (0.5s)
+        }, 500);
     };
 
-    // Initial quote display
     updateQuote();
-
-    // Rotate quotes every 10 seconds
     setInterval(updateQuote, 10000);
 }
 
 // Initialize on DOM load
-document.addEventListener("DOMContentLoaded", function () {
-    // Fetch and display a random quote with rotation
+document.addEventListener("DOMContentLoaded", async function () {
     displayRandomQuote();
 
-    // Tab switching with card transition
     document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', (e) => {
             e.preventDefault();
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
-
             const tabId = tab.getAttribute('data-tab');
             document.querySelectorAll('.auth-card').forEach(card => card.classList.remove('active'));
             document.getElementById(`${tabId}-form`).classList.add('active');
         });
     });
 
-    // Toggle signup from login footer
     document.querySelector('.toggle-signup').addEventListener('click', (e) => {
         e.preventDefault();
         document.querySelector('.tab[data-tab="login"]').classList.remove('active');
@@ -173,35 +199,34 @@ document.addEventListener("DOMContentLoaded", function () {
         document.querySelector('#signup-form').classList.add('active');
     });
 
-    // Password toggle for login form
     const loginPasswordInput = document.getElementById('login-password');
     const loginTogglePassword = document.getElementById('login-toggle-password');
-    const loginEyeIcon = loginTogglePassword.querySelector('svg');
-    loginTogglePassword.addEventListener('click', () => {
-        loginPasswordInput.type = 'text';
-        loginEyeIcon.style.opacity = '0.5';
+    const loginEyeIcon = loginTogglePassword?.querySelector('svg');
+    if (loginTogglePassword && loginEyeIcon) {
+        loginTogglePassword.addEventListener('click', () => {
+            loginPasswordInput.type = 'text';
+            loginEyeIcon.style.opacity = '0.5';
+            setTimeout(() => {
+                loginPasswordInput.type = 'password';
+                loginEyeIcon.style.opacity = '1';
+            }, 2000);
+        });
+    }
 
-        setTimeout(() => {
-            loginPasswordInput.type = 'password';
-            loginEyeIcon.style.opacity = '1';
-        }, 2000);
-    });
-
-    // Password toggle for signup form
     const signupPasswordInput = document.getElementById('signup-password');
     const signupTogglePassword = document.getElementById('signup-toggle-password');
-    const signupEyeIcon = signupTogglePassword.querySelector('svg');
-    signupTogglePassword.addEventListener('click', () => {
-        signupPasswordInput.type = 'text';
-        signupEyeIcon.style.opacity = '0.5';
+    const signupEyeIcon = signupTogglePassword?.querySelector('svg');
+    if (signupTogglePassword && signupEyeIcon) {
+        signupTogglePassword.addEventListener('click', () => {
+            signupPasswordInput.type = 'text';
+            signupEyeIcon.style.opacity = '0.5';
+            setTimeout(() => {
+                signupPasswordInput.type = 'password';
+                signupEyeIcon.style.opacity = '1';
+            }, 2000);
+        });
+    }
 
-        setTimeout(() => {
-            signupPasswordInput.type = 'password';
-            signupEyeIcon.style.opacity = '1';
-        }, 2000);
-    });
-
-    // Login form submission
     const emailInput = document.getElementById('login-email');
     const passwordInput = document.getElementById('login-password');
     const rememberMeCheckbox = document.getElementById('rememberMe');
@@ -211,7 +236,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
     }
 
-    document.getElementById('login-form').addEventListener('submit', async (e) => {
+    document.getElementById('login-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
@@ -236,7 +261,7 @@ document.addEventListener("DOMContentLoaded", function () {
         try {
             const payload = { email, password };
             console.log('Login payload:', payload);
-            const response = await fetch(`${API_BASE_URL}/api/v1/login`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/users/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -244,10 +269,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const data = await response.json();
             console.log('Login response:', data);
-            if (data.token) {
-                localStorage.setItem('token', data.token);
+            if (response.ok && data.access_token) {
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+                localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
                 const username = data.user?.full_name || email.split('@')[0];
                 localStorage.setItem('username', username);
+                localStorage.setItem('justLoggedIn', 'true'); // Flag for homepage refresh
                 console.log('Username stored in localStorage:', username);
                 alert(data.message || 'Login successful!');
                 window.location.href = '../pages/homePage.html';
@@ -260,8 +288,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Signup form submission
-    document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    document.getElementById('signup-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const nameInput = document.getElementById('signup-name');
         const emailInput = document.getElementById('signup-email');
@@ -295,7 +322,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/signup`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/users`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user: { full_name: name, email, password, mobile_number: mobile } })
@@ -306,10 +333,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 alert(data.message);
                 document.querySelector('.tab[data-tab="login"]').click();
             } else {
-                alert(data.errors || 'Failed to sign up. Please try again.');
+                alert(data.errors || data.error || 'Failed to sign up. Please try again.');
             }
         } catch (error) {
+            console.error('Signup error:', error.message);
             alert(`Failed to connect to the server at ${API_BASE_URL}. Error: ${error.message}`);
         }
     });
+
+    // Ensure token is valid on page load (optional, if you want to check immediately)
+    await ensureValidToken();
 });
