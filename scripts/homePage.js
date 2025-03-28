@@ -10,26 +10,85 @@ let isSearchDropdownOpen = false;
 
 // Get auth headers
 function getAuthHeaders() {
-    const token = localStorage.getItem("token");
+    const accessToken = localStorage.getItem("access_token");
     return {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        "Authorization": `Bearer ${accessToken}`
     };
 }
 
 // Authentication Functions
 function isAuthenticated() {
-    const token = localStorage.getItem("token");
-    return token !== null;
+    const accessToken = localStorage.getItem("access_token");
+    return accessToken !== null;
 }
 
-function getAuthToken() {
-    return localStorage.getItem("token") || "";
+async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (!refreshToken) {
+        console.error("No refresh token available");
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: refreshToken })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.access_token) {
+            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
+            console.log("Access token refreshed successfully");
+            return true;
+        } else {
+            console.error("Failed to refresh token:", data.error);
+            localStorage.clear();
+            alert("Session expired. Please log in again.");
+            window.location.href = "../pages/login.html";
+            return false;
+        }
+    } catch (error) {
+        console.error("Error refreshing token:", error);
+        localStorage.clear();
+        window.location.href = "../pages/login.html";
+        return false;
+    }
+}
+
+async function fetchWithAuth(url, options = {}) {
+    if (!isAuthenticated()) {
+        console.log("User not authenticated, proceeding without auth for public routes");
+        return fetch(url, options); // Allow public routes without redirect
+    }
+
+    const expiresIn = localStorage.getItem("token_expires_in");
+    if (expiresIn && Date.now() >= expiresIn) {
+        const refreshed = await refreshAccessToken();
+        if (!refreshed) return null;
+    }
+
+    options.headers = { ...options.headers, ...getAuthHeaders() };
+    let response = await fetch(url, options);
+
+    if (response.status === 401) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+            options.headers = { ...options.headers, ...getAuthHeaders() };
+            response = await fetch(url, options);
+        } else {
+            return null;
+        }
+    }
+
+    return response;
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM fully loaded, initializing homepage...");
-    console.log("Token on load:", localStorage.getItem("token"));
+    console.log("Access Token on load:", localStorage.getItem("access_token"));
 
     const isLoggedIn = isAuthenticated();
 
@@ -224,24 +283,14 @@ async function loadUserProfile() {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/users/profile`, {
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem("token");
-                window.location.href = "../pages/login.html";
-                return;
-            }
-            throw new Error(`Profile fetch failed with status: ${response.status}`);
-        }
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/profile`);
+        if (!response) return;
+
+        if (!response.ok) throw new Error(`Profile fetch failed with status: ${response.status}`);
         const userData = await response.json();
-        if (userData.success) {
-            const username = userData.name || "User";
-            profileNameElement.textContent = username;
-            localStorage.setItem("username", username);
-        }
+        const username = userData.name || "User";
+        profileNameElement.textContent = username;
+        localStorage.setItem("username", username);
     } catch (error) {
         console.error("Profile fetch error:", error.message);
         profileNameElement.textContent = localStorage.getItem("username") || "User";
@@ -261,22 +310,13 @@ async function updateCartCount() {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/cart`, {
-            headers: getAuthHeaders()
-        });
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts`);
+        if (!response) return;
 
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem("token");
-                window.location.href = "../pages/login.html";
-                return;
-            }
-            throw new Error("Failed to fetch cart");
-        }
-        const cart = await response.json();
-        console.log("Cart API response:", cart);
-        const totalItems = cart.cart?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
+        if (!response.ok) throw new Error("Failed to fetch cart");
+        const cartItems = await response.json();
+        console.log("Cart API response:", cartItems);
+        const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
         cartCountElement.textContent = totalItems;
         cartCountElement.style.display = totalItems > 0 ? "flex" : "none";
     } catch (error) {
@@ -289,10 +329,9 @@ async function updateCartCount() {
 async function handleSignOut() {
     console.log("=== Starting logout process ===");
     const provider = localStorage.getItem("socialProvider");
-    const loginPath = "../pages/homePage.html";
+    const homePath = "../pages/homePage.html";
 
     try {
-        // Handle Google logout
         if (provider === "google" && typeof google !== "undefined" && google.accounts) {
             console.log("Attempting Google logout");
             google.accounts.id.disableAutoSelect();
@@ -302,9 +341,7 @@ async function handleSignOut() {
                     resolve();
                 });
             });
-        }
-        // Handle Facebook logout
-        else if (provider === "facebook" && typeof FB !== "undefined") {
+        } else if (provider === "facebook" && typeof FB !== "undefined") {
             console.log("Attempting Facebook logout");
             await new Promise((resolve) => {
                 FB.getLoginStatus(function (response) {
@@ -320,40 +357,20 @@ async function handleSignOut() {
             });
         }
 
-        // Clear local storage and redirect
         console.log("Clearing local storage");
         localStorage.clear();
         
-        console.log("Attempting redirect to:", loginPath);
-        // Try multiple redirect methods
-        window.location.replace(loginPath);
-        
-        // Fallback if replace doesn't work
+        window.location.replace(homePath);
         setTimeout(() => {
-            console.log("Checking current location after 500ms:", window.location.pathname);
-            if (!window.location.pathname.includes("login.html")) {
-                console.warn("First redirect attempt failed, trying alternate method");
-                window.location.href = loginPath;
-                
-                // Final fallback
-                setTimeout(() => {
-                    if (!window.location.pathname.includes("login.html")) {
-                        console.error("Second redirect failed, forcing navigation");
-                        window.location = loginPath;
-                    }
-                    console.log("Final location:", window.location.pathname);
-                    alert("Logged out successfully.");
-                }, 500);
-            } else {
-                alert("Logged out successfully.");
+            if (!window.location.pathname.includes("homePage.html")) {
+                window.location.href = homePath;
             }
+            alert("Logged out successfully.");
         }, 500);
-
     } catch (error) {
         console.error("Logout error:", error);
-        // Force redirect on error
         localStorage.clear();
-        window.location = loginPath;
+        window.location = homePath;
         alert("Logged out successfully (with error handling)");
     }
 }
@@ -378,21 +395,13 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
     try {
         const searchQuery = new URLSearchParams(window.location.search).get("query") || "";
         let url = `${API_BASE_URL}/books?page=${page}&per_page=${booksPerPage}&sort=${sortBy}&force_refresh=${forceRefresh}`;
-        if (searchQuery) url += `&query=${encodeURIComponent(searchQuery)}`;
+        if (searchQuery) url = `${API_BASE_URL}/books/search?page=${page}&per_page=${booksPerPage}&sort=${sortBy}&query=${encodeURIComponent(searchQuery)}&force_refresh=${forceRefresh}`;
         console.log("Fetching books from:", url);
 
-        const response = await fetch(url, {
-            method: "GET",
-            headers: getAuthHeaders(),
-        });
+        const response = await fetchWithAuth(url, { method: "GET" });
+        if (!response) return;
 
         if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem("token");
-                window.location.href = "../pages/login.html";
-                return;
-            }
             const errorText = await response.text();
             throw new Error(`HTTP Error ${response.status}: ${errorText}`);
         }
@@ -400,7 +409,14 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
         const data = await response.json();
         console.log("API Response:", data);
 
-        if (!data.success || !data.books || data.books.length === 0) {
+        let books = [];
+        if (searchQuery) {
+            books = data.books || [];
+        } else {
+            books = data.books || [];
+        }
+
+        if (!books || books.length === 0) {
             console.warn("No books returned from API.");
             bookContainer.innerHTML = "<p>No books found.</p>";
             updatePagination(1, 1);
@@ -408,10 +424,10 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
             return;
         }
 
-        displayBooks(data.books);
+        displayBooks(books);
 
-        const totalBooks = data.pagination?.total_count || 0;
-        totalPages = data.pagination?.total_pages || 1;
+        const totalBooks = data.pagination?.total_count || books.length;
+        totalPages = data.pagination?.total_pages || Math.ceil(totalBooks / booksPerPage);
         currentPage = page;
 
         if (totalBooksElement) totalBooksElement.textContent = totalBooks;
@@ -502,20 +518,10 @@ async function fetchSearchSuggestions(query) {
     console.log("Fetching suggestions for query:", query);
     try {
         const url = `${API_BASE_URL}/books/search_suggestions?query=${encodeURIComponent(query)}`;
-        console.log("API URL:", url);
-        const response = await fetch(url, {
-            method: "GET",
-            headers: getAuthHeaders(),
-        });
+        const response = await fetchWithAuth(url, { method: "GET" });
+        if (!response) return;
 
-        console.log("Response status:", response.status);
         if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem("token");
-                window.location.href = "../pages/login.html";
-                return;
-            }
             const errorText = await response.text();
             throw new Error(`HTTP Error ${response.status}: ${errorText}`);
         }
@@ -524,7 +530,7 @@ async function fetchSearchSuggestions(query) {
         console.log("Raw API response:", data);
 
         let suggestions = [];
-        if (data.success && data.suggestions && Array.isArray(data.suggestions)) {
+        if (data.suggestions && Array.isArray(data.suggestions)) {
             suggestions = data.suggestions.map(suggestion => ({
                 id: suggestion.id,
                 book_name: suggestion.book_name,
@@ -613,7 +619,7 @@ document.getElementById("next-page")?.addEventListener("click", () => {
     }
 });
 
-document.getElementById("sort-books")?.addEventListener("click", (event) => {
+document.getElementById("sort-books")?.addEventListener("change", (event) => {
     console.log("Sorting books by:", event.target.value);
     fetchBooks(event.target.value, 1);
 });

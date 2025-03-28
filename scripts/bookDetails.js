@@ -3,7 +3,7 @@ const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
 
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM fully loaded, initializing book details...");
-    console.log("Token on load:", localStorage.getItem("token"));
+    console.log("Access Token on load:", localStorage.getItem("access_token"));
 
     const urlParams = new URLSearchParams(window.location.search);
     const bookId = urlParams.get("id");
@@ -17,7 +17,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.querySelector(".book-details").innerHTML = "<p>Book not found.</p>";
     }
 
-    // Initialize header functionalities
     await loadUserProfile();
     await updateCartCount();
     setupHeaderEventListeners();
@@ -26,21 +25,80 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // Get auth headers
 function getAuthHeaders() {
-    const token = localStorage.getItem("token");
+    const accessToken = localStorage.getItem("access_token");
     return {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        "Authorization": `Bearer ${accessToken}`
     };
 }
 
 // Authentication Functions
 function isAuthenticated() {
-    const token = localStorage.getItem("token");
-    return token !== null;
+    const accessToken = localStorage.getItem("access_token");
+    return accessToken !== null;
 }
 
-function getAuthToken() {
-    return localStorage.getItem("token") || "";
+async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (!refreshToken) {
+        console.error("No refresh token available");
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: refreshToken })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.access_token) {
+            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
+            console.log("Access token refreshed successfully");
+            return true;
+        } else {
+            console.error("Failed to refresh token:", data.error);
+            localStorage.clear();
+            alert("Session expired. Please log in again.");
+            window.location.href = "../pages/login.html";
+            return false;
+        }
+    } catch (error) {
+        console.error("Error refreshing token:", error);
+        localStorage.clear();
+        window.location.href = "../pages/login.html";
+        return false;
+    }
+}
+
+async function fetchWithAuth(url, options = {}) {
+    if (!isAuthenticated()) {
+        window.location.href = "../pages/pleaseLogin.html";
+        return null;
+    }
+
+    const expiresIn = localStorage.getItem("token_expires_in");
+    if (expiresIn && Date.now() >= expiresIn) {
+        const refreshed = await refreshAccessToken();
+        if (!refreshed) return null;
+    }
+
+    options.headers = { ...options.headers, ...getAuthHeaders() };
+    let response = await fetch(url, options);
+
+    if (response.status === 401) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+            options.headers = { ...options.headers, ...getAuthHeaders() };
+            response = await fetch(url, options);
+        } else {
+            return null;
+        }
+    }
+
+    return response;
 }
 
 // Fetch and display user profile
@@ -56,24 +114,14 @@ async function loadUserProfile() {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/users/profile`, {
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem("token");
-                window.location.href = "../pages/login.html";
-                return;
-            }
-            throw new Error(`Profile fetch failed with status: ${response.status}`);
-        }
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/profile`);
+        if (!response) return;
+
+        if (!response.ok) throw new Error(`Profile fetch failed with status: ${response.status}`);
         const userData = await response.json();
-        if (userData.success) {
-            const username = userData.name || "User";
-            profileNameElement.textContent = username;
-            localStorage.setItem("username", username);
-        }
+        const username = userData.name || "User";
+        profileNameElement.textContent = username;
+        localStorage.setItem("username", username);
     } catch (error) {
         console.error("Profile fetch error:", error.message);
         profileNameElement.textContent = localStorage.getItem("username") || "User";
@@ -94,22 +142,13 @@ async function updateCartCount() {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/cart`, {
-            headers: getAuthHeaders()
-        });
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts/summary`);
+        if (!response) return;
 
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem("token");
-                window.location.href = "../pages/login.html";
-                return;
-            }
-            throw new Error("Failed to fetch cart");
-        }
-        const cart = await response.json();
-        console.log("Cart API response:", cart);
-        const totalItems = cart.cart?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
+        if (!response.ok) throw new Error("Failed to fetch cart summary");
+        const cartData = await response.json();
+        console.log("Cart summary API response:", cartData);
+        const totalItems = cartData.total_items || 0;
         cartCountElement.textContent = totalItems;
         cartCountElement.style.display = totalItems > 0 ? "flex" : "none";
     } catch (error) {
@@ -219,7 +258,7 @@ function setupHeaderEventListeners() {
             });
         } else {
             document.getElementById("dropdown-login-signup").addEventListener("click", () => {
-                window.location.href = "../pages/homePage.html";
+                window.location.href = "../pages/login.html";
                 closeDropdown();
             });
             document.getElementById("dropdown-orders").addEventListener("click", () => {
@@ -257,7 +296,7 @@ function handleSignOut() {
         });
     }
 
-    if (provider === "facebook") {
+    if (provider === "facebook" && typeof FB !== "undefined") {
         console.log("Logging out from Facebook");
         FB.getLoginStatus(function (response) {
             if (response.status === "connected") {
@@ -365,11 +404,11 @@ async function deleteReview(reviewId) {
 
     const bookId = new URLSearchParams(window.location.search).get("id");
     try {
-        const response = await fetch(`${API_BASE_URL}/books/${bookId}/reviews/${reviewId}`, {
-            method: "DELETE",
-            headers: getAuthHeaders()
+        const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}/reviews/${reviewId}`, {
+            method: "DELETE"
         });
 
+        if (!response) return;
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.error || "Failed to delete review");
@@ -389,9 +428,8 @@ async function checkWishlistStatus(bookId) {
     if (!isAuthenticated()) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/wishlists/fetch`, {
-            headers: getAuthHeaders()
-        });
+        const response = await fetchWithAuth(`${API_BASE_URL}/wishlists`);
+        if (!response) return;
 
         if (!response.ok) throw new Error(`Failed to fetch wishlist: ${response.status}`);
         const wishlist = await response.json();
@@ -405,7 +443,7 @@ async function checkWishlistStatus(bookId) {
 
 // Get Current User from Token
 function getCurrentUserFromToken() {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("access_token");
     if (!token) return null;
 
     try {
@@ -421,12 +459,12 @@ function getCurrentUserFromToken() {
 // Check if item exists in cart and get its quantity
 async function getCartItemQuantity(bookId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/cart`, {
-            headers: getAuthHeaders()
-        });
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts`);
+        if (!response) return 0;
+
         if (!response.ok) throw new Error("Failed to fetch cart");
         const cart = await response.json();
-        const cartItem = cart.cart?.find(item => item.book_id === parseInt(bookId));
+        const cartItem = cart.find(item => item.book_id === parseInt(bookId));
         return cartItem ? cartItem.quantity : 0;
     } catch (error) {
         console.error("Error checking cart item:", error);
@@ -437,11 +475,12 @@ async function getCartItemQuantity(bookId) {
 // Update cart item quantity
 async function updateCartItemQuantity(bookId, newQuantity) {
     try {
-        const response = await fetch(`${API_BASE_URL}/cart/update_quantity`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts/${bookId}`, {
             method: "PATCH",
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ book_id: bookId, quantity: newQuantity })
+            body: JSON.stringify({ quantity: newQuantity })
         });
+        if (!response) return;
+
         const result = await response.json();
         if (!response.ok) throw new Error(`Failed to update quantity: ${result.error || "Unknown error"}`);
         return result;
@@ -461,14 +500,13 @@ function setupEventListeners() {
     let currentQuantity = 0;
     const bookId = new URLSearchParams(window.location.search).get("id");
 
-    // Initial check for existing quantity
     if (isAuthenticated()) {
         getCartItemQuantity(bookId).then(quantity => {
             currentQuantity = quantity;
-            updateQuantityUI(quantity); // Ensure UI reflects initial state
+            updateQuantityUI(quantity);
         }).catch(error => {
             console.error("Failed to fetch initial cart quantity:", error);
-            updateQuantityUI(0); // Fallback to 0 on error
+            updateQuantityUI(0);
         });
     }
 
@@ -481,17 +519,18 @@ function setupEventListeners() {
 
         try {
             if (currentQuantity === 0) {
-                const response = await fetch(`${API_BASE_URL}/cart/add`, {
+                const response = await fetchWithAuth(`${API_BASE_URL}/carts/${bookId}`, {
                     method: "POST",
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify({ book_id: bookId, quantity: 1 })
+                    body: JSON.stringify({ quantity: 1 })
                 });
+                if (!response) return;
+
                 const result = await response.json();
                 if (!response.ok) throw new Error(`Failed to add to bag: ${result.error || "Unknown error"}`);
                 currentQuantity = 1;
                 updateQuantityUI(currentQuantity);
                 alert("Book added to bag successfully!");
-                await updateCartCount(); // Ensure cart count updates
+                await updateCartCount();
             }
         } catch (error) {
             console.error("Error adding to cart:", error);
@@ -504,10 +543,10 @@ function setupEventListeners() {
             currentQuantity++;
             await updateCartItemQuantity(bookId, currentQuantity);
             updateQuantityUI(currentQuantity);
-            await updateCartCount(); // Update cart count after increment
+            await updateCartCount();
         } catch (error) {
-            currentQuantity--; // Revert on error
-            updateQuantityUI(currentQuantity); // Ensure UI reflects reverted state
+            currentQuantity--;
+            updateQuantityUI(currentQuantity);
             alert(`Failed to update quantity: ${error.message}`);
         }
     });
@@ -515,30 +554,29 @@ function setupEventListeners() {
     decrementBtn.addEventListener("click", async () => {
         try {
             if (currentQuantity <= 1) {
-                const response = await fetch(`${API_BASE_URL}/cart/toggle_remove`, {
-                    method: "PATCH",
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify({ book_id: bookId })
+                const response = await fetchWithAuth(`${API_BASE_URL}/carts/${bookId}/delete`, {
+                    method: "PATCH"
                 });
+                if (!response) return;
+
                 if (!response.ok) {
                     const result = await response.json();
                     throw new Error(`Failed to remove from cart: ${result.error || "Unknown error"}`);
                 }
                 currentQuantity = 0;
                 updateQuantityUI(currentQuantity);
-                await updateCartCount(); // Ensure cart count updates after removal
+                await updateCartCount();
                 alert("Book removed from cart successfully!");
             } else {
                 currentQuantity--;
                 await updateCartItemQuantity(bookId, currentQuantity);
                 updateQuantityUI(currentQuantity);
-                await updateCartCount(); // Update cart count after decrement
+                await updateCartCount();
             }
         } catch (error) {
             console.error("Error during decrement:", error);
-            // Revert quantity only if it wasn't a removal operation
             if (currentQuantity > 1) currentQuantity++;
-            updateQuantityUI(currentQuantity); // Ensure UI reflects correct state
+            updateQuantityUI(currentQuantity);
             alert(`Failed to update cart: ${error.message}`);
         }
     });
@@ -553,10 +591,11 @@ function setupEventListeners() {
         const wasWishlisted = wishlistButton.classList.contains("wishlisted");
 
         try {
-            const response = await fetch(`${API_BASE_URL}/wishlists/toggle/${bookId}`, {
+            const response = await fetchWithAuth(`${API_BASE_URL}/wishlists`, {
                 method: "POST",
-                headers: getAuthHeaders()
+                body: JSON.stringify({ book_id: bookId })
             });
+            if (!response) return;
 
             const result = await response.json();
             if (!response.ok) throw new Error(`Failed to toggle wishlist: ${result.error || "Unknown error"}`);
@@ -606,11 +645,11 @@ function setupEventListeners() {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/books/${bookId}/reviews`, {
+            const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}/reviews`, {
                 method: "POST",
-                headers: getAuthHeaders(),
                 body: JSON.stringify({ rating, comment: reviewText })
             });
+            if (!response) return;
 
             const result = await response.json();
             if (!response.ok) throw new Error(`Failed to submit review: ${result.error || "Unknown error"}`);
