@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadCartItems();
     await loadAddresses();
     setupLocationButton();
-    setupHeaderEventListeners(); // Add dropdown functionality
+    setupHeaderEventListeners();
 
     document.querySelector('.continue')?.addEventListener('click', () => {
         const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
@@ -60,7 +60,7 @@ async function loadUserProfile() {
             if (response.status === 401) {
                 alert("Session expired. Please log in again.");
                 localStorage.removeItem('token');
-                window.location.href = '../pages/login.html'; // Fixed path consistency
+                window.location.href = '../pages/login.html';
                 return;
             }
             throw new Error(`Profile fetch failed with status: ${response.status}`);
@@ -70,7 +70,7 @@ async function loadUserProfile() {
             const profileElement = document.getElementById('profile-link');
             if (profileElement) {
                 profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
-                localStorage.setItem('username', userData.name || 'User'); // Store username for dropdown
+                localStorage.setItem('username', userData.name || 'User');
             }
             document.querySelector('input[readonly][value="Poonam Yadav"]').value = userData.name || 'Unknown';
             document.querySelector('input[readonly][value="81678954778"]').value = userData.mobile_number || 'N/A';
@@ -310,38 +310,35 @@ async function fetchAddresses() {
 }
 
 async function loadAddresses() {
-    const selectedAddressId = localStorage.getItem('selectedAddressId');
     const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
     const addresses = await fetchAddresses();
 
     if (!addresses || addresses.length === 0) {
         if (selectedAddress.street) {
             updateAddressFields(selectedAddress, selectedAddress.address_type === 'other');
+        } else {
+            updateAddressFields({ street: '', city: '', state: '' }, false);
         }
         return;
     }
 
     window.addressesList = addresses;
 
+    // Prioritize the selected address from profile page if it exists
     let defaultAddress;
-    if (selectedAddressId) {
-        defaultAddress = addresses.find(addr => addr.id === parseInt(selectedAddressId)) || 
-                        addresses.find(addr => addr.is_default) || 
-                        addresses[0];
-    } else if (selectedAddress.street) {
+    if (selectedAddress.id && addresses.some(addr => addr.id === selectedAddress.id)) {
         defaultAddress = selectedAddress;
     } else {
         defaultAddress = addresses.find(addr => addr.is_default) || addresses[0];
-    }
-
-    updateAddressFields(defaultAddress, defaultAddress.address_type === 'other');
-    localStorage.setItem('selectedAddress', JSON.stringify(defaultAddress));
-    if (defaultAddress.id) {
+        localStorage.setItem('selectedAddress', JSON.stringify(defaultAddress));
         localStorage.setItem('selectedAddressId', defaultAddress.id);
     }
 
+    updateAddressFields(defaultAddress, defaultAddress.address_type === 'other');
+
+    // Set the correct radio button
     const initialRadio = document.querySelector(`input[name="address-type"][value="${defaultAddress.address_type}"]`);
-    if (initialRadio && defaultAddress.id) initialRadio.checked = true;
+    if (initialRadio) initialRadio.checked = true;
 
     document.querySelectorAll('input[name="address-type"]').forEach(radio => {
         radio.addEventListener('change', async () => {
@@ -492,11 +489,6 @@ function setupLocationButton() {
             useLocationButton.disabled = false;
         }
     });
-
-    const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
-    if (selectedAddress.street) {
-        updateAddressFields(selectedAddress, selectedAddress.address_type === 'other');
-    }
 }
 
 // Dropdown Functionality
@@ -505,6 +497,17 @@ function setupHeaderEventListeners() {
     let isDropdownOpen = false;
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
+    const logo = document.querySelector(".logo");
+
+    if (logo) {
+        logo.addEventListener("click", (event) => {
+            event.preventDefault();
+            console.log("Logo clicked, redirecting to homepage");
+            window.location.href = "../pages/homePage.html";
+        });
+    } else {
+        console.error("Logo element not found in DOM");
+    }
 
     if (!profileLink) {
         console.error("Profile link element (#profile-link) not found in DOM");
@@ -534,7 +537,7 @@ function setupHeaderEventListeners() {
     if (cartLink) {
         cartLink.addEventListener("click", (event) => {
             event.preventDefault();
-            window.location.href = '../pages/cart.html'; // Navigate to cart page
+            window.location.href = '../pages/cart.html';
         });
     }
 
@@ -618,5 +621,5 @@ function handleSignOut() {
 
     localStorage.clear();
     alert("Logged out successfully.");
-    window.location.href = "../pages/login.html";
+    window.location.href = "../pages/homePage.html";
 }

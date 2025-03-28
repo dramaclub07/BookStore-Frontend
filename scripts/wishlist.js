@@ -23,7 +23,6 @@ document.addEventListener("DOMContentLoaded", function () {
         };
     }
 
-    // Fetch and display user profile
     async function loadUserProfile() {
         try {
             const response = await fetch(`${API_BASE_URL}/users/profile`, {
@@ -43,7 +42,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 const profileElement = document.getElementById('profile-link');
                 if (profileElement) {
                     profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
-                    localStorage.setItem('username', userData.name || 'User'); // Store for dropdown
+                    localStorage.setItem('username', userData.name || 'User');
                 }
             }
         } catch (error) {
@@ -51,16 +50,14 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Update cart count in UI
     function updateCartCount(count) {
         const cartCount = document.querySelector('#cart-link .cart-count');
         if (cartCount) {
             cartCount.textContent = count;
-            cartCount.style.display = count > 0 ? "flex" : "none"; // Show/hide badge
+            cartCount.style.display = count > 0 ? "flex" : "none";
         }
     }
 
-    // Fetch cart summary for count
     async function loadCartSummary() {
         try {
             const response = await fetch(`${API_BASE_URL}/cart/summary`, {
@@ -84,7 +81,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-    // Fetch and display wishlist
     function fetchWishlist() {
         fetch(`${API_BASE_URL}/wishlists/fetch`, {
             headers: getAuthHeaders()
@@ -148,7 +144,6 @@ document.addEventListener("DOMContentLoaded", function () {
             });
     }
 
-    // Toggle wishlist item
     function toggleWishlist(bookId) {
         fetch(`${API_BASE_URL}/wishlists/toggle/${bookId}`, {
             method: "POST",
@@ -167,16 +162,27 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
                 return response.json();
             })
-            .then(() => fetchWishlist()) // Refresh wishlist
+            .then(() => fetchWishlist())
             .catch(error => console.error("Error toggling wishlist:", error));
     }
 
-    // Dropdown Functionality
     function setupHeaderEventListeners() {
         let dropdownMenu = null;
         let isDropdownOpen = false;
         const profileLink = document.getElementById("profile-link");
         const cartLink = document.getElementById("cart-link");
+        const logo = document.querySelector(".logo"); // Added logo selector
+
+        // Add logo click event listener
+        if (logo) {
+            logo.addEventListener("click", (event) => {
+                event.preventDefault();
+                console.log("Logo clicked, redirecting to homepage");
+                window.location.href = "../pages/homePage.html";
+            });
+        } else {
+            console.error("Logo element not found in DOM");
+        }
 
         if (!profileLink) {
             console.error("Profile link element (#profile-link) not found in DOM");
@@ -290,6 +296,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         localStorage.clear();
         alert("Logged out successfully.");
-        window.location.href = "../pages/login.html";
+        window.location.href = "../pages/homePage.html";
     }
 });

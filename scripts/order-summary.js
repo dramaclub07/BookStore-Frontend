@@ -8,10 +8,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    await loadUserProfile(); // Updates header and form fields
-    await loadCartItems();   // Loads and renders cart items in "My cart" section
-    await loadOrderSummary(); // Loads order summary and address details
-    setupHeaderEventListeners(); // Add dropdown functionality
+    await loadUserProfile();
+    await loadCartItems();
+    await loadOrderSummary();
+    setupHeaderEventListeners();
 });
 
 function getAuthHeaders() {
@@ -22,20 +22,18 @@ function getAuthHeaders() {
     };
 }
 
-// Update cart count in UI
 function updateCartCount(count) {
     const cartCount = document.querySelector('#cart-link .cart-count');
     const sectionCount = document.getElementById('cart-count');
     if (cartCount) {
         cartCount.textContent = count;
-        cartCount.style.display = count > 0 ? "flex" : "none"; // Show/hide badge
+        cartCount.style.display = count > 0 ? "flex" : "none";
     }
     if (sectionCount) {
         sectionCount.textContent = count;
     }
 }
 
-// Load user profile and update header/form
 async function loadUserProfile() {
     try {
         const response = await fetch(`${API_BASE_URL}/users/profile`, {
@@ -55,7 +53,7 @@ async function loadUserProfile() {
             const profileElement = document.getElementById('profile-link');
             if (profileElement) {
                 profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
-                localStorage.setItem('username', userData.name || 'User'); // Store for dropdown
+                localStorage.setItem('username', userData.name || 'User');
             }
             document.querySelector('input[readonly][value="Poonam Yadav"]').value = userData.name || 'Unknown';
             document.querySelector('input[readonly][value="81678954778"]').value = userData.mobile_number || 'N/A';
@@ -65,7 +63,6 @@ async function loadUserProfile() {
     }
 }
 
-// Fetch and display cart items
 async function loadCartItems() {
     const cartContainer = document.getElementById('cart-container');
     if (!cartContainer) return;
@@ -102,7 +99,6 @@ async function loadCartItems() {
     }
 }
 
-// Render cart items
 function renderCartItems(cartItems) {
     const cartContainer = document.getElementById('cart-container');
     if (!cartContainer) return;
@@ -135,7 +131,6 @@ function renderCartItems(cartItems) {
     }).join('');
 }
 
-// Setup cart event listeners
 function setupCartEventListeners() {
     document.querySelectorAll('.increase').forEach(button => {
         button.addEventListener('click', function() {
@@ -156,7 +151,6 @@ function setupCartEventListeners() {
     });
 }
 
-// Update quantity
 async function updateQuantity(button, change) {
     const cartItem = button.closest('.cart-item');
     const bookId = cartItem.dataset.id;
@@ -217,7 +211,6 @@ async function updateQuantity(button, change) {
     }
 }
 
-// Remove item
 async function removeCartItem(button) {
     const cartItem = button.closest('.cart-item');
     const bookId = cartItem.dataset.id;
@@ -257,7 +250,6 @@ async function removeCartItem(button) {
     }
 }
 
-// Fetch and display cart summary
 async function loadCartSummary() {
     try {
         const response = await fetch(`${API_BASE_URL}/cart/summary`, {
@@ -281,7 +273,6 @@ async function loadCartSummary() {
     }
 }
 
-// Load order summary
 async function loadOrderSummary() {
     const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
     const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
@@ -294,18 +285,16 @@ async function loadOrderSummary() {
 
     if (!selectedAddress.id) {
         alert("No address selected. Please select an address.");
-        window.location.href = '../pages.customer-details.html';
+        window.location.href = '../pages/customer-details.html'; // Fixed typo in path
         return;
     }
 
-    // Populate address fields
     document.querySelector('textarea[readonly]').value = selectedAddress.street || '';
     document.querySelector('input[readonly][value="Bengaluru"]').value = selectedAddress.city || '';
     document.querySelector('input[readonly][value="Karnataka"]').value = selectedAddress.state || '';
     const radio = document.querySelector(`input[name="address-type"][value="${selectedAddress.address_type || 'Work'}"]`);
     if (radio) radio.checked = true;
 
-    // Populate order summary
     const summarySection = document.getElementById('order-summary-section');
     if (!summarySection) return;
 
@@ -332,7 +321,6 @@ async function loadOrderSummary() {
         <button class="checkout">CHECKOUT</button>
     `;
 
-    // Add checkout event listener
     document.querySelector('.checkout').addEventListener('click', async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/orders`, {
@@ -364,12 +352,23 @@ async function loadOrderSummary() {
     });
 }
 
-// Dropdown Functionality
 function setupHeaderEventListeners() {
     let dropdownMenu = null;
     let isDropdownOpen = false;
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
+    const logo = document.querySelector(".logo"); // Added logo selector
+
+    // Add logo click event listener
+    if (logo) {
+        logo.addEventListener("click", (event) => {
+            event.preventDefault();
+            console.log("Logo clicked, redirecting to homepage");
+            window.location.href = "../pages/homePage.html";
+        });
+    } else {
+        console.error("Logo element not found in DOM");
+    }
 
     if (!profileLink) {
         console.error("Profile link element (#profile-link) not found in DOM");
@@ -483,5 +482,5 @@ function handleSignOut() {
 
     localStorage.clear();
     alert("Logged out successfully.");
-    window.location.href = "../pages/login.html";
+    window.location.href = "../pages/homePage.html";
 }

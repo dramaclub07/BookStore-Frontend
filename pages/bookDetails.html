@@ -35,11 +35,19 @@
             <div class="book-details-left">
                 <div class="image-container">
                     <div class="book-image-wrapper">
-                        <img src="path-to-book-image.jpg" alt="Book Title" class="book-image">
+                        <div class="image-loader" id="image-loader">
+                            <div class="spinner"></div>
+                        </div>
+                        <img src="path-to-book-image.jpg" alt="Book Title" class="book-image" id="book-image">
                     </div>
                 </div>
                 <div class="action-buttons">
                     <button id="add-to-bag" class="add-to-bag">ADD TO BAG</button>
+                    <div id="quantity-control" class="quantity-control" style="display: none;">
+                        <button id="decrement">-</button>
+                        <span id="quantity-display">1</span>
+                        <button id="increment">+</button>
+                    </div>
                     <button id="add-to-wishlist" class="wishlist">
                         <i class="far fa-heart"></i> WISHLIST
                     </button>
