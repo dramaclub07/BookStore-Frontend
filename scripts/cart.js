@@ -2,9 +2,9 @@
 const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
 
 document.addEventListener("DOMContentLoaded", async () => {
-    const token = localStorage.getItem("token");
+    const accessToken = localStorage.getItem("access_token");
 
-    if (!token) {
+    if (!accessToken) {
         alert("Please log in to view your cart.");
         window.location.href = "../pages/login.html";
         return;
@@ -18,11 +18,75 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // Get auth headers
 function getAuthHeaders() {
-    const token = localStorage.getItem("token");
+    const accessToken = localStorage.getItem("access_token");
     return {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        "Authorization": `Bearer ${accessToken}`
     };
+}
+
+// Authentication and Token Refresh
+async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (!refreshToken) {
+        console.error("No refresh token available");
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: refreshToken })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.access_token) {
+            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
+            console.log("Access token refreshed successfully");
+            return true;
+        } else {
+            console.error("Failed to refresh token:", data.error);
+            localStorage.clear();
+            alert("Session expired. Please log in again.");
+            window.location.href = "../pages/login.html";
+            return false;
+        }
+    } catch (error) {
+        console.error("Error refreshing token:", error);
+        localStorage.clear();
+        window.location.href = "../pages/login.html";
+        return false;
+    }
+}
+
+async function fetchWithAuth(url, options = {}) {
+    if (!localStorage.getItem("access_token")) {
+        window.location.href = "../pages/login.html";
+        return null;
+    }
+
+    const expiresIn = localStorage.getItem("token_expires_in");
+    if (expiresIn && Date.now() >= expiresIn) {
+        const refreshed = await refreshAccessToken();
+        if (!refreshed) return null;
+    }
+
+    options.headers = { ...options.headers, ...getAuthHeaders() };
+    let response = await fetch(url, options);
+
+    if (response.status === 401) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+            options.headers = { ...options.headers, ...getAuthHeaders() };
+            response = await fetch(url, options);
+        } else {
+            return null;
+        }
+    }
+
+    return response;
 }
 
 // Update cart count in UI
@@ -32,13 +96,23 @@ function updateCartCount(count) {
     const placeOrderButton = document.querySelector(".place-order");
 
     if (cartCount) {
-        cartCount.textContent = count;
-        cartCount.style.display = count > 0 ? "flex" : "none";
+        if (count > 0) {
+            cartCount.textContent = count;
+            cartCount.style.display = "flex";
+        } else {
+            cartCount.textContent = ""; // Clear the content when count is 0
+            cartCount.style.display = "none"; // Hide the element
+        }
     }
 
     if (sectionCount) {
-        sectionCount.textContent = count;
-        sectionCount.style.display = count > 0 ? "inline" : "none";
+        if (count > 0) {
+            sectionCount.textContent = count;
+            sectionCount.style.display = "inline";
+        } else {
+            sectionCount.textContent = ""; // Clear the content when count is 0
+            sectionCount.style.display = "none"; // Hide the element
+        }
     }
 
     if (placeOrderButton) {
@@ -54,23 +128,14 @@ async function loadCartItems() {
     cartContainer.innerHTML = "<p>Loading cart...</p>";
 
     try {
-        const response = await fetch(`${API_BASE_URL}/cart`, {
-            method: "GET",
-            headers: getAuthHeaders()
-        });
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts`, { method: "GET" });
+        if (!response) return;
 
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem("token");
-                window.location.href = "../pages/login.html";
-                return;
-            }
-            throw new Error(`Error ${response.status}: Failed to fetch cart items`);
-        }
+        if (!response.ok) throw new Error(`Error ${response.status}: Failed to fetch cart items`);
 
         const data = await response.json();
-        const cartItems = data.cart || [];
+        const cartItems = data || [];
+
         // Remove out-of-stock items from cart
         for (const item of cartItems) {
             const bookResponse = await fetch(`${API_BASE_URL}/books/${item.book_id}`);
@@ -79,13 +144,13 @@ async function loadCartItems() {
                 await removeCartItem(item.book_id);
             }
         }
+
         // Reload cart after removing out-of-stock items
-        const updatedResponse = await fetch(`${API_BASE_URL}/cart`, {
-            method: "GET",
-            headers: getAuthHeaders()
-        });
+        const updatedResponse = await fetchWithAuth(`${API_BASE_URL}/carts`, { method: "GET" });
+        if (!updatedResponse) return;
+
         const updatedData = await updatedResponse.json();
-        const updatedCartItems = updatedData.cart || [];
+        const updatedCartItems = updatedData || [];
         renderCartItems(updatedCartItems);
         updateCartCount(updatedCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0));
         setupCartEventListeners();
@@ -93,6 +158,7 @@ async function loadCartItems() {
     } catch (error) {
         console.error("Error fetching cart items:", error);
         cartContainer.innerHTML = `<p>Error loading cart.</p>`;
+        updateCartCount(0); // Ensure count is cleared on error
     }
 }
 
@@ -186,11 +252,11 @@ async function updateQuantity(button, change) {
     const perUnitPrice = parseFloat(cartItem.dataset.unitPrice);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/cart/update_quantity`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts/${bookId}`, {
             method: "PATCH",
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ book_id: bookId, quantity: newQuantity })
+            body: JSON.stringify({ quantity: newQuantity })
         });
+        if (!response) return;
 
         if (!response.ok) {
             const result = await response.json();
@@ -216,24 +282,22 @@ async function updateQuantity(button, change) {
 // Remove item
 async function removeCartItem(bookId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/cart/toggle_remove`, {
-            method: "PATCH",
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ book_id: bookId })
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts/${bookId}/delete`, {
+            method: "PATCH"
         });
+        if (!response) return;
 
         const result = await response.json();
-        if (!response.ok || !result.success) {
+        if (!response.ok) {
             console.warn("Failed to remove item from cart:", result.error || "Unknown error");
-            console.log("Full response from /cart/toggle_remove:", result);
-            // Continue with UI update even if removal fails
+            console.log("Full response from /carts/:id/delete:", result);
+            throw new Error(result.error || "Failed to remove item");
         }
 
         await loadCartItems(); // Refresh cart
     } catch (error) {
         console.error("Error removing item:", error);
         console.log("Error details:", error.message);
-        // Do not show alert to user since this is not critical
         await loadCartItems(); // Refresh cart even on error
     }
 }
@@ -241,13 +305,10 @@ async function removeCartItem(bookId) {
 // Fetch and display cart summary
 async function loadCartSummary() {
     try {
-        const response = await fetch(`${API_BASE_URL}/cart/summary`, {
-            headers: getAuthHeaders()
-        });
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts/summary`);
+        if (!response) return;
 
-        if (!response.ok) {
-            throw new Error("Failed to fetch cart summary");
-        }
+        if (!response.ok) throw new Error("Failed to fetch cart summary");
 
         const cartData = await response.json();
         const totalPriceElement = document.getElementById("cart-total");
@@ -257,6 +318,7 @@ async function loadCartSummary() {
         updateCartCount(cartData.total_items || 0);
     } catch (error) {
         console.error("Error fetching cart summary:", error);
+        updateCartCount(0); // Ensure count is cleared on error
     }
 }
 
@@ -266,24 +328,14 @@ async function loadUserProfile() {
     if (!profileNameElement) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/users/profile`, {
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem("token");
-                window.location.href = "../pages/login.html";
-                return;
-            }
-            throw new Error(`Profile fetch failed with status: ${response.status}`);
-        }
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/profile`);
+        if (!response) return;
+
+        if (!response.ok) throw new Error(`Profile fetch failed with status: ${response.status}`);
         const userData = await response.json();
-        if (userData.success) {
-            const username = userData.name || "User";
-            profileNameElement.textContent = username;
-            localStorage.setItem("username", username);
-        }
+        const username = userData.name || "User";
+        profileNameElement.textContent = username;
+        localStorage.setItem("username", username);
     } catch (error) {
         console.error("Profile fetch error:", error.message);
         profileNameElement.textContent = localStorage.getItem("username") || "User";
@@ -409,7 +461,7 @@ function handleSignOut() {
         });
     }
 
-    if (provider === "facebook") {
+    if (provider === "facebook" && typeof FB !== "undefined") {
         console.log("Logging out from Facebook");
         FB.getLoginStatus(function (response) {
             if (response.status === "connected") {
@@ -438,11 +490,11 @@ async function saveCurrentLocationToBackend(locationData) {
             is_default: false
         };
 
-        const response = await fetch(`${API_BASE_URL}/addresses/create`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/addresses/create`, {
             method: "POST",
-            headers: getAuthHeaders(),
             body: JSON.stringify(addressData)
         });
+        if (!response) return;
 
         const result = await response.json();
         if (!response.ok) {
@@ -459,17 +511,12 @@ async function saveCurrentLocationToBackend(locationData) {
 // Fetch addresses
 async function fetchAddresses() {
     try {
-        const response = await fetch(`${API_BASE_URL}/addresses`, { headers: getAuthHeaders() });
-        if (response.status === 401) {
-            alert("Session expired. Please log in again.");
-            localStorage.removeItem("token");
-            window.location.href = "../pages/login.html";
-            return null;
-        }
+        const response = await fetchWithAuth(`${API_BASE_URL}/addresses`);
+        if (!response) return null;
+
         if (!response.ok) throw new Error(`Failed to fetch addresses: ${response.status}`);
 
         const data = await response.json();
-        if (!data.success) throw new Error("Failed to load addresses from server");
         return data.addresses || [];
     } catch (error) {
         console.error("Error fetching addresses:", error);
