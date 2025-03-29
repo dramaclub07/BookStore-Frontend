@@ -13,10 +13,208 @@ body {
     background-color: #f5f5f5;
 }
 
+/* Navbar */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(90deg, #a52a2a, #8b1e1e);
+    padding: 10px 20px;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    gap: 10px;
+}
+
+.logo img {
+    width: 50px;
+    height: 30px;
+    object-fit: contain;
+}
+
+/* Search Container */
+.search-container {
+    position: relative;
+    width: 40%;
+    min-width: 200px;
+    max-width: 400px;
+}
+
+.search-wrapper {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.search-bar {
+    width: 100%;
+    padding: 8px 12px 8px 35px; /* Left padding for icon */
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    background-color: #fff;
+    transition: border-color 0.2s ease;
+}
+
+.search-bar:focus {
+    outline: none;
+    border-color: #a52a2a;
+    box-shadow: 0 0 5px rgba(165, 42, 42, 0.3);
+}
+
+.search-icon {
+    position: absolute;
+    left: 10px;
+    color: #666;
+    font-size: 16px;
+    pointer-events: none; /* Prevents icon from blocking input */
+}
+
+.search-dropdown-menu {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    width: 100%;
+    position: absolute;
+    top: 100%;
+    left: 0;
+}
+
+.search-dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    border-bottom: 1px solid #eee;
+}
+
+.search-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.search-dropdown-item:hover {
+    background-color: #f5f5f5;
+}
+
+.suggestion-book-name {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.suggestion-author-name {
+    font-size: 12px;
+    color: #666;
+}
+
+/* Nav Links */
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+}
+
+.nav-links span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.cart-count {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f44336;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
+    margin-left: 2px;
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 10px 0;
+    min-width: 180px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.dropdown-item {
+    padding: 8px 15px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: #f2dede;
+}
+
+.dropdown-header {
+    font-weight: 600;
+    color: #222;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
+}
+
+.dropdown-subheader {
+    font-style: italic;
+    color: #666;
+    font-size: 13px;
+    padding-bottom: 5px;
+}
+
+.dropdown-menu button {
+    width: 100%;
+    padding: 8px 15px;
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.dropdown-menu button:hover {
+    background: #d32f2f;
+}
+
 /* Page Content Wrapper */
 .content-wrapper {
     margin-top: 70px;
-    padding: 20px 60px;
+    padding: 20px;
+    width: 100%;
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Page Info & Sorting */
@@ -26,6 +224,8 @@ body {
     align-items: center;
     padding: 15px 0;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .sort-dropdown {
@@ -40,6 +240,7 @@ body {
 .book-list {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
+    gap: 30px 20px;
     padding: 20px 0;
     justify-items: center;
     background: linear-gradient(180deg, #f5f5f5, #e8e8e8);
@@ -59,6 +260,7 @@ body {
     border-top: 5px solid transparent;
     border-radius: 50%;
     animation: spin 1s linear infinite;
+    z-index: 10;
 }
 
 @keyframes spin {
@@ -72,8 +274,8 @@ body {
     border-radius: 5px;
     box-shadow: 0 4px 16px rgba(247, 152, 152, 0.1);
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
-    width: 100%; /* Make the book card fill the grid cell width */
-    max-width: 280px; /* Keep a max-width to prevent it from growing too large */
+    width: 100%;
+    max-width: 280px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -81,25 +283,6 @@ body {
     overflow: hidden;
     border: 1px solid rgba(0, 0, 0, 0.05);
     position: relative;
-    margin: 0; /* Ensure no margins are adding extra space */
-}
-
-/* Ensure no extra margins or padding on book-card children */
-.book-card * {
-    margin: 0; /* Reset margins on child elements */
-}
-
-/* Book Image */
-.book-image {
-    width: 100%;
-    max-width: 280px;
-    height: 270px;
-    object-fit: contain;
-    border-radius: 1px;
-    margin-bottom: 12px;
-    padding: 2px; /* Reduced padding (from 4px) */
-    transition: transform 0.2s ease;
-    background-color: #ddd;
 }
 
 .book-card:hover {
@@ -108,10 +291,21 @@ body {
     background-color: #f2dede;
 }
 
-/* Lighten the book card when hovering over the Quick View button */
 .book-card:hover .quick-view:hover {
     background-color: #f9f9f9;
     color: #A03037;
+}
+
+/* Book Image */
+.book-image {
+    width: 100%;
+    height: 200px;
+    object-fit: contain;
+    border-radius: 1px;
+    margin-bottom: 12px;
+    padding: 4px;
+    transition: transform 0.2s ease;
+    background-color: #ddd;
 }
 
 .book-card:hover .book-image {
@@ -136,6 +330,13 @@ body {
     transition: opacity 0.2s ease;
 }
 
+@media (hover: none) {
+    .quick-view {
+        opacity: 1;
+        background-color: rgba(160, 48, 55, 0.8);
+    }
+}
+
 .book-card:hover .quick-view {
     opacity: 1;
 }
@@ -147,7 +348,6 @@ body {
     padding: 0 12px;
 }
 
-/* Book Title */
 .book-card h3 {
     font-size: 14px;
     font-weight: bold;
@@ -156,14 +356,12 @@ body {
     line-height: 1.3;
 }
 
-/* Author */
 .book-card p {
     font-size: 12px;
     color: gray;
     margin-bottom: 5px;
 }
 
-/* Rating */
 .rating {
     display: inline-flex;
     align-items: center;
@@ -175,7 +373,6 @@ body {
     font-weight: bold;
 }
 
-/* Rating Count */
 .rating-count {
     color: black;
     font-size: 12px;
@@ -183,17 +380,13 @@ body {
     opacity: 0.7;
 }
 
-/* Price */
 .price-info {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-top: 5px;
-}
-
-/* Add margin-bottom to price-info to create space */
-.price-info {
     margin-bottom: 12px;
+    flex-wrap: wrap;
 }
 
 .price {
@@ -215,6 +408,8 @@ body {
     justify-content: center;
     margin: 30px 0;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
 }
 
 .pagination span {
@@ -241,88 +436,118 @@ body {
     cursor: not-allowed;
 }
 
-.pagination .active {
-    background: #333;
-}   
-/* Ensure the parent container supports absolute positioning */
-.nav-links {
-    position: relative; /* Allows absolute positioning of dropdown relative to this */
-    display: flex;
-    align-items: center;
-    gap: 20px; /* Optional: spacing between profile and cart links */
+/* Responsive Media Queries */
+@media screen and (max-width: 1200px) {
+    .content-wrapper {
+        padding: 20px 40px;
+    }
+    .book-list {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 25px 15px;
+    }
 }
 
-/* Dropdown menu styling */
-.dropdown-menu {
-    position: absolute;
-    top: 100%; /* Places it directly below the profile link */
-    right: 0; /* Aligns to the right edge of .nav-links */
-    background: #fff; /* White background */
-    border: 1px solid #ccc; /* Light gray border */
-    border-radius: 4px; /* Slightly rounded corners */
-    padding: 10px 0; /* Vertical padding, no horizontal padding on the container */
-    min-width: 180px; /* Ensures it’s wide enough for content */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
-    z-index: 1000; /* Ensures it appears above other content */
+@media screen and (max-width: 992px) {
+    .content-wrapper {
+        padding: 20px 30px;
+    }
+    .book-list {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px 15px;
+    }
+    .book-card {
+        max-width: 250px;
+    }
 }
 
-/* Individual dropdown items */
-.dropdown-item {
-    padding: 8px 15px; /* Comfortable padding for clickable area */
-    font-size: 14px; /* Consistent text size */
-    color: #333; /* Dark gray text */
-    cursor: pointer;
-    transition: background 0.2s ease; /* Smooth hover effect */
+@media screen and (max-width: 768px) {
+    .content-wrapper {
+        margin-top: 60px;
+        padding: 15px 20px;
+    }
+    .navbar {
+        flex-wrap: wrap;
+        padding: 10px;
+    }
+    .search-container {
+        width: 100%;
+        margin: 10px 0;
+    }
+    .page-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    .book-list {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px 10px;
+    }
+    .book-card {
+        max-width: 200px;
+    }
+    .book-image {
+        height: 180px;
+    }
 }
 
-.dropdown-item:hover {
-    background: #f2dede; /* Light gray on hover */
+@media screen and (max-width: 576px) {
+    .content-wrapper {
+        margin-top: 50px;
+        padding: 10px 15px;
+    }
+    .book-list {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px 8px;
+    }
+    .book-card {
+        max-width: 170px;
+    }
+    .book-image {
+        height: 160px;
+    }
+    .book-card h3 {
+        font-size: 13px;
+    }
+    .book-card p {
+        font-size: 11px;
+    }
+    .price {
+        font-size: 13px;
+    }
+    .pagination button {
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+    .pagination span {
+        margin: 0 5px;
+        font-size: 12px;
+    }
 }
 
-/* Header styling */
-.dropdown-header {
-    font-weight: 600; /* Slightly bolder than normal */
-    color: #222; /* Darker for emphasis */
-    padding-bottom: 5px; /* Space below header */
-    border-bottom: 1px solid #eee; /* Subtle separator */
-}
-
-/* Subheader styling */
-.dropdown-subheader {
-    font-style: italic;
-    color: #666; /* Lighter gray for contrast */
-    font-size: 13px; /* Slightly smaller */
-    padding-bottom: 5px; /* Space below subheader */
-}
-
-/* Button styling within dropdown */
-.dropdown-menu button {
-    width: 100%; /* Full width of the dropdown */
-    padding: 8px 15px; /* Matches .dropdown-item padding */
-    background: #f44336; /* Red background for logout/login */
-    color: white;
-    border: none;
-    border-radius: 4px; /* Rounded corners */
-    font-size: 14px;
-    text-align: left; /* Align text with other items */
-    cursor: pointer;
-    transition: background 0.2s ease; /* Smooth hover effect */
-}
-
-.dropdown-menu button:hover {
-    background: #d32f2f; /* Darker red on hover */
-}
-
-/* Ensure cart count visibility works */
-.cart-count {
-    display: flex; /* Default state, overridden by JS if 0 */
-    align-items: center;
-    justify-content: center;
-    background: #f44336; /* Red badge */
-    color: white;
-    border-radius: 50%; /* Circular badge */
-    width: 18px;
-    height: 18px;
-    font-size: 12px;
-    margin-left: 2px; /* Space from cart icon */
+@media screen and (max-width: 400px) {
+    .content-wrapper {
+        padding: 10px;
+    }
+    .book-list {
+        grid-template-columns: 1fr;
+        gap: 10px 0;
+    }
+    .book-card {
+        max-width: 150px;
+    }
+    .book-image {
+        height: 140px;
+    }
+    .quick-view {
+        padding: 6px 10px;
+        font-size: 10px;
+    }
+    .dropdown-menu {
+        min-width: 150px;
+        right: -10px;
+    }
+    .dropdown-item {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
 }

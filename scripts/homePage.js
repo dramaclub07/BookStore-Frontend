@@ -4,33 +4,94 @@ let currentPage = 1;
 let totalPages = 1;
 const booksPerPage = 12;
 
+// Search dropdown state
+let searchDropdown = null;
+let isSearchDropdownOpen = false;
+
 // Get auth headers
 function getAuthHeaders() {
-    const token = localStorage.getItem("token");
+    const accessToken = localStorage.getItem("access_token");
     return {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        "Authorization": `Bearer ${accessToken}`
     };
 }
 
 // Authentication Functions
 function isAuthenticated() {
-    const token = localStorage.getItem("token");
-    return token !== null;
+    const accessToken = localStorage.getItem("access_token");
+    return accessToken !== null;
 }
 
-function getAuthToken() {
-    return localStorage.getItem("token") || "";
+async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (!refreshToken) {
+        console.error("No refresh token available");
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: refreshToken })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.access_token) {
+            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
+            console.log("Access token refreshed successfully");
+            return true;
+        } else {
+            console.error("Failed to refresh token:", data.error);
+            localStorage.clear();
+            alert("Session expired. Please log in again.");
+            window.location.href = "../pages/login.html";
+            return false;
+        }
+    } catch (error) {
+        console.error("Error refreshing token:", error);
+        localStorage.clear();
+        window.location.href = "../pages/login.html";
+        return false;
+    }
+}
+
+async function fetchWithAuth(url, options = {}) {
+    if (!isAuthenticated()) {
+        console.log("User not authenticated, proceeding without auth for public routes");
+        return fetch(url, options); // Allow public routes without redirect
+    }
+
+    const expiresIn = localStorage.getItem("token_expires_in");
+    if (expiresIn && Date.now() >= expiresIn) {
+        const refreshed = await refreshAccessToken();
+        if (!refreshed) return null;
+    }
+
+    options.headers = { ...options.headers, ...getAuthHeaders() };
+    let response = await fetch(url, options);
+
+    if (response.status === 401) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+            options.headers = { ...options.headers, ...getAuthHeaders() };
+            response = await fetch(url, options);
+        } else {
+            return null;
+        }
+    }
+
+    return response;
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM fully loaded, initializing homepage...");
-    console.log("Token on load:", localStorage.getItem("token"));
+    console.log("Access Token on load:", localStorage.getItem("access_token"));
 
-    // No redirect here; allow unauthenticated users to browse books
     const isLoggedIn = isAuthenticated();
 
-    // Check for refresh triggers (e.g., after login or review submission)
     const sortBooks = document.getElementById("sort-books");
     const initialSortOption = sortBooks?.value || "relevance";
 
@@ -46,11 +107,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         fetchBooks(initialSortOption, 1);
     }
 
-    // Load user profile and cart count
     await loadUserProfile();
     await updateCartCount();
 
-    // Dropdown menu state and event listeners
     let dropdownMenu = null;
     let isDropdownOpen = false;
     const profileLink = document.getElementById("profile-link");
@@ -94,18 +153,54 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // Simplified search redirect (no fetch)
-    document.getElementById("search")?.addEventListener("keypress", (event) => {
-        if (event.key === "Enter") {
-            const query = event.target.value.trim();
-            if (query) {
-                console.log("Search triggered with query:", query);
-                window.location.href = `homePage.html?query=${encodeURIComponent(query)}`;
-            }
-        }
-    });
+    const searchInput = document.getElementById("search");
+    if (searchInput) {
+        console.log("Search input found, setting up event listeners");
+        const debounce = (func, delay) => {
+            let timeoutId;
+            return (...args) => {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => func(...args), delay);
+            };
+        };
 
-    // Function to open the dropdown
+        searchInput.addEventListener("input", debounce(async (event) => {
+            const query = event.target.value.trim();
+            console.log("Input event triggered with query:", query);
+            if (query.length < 2) {
+                console.log("Query too short, closing dropdown");
+                closeSearchDropdown();
+                return;
+            }
+            await fetchSearchSuggestions(query);
+        }, 300));
+
+        searchInput.addEventListener("keypress", (event) => {
+            if (event.key === "Enter") {
+                const query = event.target.value.trim();
+                if (query) {
+                    console.log("Enter pressed, searching for:", query);
+                    closeSearchDropdown();
+                    window.location.href = `homePage.html?query=${encodeURIComponent(query)}`;
+                }
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            if (
+                isSearchDropdownOpen &&
+                !searchInput.contains(event.target) &&
+                searchDropdown &&
+                !searchDropdown.contains(event.target)
+            ) {
+                console.log("Clicked outside, closing search dropdown");
+                closeSearchDropdown();
+            }
+        });
+    } else {
+        console.error("Search input not found in DOM");
+    }
+
     function openDropdown() {
         if (dropdownMenu) dropdownMenu.remove();
 
@@ -145,6 +240,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 closeDropdown();
             });
             document.getElementById("dropdown-logout").addEventListener("click", () => {
+                console.log("Logout button clicked");
                 handleSignOut();
                 closeDropdown();
             });
@@ -166,7 +262,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         isDropdownOpen = true;
     }
 
-    // Function to close the dropdown
     function closeDropdown() {
         if (dropdownMenu) {
             dropdownMenu.remove();
@@ -176,7 +271,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
-// Fetch and display user profile
 async function loadUserProfile() {
     const profileNameElement = document.querySelector(".profile-name");
     const isLoggedIn = isAuthenticated();
@@ -189,31 +283,20 @@ async function loadUserProfile() {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/users/profile`, {
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem("token");
-                window.location.href = "../pages/login.html";
-                return;
-            }
-            throw new Error(`Profile fetch failed with status: ${response.status}`);
-        }
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/profile`);
+        if (!response) return;
+
+        if (!response.ok) throw new Error(`Profile fetch failed with status: ${response.status}`);
         const userData = await response.json();
-        if (userData.success) {
-            const username = userData.name || "User";
-            profileNameElement.textContent = username;
-            localStorage.setItem("username", username); // Update localStorage
-        }
+        const username = userData.name || "User";
+        profileNameElement.textContent = username;
+        localStorage.setItem("username", username);
     } catch (error) {
         console.error("Profile fetch error:", error.message);
         profileNameElement.textContent = localStorage.getItem("username") || "User";
     }
 }
 
-// Update cart count in UI
 async function updateCartCount() {
     const cartCountElement = document.querySelector("#cart-link .cart-count");
     if (!cartCountElement) return;
@@ -227,24 +310,15 @@ async function updateCartCount() {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/cart`, {
-            headers: getAuthHeaders()
-        });
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts`);
+        if (!response) return;
 
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem("token");
-                window.location.href = "../pages/login.html";
-                return;
-            }
-            throw new Error("Failed to fetch cart");
-        }
-        const cart = await response.json();
-        console.log("Cart API response:", cart);
-        const totalItems = cart.cart?.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
+        if (!response.ok) throw new Error("Failed to fetch cart");
+        const cartItems = await response.json();
+        console.log("Cart API response:", cartItems);
+        const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
         cartCountElement.textContent = totalItems;
-        cartCountElement.style.display = totalItems > 0 ? "flex" : "none"; // Show/hide based on count
+        cartCountElement.style.display = totalItems > 0 ? "flex" : "none";
     } catch (error) {
         console.error("Error fetching cart count:", error);
         cartCountElement.textContent = "0";
@@ -252,39 +326,55 @@ async function updateCartCount() {
     }
 }
 
-// Sign Out (Logout) functionality
-function handleSignOut() {
-    console.log("Logging out...");
+async function handleSignOut() {
+    console.log("=== Starting logout process ===");
     const provider = localStorage.getItem("socialProvider");
+    const homePath = "../pages/homePage.html";
 
-    // Revoke Google session if applicable
-    if (provider === "google" && typeof google !== "undefined" && google.accounts) {
-        console.log("Logging out from Google");
-        google.accounts.id.disableAutoSelect();
-        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
-            console.log("Google session revoked");
-        });
-    }
-
-    // Revoke Facebook session if applicable
-    if (provider === "facebook") {
-        console.log("Logging out from Facebook");
-        FB.getLoginStatus(function (response) {
-            if (response.status === "connected") {
-                FB.logout(function (response) {
-                    console.log("Facebook session revoked");
+    try {
+        if (provider === "google" && typeof google !== "undefined" && google.accounts) {
+            console.log("Attempting Google logout");
+            google.accounts.id.disableAutoSelect();
+            await new Promise((resolve) => {
+                google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
+                    console.log("Google session revoked");
+                    resolve();
                 });
-            }
-        });
-    }
+            });
+        } else if (provider === "facebook" && typeof FB !== "undefined") {
+            console.log("Attempting Facebook logout");
+            await new Promise((resolve) => {
+                FB.getLoginStatus(function (response) {
+                    if (response.status === "connected") {
+                        FB.logout(function (response) {
+                            console.log("Facebook session revoked");
+                            resolve();
+                        });
+                    } else {
+                        resolve();
+                    }
+                });
+            });
+        }
 
-    // Clear localStorage
-    localStorage.clear(); // Consistent with navbar.js
-    alert("Logged out successfully.");
-    window.location.href = "../pages/login.html"; // Redirect to login page
+        console.log("Clearing local storage");
+        localStorage.clear();
+        
+        window.location.replace(homePath);
+        setTimeout(() => {
+            if (!window.location.pathname.includes("homePage.html")) {
+                window.location.href = homePath;
+            }
+            alert("Logged out successfully.");
+        }, 500);
+    } catch (error) {
+        console.error("Logout error:", error);
+        localStorage.clear();
+        window.location = homePath;
+        alert("Logged out successfully (with error handling)");
+    }
 }
 
-// Fetch Books with Sorting, Pagination, and Optional Force Refresh
 async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) {
     const bookContainer = document.getElementById("book-list");
     const bookLoader = document.getElementById("book-loader");
@@ -297,42 +387,36 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
         return;
     }
 
-    // Show loader while fetching books
-    bookContainer.innerHTML = ""; // Clear previous content
-    if (bookLoader) bookLoader.style.display = "block"; // Show loader
+    bookContainer.innerHTML = "";
+    if (bookLoader) bookLoader.style.display = "block";
     if (prevButton) prevButton.disabled = true;
     if (nextButton) nextButton.disabled = true;
 
     try {
-        // Construct the API URL with query parameters
         const searchQuery = new URLSearchParams(window.location.search).get("query") || "";
         let url = `${API_BASE_URL}/books?page=${page}&per_page=${booksPerPage}&sort=${sortBy}&force_refresh=${forceRefresh}`;
-        if (searchQuery) url += `&query=${encodeURIComponent(searchQuery)}`;
+        if (searchQuery) url = `${API_BASE_URL}/books/search?page=${page}&per_page=${booksPerPage}&sort=${sortBy}&query=${encodeURIComponent(searchQuery)}&force_refresh=${forceRefresh}`;
         console.log("Fetching books from:", url);
 
-        const response = await fetch(url, {
-            method: "GET",
-            headers: getAuthHeaders(),
-        });
-        console.log("Response status:", response.status);
-        console.log("Response headers:", response.headers);
+        const response = await fetchWithAuth(url, { method: "GET" });
+        if (!response) return;
 
         if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem("token");
-                window.location.href = "../pages/login.html";
-                return;
-            }
             const errorText = await response.text();
             throw new Error(`HTTP Error ${response.status}: ${errorText}`);
         }
 
         const data = await response.json();
         console.log("API Response:", data);
-        console.log("Books with ratings:", data.books?.map(b => ({ name: b.book_name, rating: b.rating, rating_count: b.rating_count })));
 
-        if (!data.success || !data.books || data.books.length === 0) {
+        let books = [];
+        if (searchQuery) {
+            books = data.books || [];
+        } else {
+            books = data.books || [];
+        }
+
+        if (!books || books.length === 0) {
             console.warn("No books returned from API.");
             bookContainer.innerHTML = "<p>No books found.</p>";
             updatePagination(1, 1);
@@ -340,11 +424,10 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
             return;
         }
 
-        console.log("Sample books:", data.books.slice(0, 3));
-        displayBooks(data.books);
+        displayBooks(books);
 
-        const totalBooks = data.pagination?.total_count || 0;
-        totalPages = data.pagination?.total_pages || 1;
+        const totalBooks = data.pagination?.total_count || books.length;
+        totalPages = data.pagination?.total_pages || Math.ceil(totalBooks / booksPerPage);
         currentPage = page;
 
         if (totalBooksElement) totalBooksElement.textContent = totalBooks;
@@ -353,14 +436,12 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
         console.error("Error fetching books:", error.message);
         bookContainer.innerHTML = "<p>Failed to load books. Please try again.</p>";
     } finally {
-        // Hide loader after fetching books
         if (bookLoader) bookLoader.style.display = "none";
         if (prevButton) prevButton.disabled = currentPage === 1;
         if (nextButton) nextButton.disabled = currentPage >= totalPages;
     }
 }
 
-// Display Books with Quick View Button Only
 function displayBooks(books) {
     const bookContainer = document.getElementById("book-list");
     if (!bookContainer) {
@@ -368,7 +449,7 @@ function displayBooks(books) {
         return;
     }
 
-    bookContainer.innerHTML = ""; // Clear previous books
+    bookContainer.innerHTML = "";
     console.log("Displaying books:", books.length);
 
     if (!books || books.length === 0) {
@@ -401,14 +482,12 @@ function displayBooks(books) {
 
         bookContainer.appendChild(bookCard);
 
-        // Add event listener for Quick View button
         bookCard.querySelector(".quick-view").addEventListener("click", () => {
             viewBookDetails(book.id);
         });
     });
 }
 
-// Update Pagination UI
 function updatePagination(totalPagesFromAPI, currentPageFromAPI) {
     totalPages = totalPagesFromAPI;
     currentPage = currentPageFromAPI;
@@ -426,7 +505,6 @@ function updatePagination(totalPagesFromAPI, currentPageFromAPI) {
     if (nextButton) nextButton.disabled = currentPage >= totalPages || totalPages === 0;
 }
 
-// Navigate to Book Details Page
 function viewBookDetails(bookId) {
     console.log("Navigating to book details with ID:", bookId);
     if (bookId) {
@@ -436,7 +514,97 @@ function viewBookDetails(bookId) {
     }
 }
 
-// Event Listeners for Pagination and Sorting
+async function fetchSearchSuggestions(query) {
+    console.log("Fetching suggestions for query:", query);
+    try {
+        const url = `${API_BASE_URL}/books/search_suggestions?query=${encodeURIComponent(query)}`;
+        const response = await fetchWithAuth(url, { method: "GET" });
+        if (!response) return;
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`HTTP Error ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json();
+        console.log("Raw API response:", data);
+
+        let suggestions = [];
+        if (data.suggestions && Array.isArray(data.suggestions)) {
+            suggestions = data.suggestions.map(suggestion => ({
+                id: suggestion.id,
+                book_name: suggestion.book_name,
+                author_name: suggestion.author_name
+            }));
+        }
+
+        console.log("Parsed suggestions:", suggestions);
+        displaySearchSuggestions(suggestions);
+    } catch (error) {
+        console.error("Error fetching search suggestions:", error.message);
+        closeSearchDropdown();
+    }
+}
+
+function displaySearchSuggestions(suggestions) {
+    const searchInput = document.getElementById("search");
+    if (!searchInput) {
+        console.error("Search input not found for displaying suggestions");
+        return;
+    }
+
+    closeSearchDropdown();
+
+    if (!suggestions || suggestions.length === 0) {
+        console.log("No suggestions to display");
+        return;
+    }
+
+    console.log("Displaying suggestions:", suggestions);
+    searchDropdown = document.createElement("div");
+    searchDropdown.classList.add("search-dropdown-menu");
+    searchDropdown.style.position = "absolute";
+    searchDropdown.style.top = `${searchInput.offsetTop + searchInput.offsetHeight}px`;
+    searchDropdown.style.left = `${searchInput.offsetLeft}px`;
+    searchDropdown.style.width = `${searchInput.offsetWidth}px`;
+
+    suggestions.forEach((suggestion) => {
+        const suggestionItem = document.createElement("div");
+        suggestionItem.classList.add("search-dropdown-item");
+
+        suggestionItem.innerHTML = `
+            <div class="suggestion-book-name">${suggestion.book_name}</div>
+            <div class="suggestion-author-name">${suggestion.author_name}</div>
+        `;
+
+        suggestionItem.addEventListener("click", () => {
+            console.log("Suggestion clicked:", suggestion.book_name, "ID:", suggestion.id);
+            searchInput.value = suggestion.book_name;
+            closeSearchDropdown();
+            if (suggestion.id) {
+                window.location.href = `../pages/bookDetails.html?id=${suggestion.id}`;
+            } else {
+                console.warn("No book ID in suggestion, falling back to search");
+                window.location.href = `homePage.html?query=${encodeURIComponent(suggestion.book_name)}`;
+            }
+        });
+
+        searchDropdown.appendChild(suggestionItem);
+    });
+
+    searchInput.parentElement.appendChild(searchDropdown);
+    isSearchDropdownOpen = true;
+}
+
+function closeSearchDropdown() {
+    if (searchDropdown) {
+        console.log("Closing search dropdown");
+        searchDropdown.remove();
+        searchDropdown = null;
+    }
+    isSearchDropdownOpen = false;
+}
+
 document.getElementById("prev-page")?.addEventListener("click", () => {
     if (currentPage > 1) {
         console.log("Fetching previous page:", currentPage - 1);

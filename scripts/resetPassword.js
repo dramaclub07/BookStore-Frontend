@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const passwordRequirements = document.getElementById("password-requirements");
     const errorMessage = document.getElementById("reset-error");
     const otpExpiryTimer = document.getElementById("otp-expiry-timer");
-    const API_BASE_URL = "http://localhost:3000";
+    const API_BASE_URL = "http://127.0.0.1:3000/api/v1"; // Updated for consistency
 
     let otpExpiryTime = 300; // 5 minutes in seconds
     let timerInterval;
@@ -90,6 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // OTP expiry timer
     function startOtpTimer() {
+        if (timerInterval) clearInterval(timerInterval); // Clear any existing timer
         timerInterval = setInterval(() => {
             if (otpExpiryTime <= 0) {
                 clearInterval(timerInterval);
@@ -114,7 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 resendOtpButton.disabled = true;
                 resendOtpButton.textContent = "Resending...";
 
-                const response = await fetch(`${API_BASE_URL}/api/v1/forgot_password`, {
+                const response = await fetch(`${API_BASE_URL}/users/password/forgot`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email })
@@ -123,14 +124,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = await response.json();
                 if (response.ok && data.message) {
                     alert("OTP resent successfully!");
-                    otpExpiryTime = 300; // Reset timer
+                    otpExpiryTime = 300; // Reset timer to 5 minutes
                     startOtpTimer();
                 } else {
-                    alert(data.errors || "Failed to resend OTP. Please try again.");
+                    errorMessage.textContent = data.error || "Failed to resend OTP. Please try again.";
                 }
             } catch (error) {
                 console.error("Resend OTP Error:", error);
-                alert("Failed to resend OTP. Please try again.");
+                errorMessage.textContent = "Failed to connect to the server. Please try again.";
             } finally {
                 resendOtpButton.disabled = false;
                 resendOtpButton.textContent = "Resend OTP";
@@ -165,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const payload = { email, otp, new_password: newPassword };
                 console.log("Raw Reset Password Request Body:", JSON.stringify(payload));
 
-                const response = await fetch(`${API_BASE_URL}/api/v1/reset_password`, {
+                const response = await fetch(`${API_BASE_URL}/users/password/reset`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
@@ -178,7 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     alert(data.message);
                     window.location.href = "login.html";
                 } else {
-                    errorMessage.textContent = data.errors || "Failed to reset password. Please try again.";
+                    errorMessage.textContent = data.error || "Failed to reset password. Please try again.";
                 }
             } catch (error) {
                 console.error("Reset Password Error:", error);

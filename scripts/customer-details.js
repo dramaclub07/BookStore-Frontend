@@ -1,109 +1,212 @@
 const API_BASE_URL = 'http://127.0.0.1:3000/api/v1';
 
 document.addEventListener("DOMContentLoaded", async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    console.log("DOM fully loaded, initializing...");
+
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) {
+        console.warn("No access token found, redirecting to login...");
         alert("Please log in to continue.");
         window.location.href = '../pages/login.html';
         return;
     }
 
-    await loadUserProfile();
-    await loadCartItems();
-    await loadAddresses();
+    try {
+        await Promise.all([
+            loadUserProfile(),
+            loadCartItems(),
+            loadAddresses()
+        ]);
+        console.log("Initial data loaded successfully");
+    } catch (error) {
+        console.error("Error during initial load:", error);
+    }
+
     setupLocationButton();
-    setupHeaderEventListeners(); // Add dropdown functionality
+    setupHeaderEventListeners();
 
-    document.querySelector('.continue')?.addEventListener('click', () => {
-        const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
-        if (selectedAddress.id || (selectedAddress.street && selectedAddress.city && selectedAddress.state)) {
-            window.location.href = '../pages/order-summary.html';
-        } else {
-            alert("Please select an address or use your current location.");
-        }
-    });
+    const continueButton = document.querySelector('.continue');
+    if (continueButton) {
+        continueButton.addEventListener('click', () => {
+            const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
+            if (selectedAddress.id || (selectedAddress.street && selectedAddress.city && selectedAddress.state)) {
+                console.log("Continue clicked, redirecting to order-summary with address:", selectedAddress);
+                window.location.href = '../pages/order-summary.html';
+            } else {
+                alert("Please select an address or use your current location.");
+            }
+        });
+    } else {
+        console.error("Continue button not found in DOM");
+    }
 
-    document.querySelector('.add-address')?.addEventListener('click', () => {
-        window.location.href = '../pages/profile.html';
-    });
+    const addAddressButton = document.querySelector('.add-address');
+    if (addAddressButton) {
+        addAddressButton.addEventListener('click', () => {
+            console.log("Add address clicked, redirecting to profile...");
+            window.location.href = '../pages/profile.html';
+        });
+    } else {
+        console.error("Add address button not found in DOM");
+    }
 });
 
+// Get auth headers
 function getAuthHeaders() {
-    const token = localStorage.getItem('token');
+    const accessToken = localStorage.getItem('access_token');
     return {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${accessToken}`
     };
 }
 
+// Token Refresh Logic
+async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (!refreshToken) {
+        console.error("No refresh token available");
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: refreshToken })
+        });
+
+        const data = await response.json();
+        console.log("Refresh token response:", data);
+        if (response.ok && data.access_token) {
+            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
+            console.log("Access token refreshed successfully");
+            return true;
+        } else {
+            console.error("Failed to refresh token:", data.error);
+            localStorage.clear();
+            alert("Session expired. Please log in again.");
+            window.location.href = "../pages/login.html";
+            return false;
+        }
+    } catch (error) {
+        console.error("Error refreshing token:", error);
+        localStorage.clear();
+        window.location.href = "../pages/login.html";
+        return false;
+    }
+}
+
+async function fetchWithAuth(url, options = {}) {
+    if (!localStorage.getItem("access_token")) {
+        console.warn("No access token, redirecting to login...");
+        window.location.href = "../pages/login.html";
+        return null;
+    }
+
+    const expiresIn = localStorage.getItem("token_expires_in");
+    if (expiresIn && Date.now() >= expiresIn) {
+        console.log("Token expired, attempting refresh...");
+        const refreshed = await refreshAccessToken();
+        if (!refreshed) return null;
+    }
+
+    options.headers = { ...options.headers, ...getAuthHeaders() };
+    let response = await fetch(url, options);
+
+    if (response.status === 401) {
+        console.warn("Received 401, attempting token refresh...");
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+            options.headers = { ...options.headers, ...getAuthHeaders() };
+            response = await fetch(url, options);
+        } else {
+            return null;
+        }
+    }
+
+    return response;
+}
+
+// Update cart count in UI
 function updateCartCount(count) {
+    console.log("Updating cart count to:", count);
     const cartCount = document.querySelector('#cart-link .cart-count');
     const sectionCount = document.getElementById('cart-count');
 
     if (cartCount) {
-        cartCount.textContent = count;
-        cartCount.style.display = count > 0 ? "flex" : "none";
+        if (count > 0) {
+            cartCount.textContent = count;
+            cartCount.style.display = "flex";
+            console.log("Cart count visible:", cartCount.textContent);
+        } else {
+            cartCount.textContent = ""; // Clear content when count is 0
+            cartCount.style.display = "none"; // Hide the element
+            console.log("Cart count hidden");
+        }
+    } else {
+        console.error("Cart count element (#cart-link .cart-count) not found in DOM");
     }
 
     if (sectionCount) {
-        sectionCount.textContent = count;
-        sectionCount.style.display = count > 0 ? "inline" : "none";
+        if (count > 0) {
+            sectionCount.textContent = count;
+            sectionCount.style.display = "inline";
+        } else {
+            sectionCount.textContent = ""; // Clear content when count is 0
+            sectionCount.style.display = "none"; // Hide the element
+        }
+    } else {
+        console.error("Section count element (#cart-count) not found in DOM");
     }
 }
 
+// Fetch and display user profile
 async function loadUserProfile() {
     try {
-        const response = await fetch(`${API_BASE_URL}/users/profile`, {
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem('token');
-                window.location.href = '../pages/login.html'; // Fixed path consistency
-                return;
-            }
-            throw new Error(`Profile fetch failed with status: ${response.status}`);
-        }
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/profile`);
+        if (!response) return;
+
+        if (!response.ok) throw new Error(`Profile fetch failed with status: ${response.status}`);
         const userData = await response.json();
-        if (userData.success) {
-            const profileElement = document.getElementById('profile-link');
-            if (profileElement) {
-                profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
-                localStorage.setItem('username', userData.name || 'User'); // Store username for dropdown
-            }
-            document.querySelector('input[readonly][value="Poonam Yadav"]').value = userData.name || 'Unknown';
-            document.querySelector('input[readonly][value="81678954778"]').value = userData.mobile_number || 'N/A';
+        console.log("User profile data:", userData);
+
+        const profileElement = document.getElementById('profile-link');
+        if (profileElement) {
+            profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || userData.full_name || 'User'}</span>`;
+            localStorage.setItem('username', userData.name || userData.full_name || 'User');
+        } else {
+            console.error("Profile link element (#profile-link) not found in DOM");
         }
+
+        const nameInput = document.querySelector('input[readonly][value="Poonam Yadav"]');
+        if (nameInput) nameInput.value = userData.name || userData.full_name || 'Unknown';
+
+        const mobileInput = document.querySelector('input[readonly][value="81678954778"]');
+        if (mobileInput) mobileInput.value = userData.mobile_number || 'N/A';
     } catch (error) {
         console.error("Profile fetch error:", error.message);
     }
 }
 
+// Fetch and display cart items
 async function loadCartItems() {
     const cartContainer = document.getElementById('cart-container');
-    if (!cartContainer) return;
+    if (!cartContainer) {
+        console.error("Cart container (#cart-container) not found in DOM");
+        return;
+    }
 
     cartContainer.innerHTML = '<p>Loading cart...</p>';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/cart`, {
-            method: 'GET',
-            headers: getAuthHeaders()
-        });
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts`, { method: 'GET' });
+        if (!response) return;
 
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem('token');
-                window.location.href = '../pages/login.html';
-                return;
-            }
-            throw new Error(`Error ${response.status}: Failed to fetch cart items`);
-        }
+        if (!response.ok) throw new Error(`Error ${response.status}: Failed to fetch cart items`);
+        const cartItems = await response.json();
+        console.log("Cart items fetched:", cartItems);
 
-        const data = await response.json();
-        const cartItems = data.cart || [];
         renderCartItems(cartItems);
         updateCartCount(cartItems.length);
         setupCartEventListeners();
@@ -113,9 +216,11 @@ async function loadCartItems() {
     } catch (error) {
         console.error('Error fetching cart items:', error);
         cartContainer.innerHTML = `<p>Error loading cart.</p>`;
+        updateCartCount(0);
     }
 }
 
+// Render cart items
 function renderCartItems(cartItems) {
     const cartContainer = document.getElementById('cart-container');
     if (!cartContainer) return;
@@ -131,7 +236,7 @@ function renderCartItems(cartItems) {
         const totalUnitPrice = (item.unit_price * (item.quantity || 1)).toFixed(2);
         return `
         <div class="cart-item" data-id="${item.book_id}" data-discounted-price="${item.discounted_price}" data-unit-price="${item.unit_price}">
-            <img src="${item.image_url}" alt="${item.book_name || 'Unknown'}">
+            <img src="${item.image_url || '/default-image.jpg'}" alt="${item.book_name || 'Unknown'}">
             <div class="cart-item-details">
                 <h3>${item.book_name || 'Untitled'}</h3>
                 <p>by ${item.author_name || 'Unknown'}</p>
@@ -148,6 +253,7 @@ function renderCartItems(cartItems) {
     }).join('');
 }
 
+// Setup cart event listeners
 function setupCartEventListeners() {
     document.querySelectorAll('.increase').forEach(button => {
         button.addEventListener('click', function() {
@@ -168,6 +274,7 @@ function setupCartEventListeners() {
     });
 }
 
+// Update quantity
 async function updateQuantity(button, change) {
     const cartItem = button.closest('.cart-item');
     const bookId = cartItem.dataset.id;
@@ -193,14 +300,15 @@ async function updateQuantity(button, change) {
     const perUnitPrice = parseFloat(cartItem.dataset.unitPrice);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/cart/update_quantity`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts/${bookId}`, {
             method: 'PATCH',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ book_id: bookId, quantity: newQuantity })
+            body: JSON.stringify({ quantity: newQuantity })
         });
+        if (!response) return;
 
         if (!response.ok) {
-            throw new Error("Failed to update quantity");
+            const result = await response.json();
+            throw new Error(result.error || "Failed to update quantity");
         }
 
         quantityElement.textContent = newQuantity;
@@ -227,6 +335,7 @@ async function updateQuantity(button, change) {
     }
 }
 
+// Remove cart item
 async function removeCartItem(button) {
     const cartItem = button.closest('.cart-item');
     const bookId = cartItem.dataset.id;
@@ -237,14 +346,14 @@ async function removeCartItem(button) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/cart/toggle_remove`, {
-            method: 'PATCH',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ book_id: bookId })
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts/${bookId}/delete`, {
+            method: 'PATCH'
         });
+        if (!response) return;
 
         if (!response.ok) {
-            throw new Error("Failed to remove item");
+            const result = await response.json();
+            throw new Error(result.error || "Failed to remove item");
         }
 
         cartItem.remove();
@@ -265,42 +374,32 @@ async function removeCartItem(button) {
     }
 }
 
+// Fetch cart summary
 async function loadCartSummary() {
     try {
-        const response = await fetch(`${API_BASE_URL}/cart/summary`, {
-            headers: getAuthHeaders()
-        });
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts/summary`);
+        if (!response) return;
 
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem('token');
-                window.location.href = '../pages/login.html';
-                return;
-            }
-            throw new Error("Failed to fetch cart summary");
-        }
+        if (!response.ok) throw new Error("Failed to fetch cart summary");
 
         const cartData = await response.json();
+        console.log("Cart summary:", cartData);
         updateCartCount(cartData.total_items || 0);
     } catch (error) {
         console.error("Error fetching cart summary:", error);
+        updateCartCount(0);
     }
 }
 
+// Fetch addresses
 async function fetchAddresses() {
     try {
-        const response = await fetch(`${API_BASE_URL}/addresses`, { headers: getAuthHeaders() });
-        if (response.status === 401) {
-            alert("Session expired. Please log in again.");
-            localStorage.removeItem('token');
-            window.location.href = '../pages/login.html';
-            return null;
-        }
-        if (!response.ok) throw new Error(`Failed to fetch addresses: ${response.status}`);
+        const response = await fetchWithAuth(`${API_BASE_URL}/addresses`);
+        if (!response) return null;
 
+        if (!response.ok) throw new Error(`Failed to fetch addresses: ${response.status}`);
         const data = await response.json();
-        if (!data.success) throw new Error("Failed to load addresses from server");
+        console.log("Fetched addresses:", data);
         return data.addresses || [];
     } catch (error) {
         console.error("Error fetching addresses:", error);
@@ -309,14 +408,16 @@ async function fetchAddresses() {
     }
 }
 
+// Load addresses
 async function loadAddresses() {
-    const selectedAddressId = localStorage.getItem('selectedAddressId');
     const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
     const addresses = await fetchAddresses();
 
     if (!addresses || addresses.length === 0) {
         if (selectedAddress.street) {
             updateAddressFields(selectedAddress, selectedAddress.address_type === 'other');
+        } else {
+            updateAddressFields({ street: '', city: '', state: '' }, false);
         }
         return;
     }
@@ -324,24 +425,18 @@ async function loadAddresses() {
     window.addressesList = addresses;
 
     let defaultAddress;
-    if (selectedAddressId) {
-        defaultAddress = addresses.find(addr => addr.id === parseInt(selectedAddressId)) || 
-                        addresses.find(addr => addr.is_default) || 
-                        addresses[0];
-    } else if (selectedAddress.street) {
+    if (selectedAddress.id && addresses.some(addr => addr.id === selectedAddress.id)) {
         defaultAddress = selectedAddress;
     } else {
         defaultAddress = addresses.find(addr => addr.is_default) || addresses[0];
-    }
-
-    updateAddressFields(defaultAddress, defaultAddress.address_type === 'other');
-    localStorage.setItem('selectedAddress', JSON.stringify(defaultAddress));
-    if (defaultAddress.id) {
+        localStorage.setItem('selectedAddress', JSON.stringify(defaultAddress));
         localStorage.setItem('selectedAddressId', defaultAddress.id);
     }
 
+    updateAddressFields(defaultAddress, defaultAddress.address_type === 'other');
+
     const initialRadio = document.querySelector(`input[name="address-type"][value="${defaultAddress.address_type}"]`);
-    if (initialRadio && defaultAddress.id) initialRadio.checked = true;
+    if (initialRadio) initialRadio.checked = true;
 
     document.querySelectorAll('input[name="address-type"]').forEach(radio => {
         radio.addEventListener('change', async () => {
@@ -365,10 +460,20 @@ async function loadAddresses() {
     });
 }
 
+// Update address fields
 function updateAddressFields(address, shouldBlink = false) {
-    document.getElementById('address-street').value = address.street || '';
-    document.getElementById('address-city').value = address.city || '';
-    document.getElementById('address-state').value = address.state || '';
+    const streetInput = document.getElementById('address-street');
+    const cityInput = document.getElementById('address-city');
+    const stateInput = document.getElementById('address-state');
+
+    if (streetInput) streetInput.value = address.street || '';
+    else console.error("Address street input (#address-street) not found in DOM");
+
+    if (cityInput) cityInput.value = address.city || '';
+    else console.error("Address city input (#address-city) not found in DOM");
+
+    if (stateInput) stateInput.value = address.state || '';
+    else console.error("Address state input (#address-state) not found in DOM");
 
     const otherRadio = document.querySelector('input[name="address-type"][value="Other"]');
     if (shouldBlink && otherRadio) {
@@ -380,6 +485,7 @@ function updateAddressFields(address, shouldBlink = false) {
     }
 }
 
+// Save current location to backend
 async function saveCurrentLocationToBackend(locationData) {
     try {
         const addressData = {
@@ -392,17 +498,17 @@ async function saveCurrentLocationToBackend(locationData) {
             is_default: false
         };
 
-        const response = await fetch(`${API_BASE_URL}/addresses/create`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/addresses/create`, {
             method: 'POST',
-            headers: getAuthHeaders(),
             body: JSON.stringify(addressData)
         });
+        if (!response) return;
 
         const result = await response.json();
         if (!response.ok) {
             throw new Error(`Failed to save address: ${result.error || 'Unknown error'}`);
         }
-
+        console.log("Saved address:", result.address);
         return result.address;
     } catch (error) {
         console.error("Error saving current location:", error);
@@ -410,9 +516,13 @@ async function saveCurrentLocationToBackend(locationData) {
     }
 }
 
+// Setup location button
 function setupLocationButton() {
     const useLocationButton = document.querySelector('.use-location');
-    if (!useLocationButton) return;
+    if (!useLocationButton) {
+        console.error("Use location button (.use-location) not found in DOM");
+        return;
+    }
 
     useLocationButton.addEventListener('click', async function() {
         if (!("geolocation" in navigator)) {
@@ -484,6 +594,7 @@ function setupLocationButton() {
             } else {
                 errorMessage += error.message;
             }
+            console.error(errorMessage);
             alert(errorMessage);
             updateAddressFields({ street: '', city: '', state: '' }, false);
             localStorage.removeItem('selectedAddress');
@@ -492,11 +603,6 @@ function setupLocationButton() {
             useLocationButton.disabled = false;
         }
     });
-
-    const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
-    if (selectedAddress.street) {
-        updateAddressFields(selectedAddress, selectedAddress.address_type === 'other');
-    }
 }
 
 // Dropdown Functionality
@@ -505,6 +611,17 @@ function setupHeaderEventListeners() {
     let isDropdownOpen = false;
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
+    const logo = document.querySelector(".logo");
+
+    if (logo) {
+        logo.addEventListener("click", (event) => {
+            event.preventDefault();
+            console.log("Logo clicked, redirecting to homepage");
+            window.location.href = "../pages/homePage.html";
+        });
+    } else {
+        console.error("Logo element (.logo) not found in DOM");
+    }
 
     if (!profileLink) {
         console.error("Profile link element (#profile-link) not found in DOM");
@@ -513,6 +630,7 @@ function setupHeaderEventListeners() {
 
     profileLink.addEventListener("click", (event) => {
         event.preventDefault();
+        console.log("Profile link clicked, toggling dropdown");
         if (isDropdownOpen) {
             closeDropdown();
         } else {
@@ -527,6 +645,7 @@ function setupHeaderEventListeners() {
             dropdownMenu &&
             !dropdownMenu.contains(event.target)
         ) {
+            console.log("Clicked outside dropdown, closing...");
             closeDropdown();
         }
     });
@@ -534,8 +653,11 @@ function setupHeaderEventListeners() {
     if (cartLink) {
         cartLink.addEventListener("click", (event) => {
             event.preventDefault();
-            window.location.href = '../pages/cart.html'; // Navigate to cart page
+            console.log("Cart link clicked, redirecting to cart...");
+            window.location.href = '../pages/cart.html';
         });
+    } else {
+        console.error("Cart link element (#cart-link) not found in DOM");
     }
 
     const searchInput = document.getElementById("search");
@@ -544,10 +666,13 @@ function setupHeaderEventListeners() {
             if (event.key === "Enter") {
                 const query = event.target.value.trim();
                 if (query) {
+                    console.log("Search triggered with query:", query);
                     window.location.href = `../pages/homePage.html?query=${encodeURIComponent(query)}`;
                 }
             }
         });
+    } else {
+        console.error("Search input (#search) not found in DOM");
     }
 
     function openDropdown() {
@@ -566,20 +691,25 @@ function setupHeaderEventListeners() {
         `;
 
         profileLink.parentElement.appendChild(dropdownMenu);
+        console.log("Dropdown opened");
 
         document.getElementById("dropdown-profile").addEventListener("click", () => {
+            console.log("Profile clicked, redirecting...");
             window.location.href = "../pages/profile.html";
             closeDropdown();
         });
         document.getElementById("dropdown-orders").addEventListener("click", () => {
+            console.log("Orders clicked, redirecting...");
             window.location.href = "../pages/myOrders.html";
             closeDropdown();
         });
         document.getElementById("dropdown-wishlist").addEventListener("click", () => {
+            console.log("Wishlist clicked, redirecting...");
             window.location.href = "../pages/wishlist.html";
             closeDropdown();
         });
         document.getElementById("dropdown-logout").addEventListener("click", () => {
+            console.log("Logout clicked");
             handleSignOut();
             closeDropdown();
         });
@@ -593,9 +723,11 @@ function setupHeaderEventListeners() {
             dropdownMenu = null;
         }
         isDropdownOpen = false;
+        console.log("Dropdown closed");
     }
 }
 
+// Sign Out Functionality
 function handleSignOut() {
     const provider = localStorage.getItem("socialProvider");
 
@@ -618,5 +750,5 @@ function handleSignOut() {
 
     localStorage.clear();
     alert("Logged out successfully.");
-    window.location.href = "../pages/login.html";
+    window.location.href = "../pages/homePage.html";
 }

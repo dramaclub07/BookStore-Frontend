@@ -6,9 +6,11 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;
     background: linear-gradient(135deg, #e8f0fe, #d1e0e0); /* Soft gradient background */
     margin: 0;
+    padding: 15px;
+    box-sizing: border-box;
 }
 
 .container {
@@ -18,8 +20,8 @@ body {
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Deeper shadow for depth */
     overflow: hidden;
     width: 900px;
-    max-width: 95%;
-    height: 600px;
+    max-width: 100%;
+    min-height: 600px;
     max-height: 90vh;
 }
 
@@ -30,9 +32,9 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 40px;
+    padding: 40px 20px;
     color: white;
-    height: 520px;
+    height: auto;
 }
 
 .icon-circle {
@@ -50,6 +52,8 @@ body {
 .shopper {
     width: 120px;
     height: 120px;
+    max-width: 100%;
+    max-height: 100%;
 }
 
 .title {
@@ -64,7 +68,7 @@ body {
 .quote-container {
     margin-top: 20px;
     text-align: center;
-    max-width: 80%;
+    max-width: 95%;
 }
 
 #quote-text {
@@ -78,17 +82,19 @@ body {
 
 .right-card {
     flex: 1.5;
-    padding: 50px;
+    padding: 40px 30px;
     background: white;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    overflow-y: auto;
 }
 
 .tabs {
     display: flex;
     border-bottom: 2px solid #e5e7eb;
     margin-bottom: 30px;
+    flex-wrap: wrap;
 }
 
 .tab {
@@ -98,6 +104,7 @@ body {
     color: #6b7280;
     transition: all 0.3s ease;
     position: relative;
+    white-space: nowrap;
 }
 
 .tab::after {
@@ -137,6 +144,7 @@ body {
     transform: translateY(20px);
     transition: opacity 0.3s ease, transform 0.3s ease;
     display: none;
+    box-sizing: border-box;
 }
 
 .auth-card.active {
@@ -164,6 +172,7 @@ label {
     border-radius: 8px;
     font-size: 14px;
     transition: border-color 0.3s, box-shadow 0.3s;
+    box-sizing: border-box;
 }
 
 .form-control:focus {
@@ -275,10 +284,12 @@ label {
     justify-content: space-between;
     margin-bottom: 20px;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
 .btn-social {
-    width: 48%;
+    flex: 1;
+    min-width: 120px;
     padding: 12px;
     border: none;
     border-radius: 8px;
@@ -363,8 +374,10 @@ label {
     border-radius: 16px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
     width: 450px;
+    max-width: 90%;
     padding: 30px;
     position: relative;
+    margin: 20px;
 }
 
 .close-btn {
@@ -394,11 +407,21 @@ label {
 }
 
 /* Responsive Design */
+@media (max-width: 992px) {
+    .container {
+        width: 95%;
+    }
+    
+    .right-card {
+        padding: 30px 20px;
+    }
+}
+
 @media (max-width: 768px) {
     .container {
         flex-direction: column;
-        width: 90%;
         height: auto;
+        max-height: none;
     }
 
     .left-card,
@@ -408,7 +431,9 @@ label {
     }
 
     .left-card {
-        padding: 20px;
+        padding: 30px 20px;
+        height: auto;
+        min-height: 300px;
     }
 
     .icon-circle {
@@ -422,11 +447,12 @@ label {
     }
 
     .title {
-        font-size: 20px;
+        font-size: 24px;
+        margin-top: 20px;
     }
 
     .quote-container {
-        margin-top: 15px;
+        margin: 15px 0;
     }
 
     #quote-text {
@@ -434,28 +460,81 @@ label {
     }
 
     .right-card {
-        padding: 20px;
+        padding: 25px 20px;
     }
 
+    .form-container {
+        min-height: 350px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+    
+    .container {
+        border-radius: 15px;
+    }
+    
+    .left-card {
+        padding: 25px 15px;
+        min-height: 250px;
+    }
+    
+    .icon-circle {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .shopper {
+        width: 75px;
+        height: 75px;
+    }
+    
+    .title {
+        font-size: 20px;
+    }
+    
     .tabs {
         margin-bottom: 20px;
     }
-
+    
     .tab {
         padding: 10px 15px;
+        font-size: 13px;
     }
-
+    
     .form-group {
         margin-bottom: 15px;
     }
-
+    
+    .form-control {
+        padding: 10px 14px;
+    }
+    
     .btn-submit {
         padding: 10px;
         font-size: 14px;
     }
-
+    
+    .social-login {
+        flex-direction: column;
+    }
+    
+    .btn-social {
+        width: 100%;
+    }
+    
+    .separator {
+        margin: 15px 0;
+    }
+    
     .modal-content {
-        width: 90%;
-        padding: 20px;
+        padding: 20px 15px;
+    }
+    
+    .modal-header h2 {
+        font-size: 22px;
     }
 }
