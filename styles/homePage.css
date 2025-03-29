@@ -74,7 +74,7 @@ body {
 
 .search-icon {
     position: absolute;
-    left: 10px;
+    left: 8px;
     color: #666;
     font-size: 16px;
     pointer-events: none; /* Prevents icon from blocking input */
