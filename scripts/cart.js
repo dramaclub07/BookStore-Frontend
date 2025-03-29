@@ -43,7 +43,7 @@ async function refreshAccessToken() {
         const data = await response.json();
         if (response.ok && data.access_token) {
             localStorage.setItem("access_token", data.access_token);
-            localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
+            localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000)); // Assumes expires_in from backend
             console.log("Access token refreshed successfully");
             return true;
         } else {
@@ -100,8 +100,8 @@ function updateCartCount(count) {
             cartCount.textContent = count;
             cartCount.style.display = "flex";
         } else {
-            cartCount.textContent = ""; // Clear the content when count is 0
-            cartCount.style.display = "none"; // Hide the element
+            cartCount.textContent = "";
+            cartCount.style.display = "none";
         }
     }
 
@@ -110,8 +110,8 @@ function updateCartCount(count) {
             sectionCount.textContent = count;
             sectionCount.style.display = "inline";
         } else {
-            sectionCount.textContent = ""; // Clear the content when count is 0
-            sectionCount.style.display = "none"; // Hide the element
+            sectionCount.textContent = "";
+            sectionCount.style.display = "none";
         }
     }
 
@@ -129,14 +129,24 @@ async function loadCartItems() {
 
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/carts`, { method: "GET" });
-        if (!response) return;
+        if (!response) {
+            cartContainer.innerHTML = "<p>Authentication failed. Please log in again.</p>";
+            return;
+        }
 
-        if (!response.ok) throw new Error(`Error ${response.status}: Failed to fetch cart items`);
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Error ${response.status}: ${errorData.message || "Failed to fetch cart items"}`);
+        }
 
         const data = await response.json();
-        const cartItems = data || [];
+        if (!data.success) {
+            throw new Error(data.message || "Failed to load cart");
+        }
 
-        // Remove out-of-stock items from cart
+        const cartItems = data.cart || []; // Access nested cart array
+
+        // Remove out-of-stock items
         for (const item of cartItems) {
             const bookResponse = await fetch(`${API_BASE_URL}/books/${item.book_id}`);
             const book = await bookResponse.json();
@@ -145,20 +155,27 @@ async function loadCartItems() {
             }
         }
 
-        // Reload cart after removing out-of-stock items
+        // Reload cart after cleanup
         const updatedResponse = await fetchWithAuth(`${API_BASE_URL}/carts`, { method: "GET" });
-        if (!updatedResponse) return;
+        if (!updatedResponse) {
+            cartContainer.innerHTML = "<p>Authentication failed. Please log in again.</p>";
+            return;
+        }
 
         const updatedData = await updatedResponse.json();
-        const updatedCartItems = updatedData || [];
+        if (!updatedData.success) {
+            throw new Error(updatedData.message || "Failed to reload cart");
+        }
+
+        const updatedCartItems = updatedData.cart || [];
         renderCartItems(updatedCartItems);
         updateCartCount(updatedCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0));
         setupCartEventListeners();
         await loadCartSummary();
     } catch (error) {
         console.error("Error fetching cart items:", error);
-        cartContainer.innerHTML = `<p>Error loading cart.</p>`;
-        updateCartCount(0); // Ensure count is cleared on error
+        cartContainer.innerHTML = `<p>Error loading cart: ${error.message}</p>`;
+        updateCartCount(0);
     }
 }
 
@@ -168,7 +185,7 @@ function renderCartItems(cartItems) {
     if (!cartContainer) return;
 
     if (!cartItems || cartItems.length === 0) {
-        cartContainer.innerHTML = `<p>Your cart is empty.</p>`;
+        cartContainer.innerHTML = "<p>Your cart is empty.</p>";
         updateCartCount(0);
         return;
     }
@@ -238,7 +255,6 @@ async function updateQuantity(button, change) {
         return;
     }
 
-    // Check stock before increasing quantity
     if (change > 0) {
         const bookResponse = await fetch(`${API_BASE_URL}/books/${bookId}`);
         const book = await bookResponse.json();
@@ -256,11 +272,14 @@ async function updateQuantity(button, change) {
             method: "PATCH",
             body: JSON.stringify({ quantity: newQuantity })
         });
-        if (!response) return;
+        if (!response) {
+            alert("Authentication failed. Please log in again.");
+            return;
+        }
 
+        const result = await response.json();
         if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || "Failed to update quantity");
+            throw new Error(result.message || "Failed to update quantity");
         }
 
         quantityElement.textContent = newQuantity;
@@ -285,20 +304,21 @@ async function removeCartItem(bookId) {
         const response = await fetchWithAuth(`${API_BASE_URL}/carts/${bookId}/delete`, {
             method: "PATCH"
         });
-        if (!response) return;
+        if (!response) {
+            alert("Authentication failed. Please log in again.");
+            return;
+        }
 
         const result = await response.json();
         if (!response.ok) {
-            console.warn("Failed to remove item from cart:", result.error || "Unknown error");
-            console.log("Full response from /carts/:id/delete:", result);
-            throw new Error(result.error || "Failed to remove item");
+            throw new Error(result.message || "Failed to remove item");
         }
 
         await loadCartItems(); // Refresh cart
     } catch (error) {
         console.error("Error removing item:", error);
-        console.log("Error details:", error.message);
-        await loadCartItems(); // Refresh cart even on error
+        alert(`Failed to remove item: ${error.message}`);
+        await loadCartItems(); // Refresh even on error
     }
 }
 
@@ -308,7 +328,10 @@ async function loadCartSummary() {
         const response = await fetchWithAuth(`${API_BASE_URL}/carts/summary`);
         if (!response) return;
 
-        if (!response.ok) throw new Error("Failed to fetch cart summary");
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to fetch cart summary");
+        }
 
         const cartData = await response.json();
         const totalPriceElement = document.getElementById("cart-total");
@@ -318,7 +341,7 @@ async function loadCartSummary() {
         updateCartCount(cartData.total_items || 0);
     } catch (error) {
         console.error("Error fetching cart summary:", error);
-        updateCartCount(0); // Ensure count is cleared on error
+        updateCartCount(0);
     }
 }
 
