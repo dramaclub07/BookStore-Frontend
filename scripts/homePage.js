@@ -8,6 +8,15 @@ const booksPerPage = 12;
 let searchDropdown = null;
 let isSearchDropdownOpen = false;
 
+// Admin tools modal state
+let adminToolsModal = null;
+let isAdminToolsModalOpen = false;
+
+// Theme constants
+const THEME_KEY = "theme";
+const LIGHT_MODE = "light";
+const DARK_MODE = "dark";
+
 // Get auth headers
 function getAuthHeaders() {
     const accessToken = localStorage.getItem("access_token");
@@ -61,7 +70,7 @@ async function refreshAccessToken() {
 async function fetchWithAuth(url, options = {}) {
     if (!isAuthenticated()) {
         console.log("User not authenticated, proceeding without auth for public routes");
-        return fetch(url, options); // Allow public routes without redirect
+        return fetch(url, options);
     }
 
     const expiresIn = localStorage.getItem("token_expires_in");
@@ -86,11 +95,34 @@ async function fetchWithAuth(url, options = {}) {
     return response;
 }
 
+// Check if user is admin
+function isAdmin() {
+    const userRole = localStorage.getItem("user_role");
+    return userRole === "admin";
+}
+
+// Toggle theme function
+function toggleTheme() {
+    const currentTheme = localStorage.getItem(THEME_KEY) || LIGHT_MODE;
+    const newTheme = currentTheme === LIGHT_MODE ? DARK_MODE : LIGHT_MODE;
+    document.body.classList.toggle(DARK_MODE, newTheme === DARK_MODE);
+    localStorage.setItem(THEME_KEY, newTheme);
+    console.log(`Theme switched to: ${newTheme}`);
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM fully loaded, initializing homepage...");
     console.log("Access Token on load:", localStorage.getItem("access_token"));
+    console.log("User Role:", localStorage.getItem("user_role"));
 
     const isLoggedIn = isAuthenticated();
+    const userIsAdmin = isAdmin();
+
+    // Show admin-specific UI elements
+    if (userIsAdmin) {
+        document.querySelector(".admin-actions").style.display = "block";
+        document.getElementById("admin-tools-link").style.display = "inline-flex";
+    }
 
     const sortBooks = document.getElementById("sort-books");
     const initialSortOption = sortBooks?.value || "relevance";
@@ -103,6 +135,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.log("Review submitted previously, forcing refresh of books...");
         localStorage.removeItem("reviewSubmitted");
         fetchBooks(initialSortOption, 1, true);
+    } else if (localStorage.getItem("bookAdded") === "true") {
+        console.log("Book added previously, forcing refresh of books...");
+        localStorage.removeItem("bookAdded");
+        fetchBooks(initialSortOption, 1, true);
     } else {
         fetchBooks(initialSortOption, 1);
     }
@@ -114,6 +150,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     let isDropdownOpen = false;
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
+    const adminToolsLink = document.getElementById("admin-tools-link");
 
     if (profileLink) {
         profileLink.addEventListener("click", (event) => {
@@ -150,6 +187,68 @@ document.addEventListener("DOMContentLoaded", async () => {
                 console.log("Redirecting to cart page");
                 window.location.href = "../pages/cart.html";
             }
+        });
+    }
+
+    if (adminToolsLink && userIsAdmin) {
+        adminToolsLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            console.log("Admin tools link clicked, toggling modal");
+            if (isAdminToolsModalOpen) {
+                closeAdminToolsModal();
+            } else {
+                openAdminToolsModal();
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            if (
+                isAdminToolsModalOpen &&
+                !adminToolsLink.contains(event.target) &&
+                adminToolsModal &&
+                !adminToolsModal.contains(event.target) &&
+                !event.target.classList.contains("close-btn")
+            ) {
+                closeAdminToolsModal();
+            }
+        });
+
+        // Set up admin tools modal listeners once
+        adminToolsModal = document.getElementById("admin-tools-modal");
+        if (adminToolsModal) {
+            const toggleThemeBtn = document.getElementById("toggle-theme");
+            const closeBtn = adminToolsModal.querySelector(".close-btn");
+
+            if (toggleThemeBtn) {
+                toggleThemeBtn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("Toggle Theme clicked");
+                    toggleTheme();
+                    closeAdminToolsModal();
+                });
+            } else {
+                console.error("Toggle theme button not found");
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("Close button clicked");
+                    closeAdminToolsModal();
+                });
+            } else {
+                console.error("Close button not found");
+            }
+        } else {
+            console.error("Admin tools modal not found in DOM");
+        }
+    }
+
+    const addBookBtn = document.getElementById("add-book-btn");
+    if (addBookBtn && userIsAdmin) {
+        addBookBtn.addEventListener("click", () => {
+            console.log("Add Book button clicked, redirecting to addBook.html");
+            window.location.href = "../pages/addBook.html";
         });
     }
 
@@ -269,6 +368,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         isDropdownOpen = false;
     }
+
+    function openAdminToolsModal() {
+        adminToolsModal = document.getElementById("admin-tools-modal");
+        if (!adminToolsModal) {
+            console.error("Admin tools modal not found in DOM");
+            return;
+        }
+
+        adminToolsModal.style.display = "flex";
+        isAdminToolsModalOpen = true;
+    }
+
+    function closeAdminToolsModal() {
+        if (adminToolsModal) {
+            adminToolsModal.style.display = "none";
+        }
+        isAdminToolsModalOpen = false;
+    }
 });
 
 async function loadUserProfile() {
@@ -359,7 +476,7 @@ async function handleSignOut() {
 
         console.log("Clearing local storage");
         localStorage.clear();
-        
+
         window.location.replace(homePath);
         setTimeout(() => {
             if (!window.location.pathname.includes("homePage.html")) {
@@ -457,15 +574,32 @@ function displayBooks(books) {
         return;
     }
 
+    const userIsAdmin = isAdmin();
+
     books.forEach(book => {
         const bookCard = document.createElement("div");
         bookCard.classList.add("book-card");
 
         const bookImage = book.book_image || "default-image.jpg";
+        const isOutOfStock = book.quantity === 0;
+
+        let adminButtons = '';
+        if (userIsAdmin) {
+            adminButtons = `
+                <button class="edit-book" data-id="${book.id}">Edit</button>
+                <button class="delete-book" data-id="${book.id}">Delete</button>
+            `;
+        }
+
+        const outOfStockBanner = isOutOfStock
+            ? `<div class="out-of-stock-banner">Out of Stock</div>`
+            : '';
 
         bookCard.innerHTML = `
+            ${outOfStockBanner}
             <img src="${bookImage}" alt="${book.book_name}" class="book-image">
-            <button class="quick-view" data-id="${book.id}">Quick View</button>
+            <button class="quick-view" data-id="${book.id}" ${isOutOfStock ? 'disabled' : ''}>Quick View</button>
+            ${adminButtons}
             <div class="book-content">
                 <h3>${book.book_name}</h3>
                 <p>${book.author_name}</p>
@@ -482,10 +616,60 @@ function displayBooks(books) {
 
         bookContainer.appendChild(bookCard);
 
-        bookCard.querySelector(".quick-view").addEventListener("click", () => {
-            viewBookDetails(book.id);
-        });
+        const quickViewButton = bookCard.querySelector(".quick-view");
+        if (quickViewButton) {
+            quickViewButton.addEventListener("click", () => {
+                if (!isOutOfStock) {
+                    viewBookDetails(book.id);
+                }
+            });
+        }
+
+        if (userIsAdmin) {
+            const editButton = bookCard.querySelector(".edit-book");
+            const deleteButton = bookCard.querySelector(".delete-book");
+
+            if (editButton) {
+                editButton.addEventListener("click", () => {
+                    console.log("Edit book clicked for ID:", book.id);
+                    window.location.href = `../pages/bookDetails.html?id=${book.id}`;
+                });
+            }
+
+            if (deleteButton) {
+                deleteButton.addEventListener("click", async () => {
+                    console.log("Delete book clicked for ID:", book.id);
+                    if (confirm(`Are you sure you want to delete "${book.book_name}"?`)) {
+                        await deleteBook(book.id);
+                    }
+                });
+            }
+        }
     });
+}
+
+async function deleteBook(bookId) {
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}`, {
+            method: "DELETE"
+        });
+
+        if (!response) {
+            alert("Failed to delete book. Please try again.");
+            return;
+        }
+
+        if (response.ok) {
+            alert("Book deleted successfully!");
+            fetchBooks(document.getElementById("sort-books").value, currentPage, true);
+        } else {
+            const errorData = await response.json();
+            alert(`Failed to delete book: ${errorData.error || "Unknown error"}`);
+        }
+    } catch (error) {
+        console.error("Error deleting book:", error);
+        alert("Failed to delete book. Please try again.");
+    }
 }
 
 function updatePagination(totalPagesFromAPI, currentPageFromAPI) {

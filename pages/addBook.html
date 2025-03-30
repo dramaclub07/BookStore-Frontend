@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookstore - Add Book</title>
+    <link rel="stylesheet" href="../styles/homePage.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+    <header>
+        <div class="navbar">
+            <div class="logo">
+                <img src="../assets/education@2x.png" style="width: 50px; height: 30px;"> Bookstore
+            </div>
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="search" class="search-bar" placeholder="Search books...">
+                </div>
+            </div>
+            <div class="nav-links">
+                <span id="profile-link"><i class="fa-solid fa-user"></i> <span class="profile-name">Profile</span></span>
+                <!-- <span id="cart-link"><i class="fa-solid fa-shopping-cart"></i> <span class="cart-count">0</span></span> -->
+                <span id="admin-tools-link" style="display: none;"><i class="fa-solid fa-tools"></i> Admin Tools</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="content-wrapper">
+        <div class="page-info">
+            <h2>Add New Book</h2>
+        </div>
+
+        <section class="add-book-section">
+            <div class="add-book-form">
+                <h3>Add Single Book</h3>
+                <form id="single-book-form">
+                    <div class="form-group">
+                        <label for="book-name">Book Name</label>
+                        <input type="text" id="book-name" name="book_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="author-name">Author Name</label>
+                        <input type="text" id="author-name" name="author_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="book-mrp">MRP (Rs.)</label>
+                        <input type="number" id="book-mrp" name="book_mrp" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="discounted-price">Discounted Price (Rs.)</label>
+                        <input type="number" id="discounted-price" name="discounted_price" step="0.01" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="quantity">Quantity</label>
+                        <input type="number" id="quantity" name="quantity" min="0" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="book-details">Description</label>
+                        <textarea id="book-details" name="book_details" rows="4"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="genre">Genre</label>
+                        <input type="text" id="genre" name="genre">
+                    </div>
+                    <div class="form-group">
+                        <label for="book-image">Book Image URL</label>
+                        <input type="url" id="book-image" name="book_image">
+                    </div>
+                    <button type="submit" class="btn-add-book">Add Book</button>
+                </form>
+            </div>
+
+            <div class="csv-upload">
+                <h3>Upload Books via CSV</h3>
+                <p>Upload a CSV file with columns: book_name, author_name, book_mrp, discounted_price, quantity, book_details, genre, book_image</p>
+                <form id="csv-upload-form">
+                    <div class="form-group">
+                        <label for="csv-file">Select CSV File</label>
+                        <input type="file" id="csv-file" name="file" accept=".csv" required>
+                    </div>
+                    <button type="submit" class="btn-add-book">Upload CSV</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>Copyright © 2020, Bookstore Private Limited. All Rights Reserved</p>
+    </footer>
+    <script src="../scripts/addBook.js"></script>
+</body>
+</html>

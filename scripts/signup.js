@@ -36,33 +36,38 @@ signupForm.addEventListener("submit", async (e) => {
     const email = document.getElementById("signup-email").value.trim();
     const password = document.getElementById("signup-password").value.trim();
     const mobile = document.getElementById("signup-mobile").value.trim();
+    const role = document.getElementById("signup-role").value; // Get the selected role
 
     const nameField = document.getElementById("signup-name");
     const emailField = document.getElementById("signup-email");
     const passwordField = document.getElementById("signup-password");
     const mobileField = document.getElementById("signup-mobile");
+    const roleField = document.getElementById("signup-role");
     const nameError = document.getElementById("name-error");
     const emailError = document.getElementById("email-error");
     const passwordError = document.getElementById("password-error");
     const mobileError = document.getElementById("mobile-error");
+    const roleError = document.getElementById("role-error");
 
-    const errorElements = [nameField, emailField, passwordField, mobileField];
-    const errorMessages = [nameError, emailError, passwordError, mobileError];
+    const errorElements = [nameField, emailField, passwordField, mobileField, roleField];
+    const errorMessages = [nameError, emailError, passwordError, mobileError, roleError];
 
     // Reset error states
     errorElements.forEach(el => el.classList.remove("error"));
     errorMessages.forEach(el => (el.textContent = ""));
 
-    // Validation
-    if (!name) {
+    // Validation aligned with backend requirements
+    if (!name || name.length < 3 || name.length > 50) {
         nameField.classList.add("error");
-        nameError.textContent = "Please enter your full name.";
+        nameError.textContent = "Full name must be between 3 and 50 characters.";
         return;
     }
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email)) {
+    // Backend allows only specific email domains: gmail.com, yahoo.com, outlook.com
+    const VALID_EMAIL_REGEX = /^[\w+\-.]+@(gmail\.com|yahoo\.com|outlook\.com)$/i;
+    if (!email || !VALID_EMAIL_REGEX.test(email)) {
         emailField.classList.add("error");
-        emailError.textContent = "Please enter a valid email (e.g., user@example.com).";
+        emailError.textContent = "Please enter a valid email (e.g., user@gmail.com, user@yahoo.com, or user@outlook.com).";
         return;
     }
 
@@ -72,9 +77,18 @@ signupForm.addEventListener("submit", async (e) => {
         return;
     }
 
-    if (!mobile || !/^\d{10}$/.test(mobile)) {
+    // Backend requires mobile numbers starting with 6, 7, 8, or 9 and exactly 10 digits
+    const VALID_MOBILE_REGEX = /^[6789]\d{9}$/;
+    if (!mobile || !VALID_MOBILE_REGEX.test(mobile)) {
         mobileField.classList.add("error");
-        mobileError.textContent = "Please enter a valid 10-digit mobile number.";
+        mobileError.textContent = "Mobile number must be 10 digits and start with 6, 7, 8, or 9.";
+        return;
+    }
+
+    // Validate role
+    if (!role || (role !== "user" && role !== "admin")) {
+        roleField.classList.add("error");
+        roleError.textContent = "Please select a valid role (Customer or Admin).";
         return;
     }
 
@@ -86,10 +100,13 @@ signupForm.addEventListener("submit", async (e) => {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                full_name: name,
-                email: email,
-                password: password,
-                mobile_number: mobile,
+                user: { // Backend expects the parameters to be nested under "user"
+                    full_name: name,
+                    email: email,
+                    password: password,
+                    mobile_number: mobile,
+                    role: role // Include the role in the request
+                }
             }),
         });
 
@@ -101,6 +118,14 @@ signupForm.addEventListener("submit", async (e) => {
         const data = await response.json();
         console.log("Signup response:", data);
 
+        // Store user data in localStorage for later use (e.g., in login or other pages)
+        localStorage.setItem('user', JSON.stringify({
+            id: data.user.id,
+            email: data.user.email,
+            full_name: data.user.full_name,
+            role: role // Store the role (though role isn't returned in the response, we know it from the form)
+        }));
+
         alert("Signup successful! Redirecting to login...");
         window.location.href = "../pages/login.html";
     } catch (error) {
@@ -108,5 +133,4 @@ signupForm.addEventListener("submit", async (e) => {
         alert(`Signup failed: ${error.message}. Please ensure the backend is running at ${BASE_URL}.`);
         errorMessages.forEach(el => (el.textContent = error.message));
     }
-    FormData.clear();
 });

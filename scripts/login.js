@@ -62,6 +62,7 @@ async function verifySocialToken(token, provider) {
             localStorage.setItem('socialEmail', data.user.email);
             localStorage.setItem('socialProvider', provider);
             localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000)); // Store expiration time in milliseconds
+            localStorage.setItem('user_role', data.user.role); // Store the role from social login response
             
             localStorage.setItem('justLoggedIn', 'true'); // Flag for homepage refresh
             
@@ -180,23 +181,10 @@ function displayRandomQuote() {
 document.addEventListener("DOMContentLoaded", async function () {
     displayRandomQuote();
 
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            const tabId = tab.getAttribute('data-tab');
-            document.querySelectorAll('.auth-card').forEach(card => card.classList.remove('active'));
-            document.getElementById(`${tabId}-form`).classList.add('active');
-        });
-    });
-
-    document.querySelector('.toggle-signup').addEventListener('click', (e) => {
+    // Redirect to signup.html when "Signup" tab is clicked
+    document.querySelector('.tab[data-tab="signup"]').addEventListener('click', (e) => {
         e.preventDefault();
-        document.querySelector('.tab[data-tab="login"]').classList.remove('active');
-        document.querySelector('.tab[data-tab="signup"]').classList.add('active');
-        document.querySelector('#login-form').classList.remove('active');
-        document.querySelector('#signup-form').classList.add('active');
+        window.location.href = '../pages/signup.html';
     });
 
     const loginPasswordInput = document.getElementById('login-password');
@@ -209,20 +197,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             setTimeout(() => {
                 loginPasswordInput.type = 'password';
                 loginEyeIcon.style.opacity = '1';
-            }, 2000);
-        });
-    }
-
-    const signupPasswordInput = document.getElementById('signup-password');
-    const signupTogglePassword = document.getElementById('signup-toggle-password');
-    const signupEyeIcon = signupTogglePassword?.querySelector('svg');
-    if (signupTogglePassword && signupEyeIcon) {
-        signupTogglePassword.addEventListener('click', () => {
-            signupPasswordInput.type = 'text';
-            signupEyeIcon.style.opacity = '0.5';
-            setTimeout(() => {
-                signupPasswordInput.type = 'password';
-                signupEyeIcon.style.opacity = '1';
             }, 2000);
         });
     }
@@ -275,8 +249,10 @@ document.addEventListener("DOMContentLoaded", async function () {
                 localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
                 const username = data.user?.full_name || email.split('@')[0];
                 localStorage.setItem('username', username);
+                localStorage.setItem('user_role', data.user.role); // Store the role from the login response
                 localStorage.setItem('justLoggedIn', 'true'); // Flag for homepage refresh
                 console.log('Username stored in localStorage:', username);
+                console.log('User role stored in localStorage:', data.user.role);
                 alert(data.message || 'Login successful!');
                 window.location.href = '../pages/homePage.html';
             } else {
@@ -284,59 +260,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
         } catch (error) {
             console.error('Login error:', error.message);
-            alert(`Failed to connect to the server at ${API_BASE_URL}. Error: ${error.message}`);
-        }
-    });
-
-    document.getElementById('signup-form')?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const nameInput = document.getElementById('signup-name');
-        const emailInput = document.getElementById('signup-email');
-        const passwordInput = document.getElementById('signup-password');
-        const mobileInput = document.getElementById('signup-mobile');
-        const name = nameInput.value.trim();
-        const email = emailInput.value.trim();
-        const password = passwordInput.value.trim();
-        const mobile = mobileInput.value.trim();
-        const emailRegex = /^[\w+\-.]+@(gmail\.com|yahoo\.com|outlook\.com)$/i;
-        const mobileRegex = /^[6789]\d{9}$/;
-
-        if (!name || name.length < 3 || name.length > 50) {
-            alert('Full Name must be between 3 and 50 characters.');
-            return;
-        }
-
-        if (!email || !emailRegex.test(email)) {
-            alert('Please enter a valid email (Gmail, Yahoo, or Outlook).');
-            return;
-        }
-
-        if (!password || password.length < 6) {
-            alert('Password must be at least 6 characters.');
-            return;
-        }
-
-        if (!mobile || !mobileRegex.test(mobile)) {
-            alert('Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.');
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/users`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user: { full_name: name, email, password, mobile_number: mobile } })
-            });
-
-            const data = await response.json();
-            if (response.ok && data.message) {
-                alert(data.message);
-                document.querySelector('.tab[data-tab="login"]').click();
-            } else {
-                alert(data.errors || data.error || 'Failed to sign up. Please try again.');
-            }
-        } catch (error) {
-            console.error('Signup error:', error.message);
             alert(`Failed to connect to the server at ${API_BASE_URL}. Error: ${error.message}`);
         }
     });

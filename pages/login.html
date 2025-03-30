@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +10,6 @@
     <!-- Facebook SDK -->
     <script async defer src="https://connect.facebook.net/en_US/sdk.js"></script>
 </head>
-
 <body>
     <div class="container">
         <div class="left-card">
@@ -79,47 +77,12 @@
                         </div>
                     </div>
                     <div class="form-footer">
-                        <p>Don't have an account? <a href="#" class="toggle-signup">Signup</a></p>
+                        <p>Don't have an account? <a href="../pages/signup.html" class="toggle-signup">Signup</a></p>
                     </div>
-                </form>
-                <form class="auth-card" id="signup-form">
-                    <div class="form-group">
-                        <label for="signup-name">Full Name</label>
-                        <input type="text" class="form-control" id="signup-name" placeholder="Enter full name">
-                        <span class="error-message" id="signup-name-error"></span>
-                    </div>
-                    <div class="form-group">
-                        <label for="signup-email">Email Id</label>
-                        <input type="email" class="form-control" id="signup-email" placeholder="Enter your email">
-                        <span class="error-message" id="signup-email-error"></span>
-                    </div>
-                    <div class="form-group">
-                        <label for="signup-password">Password</label>
-                        <div class="password-field">
-                            <input type="password" class="form-control" id="signup-password"
-                                placeholder="Enter your password">
-                            <span class="password-toggle" id="signup-toggle-password">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                                    viewBox="0 0 16 16">
-                                    <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
-                                    <path
-                                        d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
-                                </svg>
-                            </span>
-                        </div>
-                        <span class="error-message" id="signup-password-error"></span>
-                    </div>
-                    <div class="form-group">
-                        <label for="signup-mobile">Mobile Number</label>
-                        <input type="tel" class="form-control" id="signup-mobile" placeholder="Enter mobile number">
-                        <span class="error-message" id="signup-mobile-error"></span>
-                    </div>
-                    <button type="submit" class="btn-submit">Sign Up</button>
                 </form>
             </div>
         </div>
     </div>
     <script src="../scripts/login.js"></script>
 </body>
-
 </html>

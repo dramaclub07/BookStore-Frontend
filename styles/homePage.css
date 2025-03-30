@@ -5,35 +5,177 @@
     box-sizing: border-box;
 }
 
+/* Dark Mode Styles */
+body.dark {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+}
+
+body.dark .navbar {
+    background-color: #2c1a1d;
+    background-image: linear-gradient(to right, #4a2b2e, #2c1a1d);
+}
+
+body.dark .search-bar {
+    background-color: #333;
+    color: #e0e0e0;
+    border-color: #555;
+}
+
+body.dark .search-bar:focus {
+    border-color: #A03037;
+    box-shadow: 0 0 5px rgba(160, 48, 55, 0.5);
+}
+
+body.dark .search-icon {
+    color: #bbb;
+}
+
+body.dark .search-dropdown-menu {
+    background-color: #333;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+body.dark .search-dropdown-item {
+    color: #e0e0e0;
+    border-bottom-color: #444;
+}
+
+body.dark .search-dropdown-item:hover {
+    background-color: #444;
+}
+
+body.dark .nav-links span {
+    color: #e0e0e0;
+}
+
+body.dark .nav-links span:hover {
+    color: #ffd700;
+}
+
+body.dark .dropdown-menu {
+    background: #333;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+body.dark .dropdown-item {
+    color: #e0e0e0;
+}
+
+body.dark .dropdown-item:hover {
+    background: #444;
+}
+
+body.dark .dropdown-header {
+    color: #ddd;
+    border-bottom-color: #555;
+}
+
+body.dark .dropdown-subheader {
+    color: #aaa;
+}
+
+body.dark .content-wrapper {
+    background-color: #1a1a1a;
+}
+
+body.dark .page-info h2 {
+    color: #e0e0e0;
+}
+
+body.dark .book-list {
+    background: linear-gradient(180deg, #1a1a1a, #2c2c2c);
+}
+
+body.dark .book-card {
+    background-color: #2c2c2c;
+    border-color: #444;
+}
+
+body.dark .book-content h3 {
+    color: #e0e0e0;
+}
+
+body.dark .book-content p {
+    color: #bbb;
+}
+
+body.dark .rating-count {
+    color: #bbb;
+}
+
+body.dark .price {
+    color: #A03037;
+}
+
+body.dark .book-card:hover .price {
+    color: #8a2328;
+}
+
+body.dark .old-price {
+    color: #999;
+}
+
+body.dark .modal-content {
+    background: #333;
+    border-color: #555;
+    color: #e0e0e0;
+}
+
+body.dark .modal-header h2 {
+    color: #A03037;
+}
+
+body.dark footer {
+    background-color: #0d0c0c;
+    color: #e0e0e0;
+}
+
 /* Body */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
     background-color: #f5f5f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Navbar */
+/* Navbar (Taken from style.css) */
 .navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: linear-gradient(90deg, #a52a2a, #8b1e1e);
-    padding: 10px 20px;
+    background-color: #A03037;
+    background-image: linear-gradient(to right, #8a2328, #A03037);
+    color: #fff;
+    padding: 0 20px;
     position: fixed;
     top: 0;
     width: 100%;
-    z-index: 1000;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    height: 60px;
+    z-index: 1001;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: height 0.3s ease;
 }
 
 .logo {
     display: flex;
     align-items: center;
-    color: white;
+    gap: 10px;
     font-size: 24px;
     font-weight: bold;
-    gap: 10px;
+    letter-spacing: 0.5px;
+    transition: transform 0.2s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+.logo:hover {
+    transform: scale(1.05);
 }
 
 .logo img {
@@ -42,48 +184,55 @@ body {
     object-fit: contain;
 }
 
-/* Search Container */
+/* Search Container (Updated for bookstore theme) */
 .search-container {
     position: relative;
     width: 40%;
     min-width: 200px;
     max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
 }
 
 .search-wrapper {
+    position: relative;
+    width: 100%;
     display: flex;
     align-items: center;
-    position: relative;
 }
 
 .search-bar {
     width: 100%;
-    padding: 8px 12px 8px 35px; /* Left padding for icon */
+    padding: 8px 35px 8px 12px;
     border-radius: 5px;
     border: 1px solid #ccc;
     font-size: 14px;
     background-color: #fff;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .search-bar:focus {
     outline: none;
-    border-color: #a52a2a;
-    box-shadow: 0 0 5px rgba(165, 42, 42, 0.3);
+    border-color: #A03037;
+    box-shadow: 0 0 5px rgba(160, 48, 55, 0.3);
 }
 
 .search-icon {
     position: absolute;
-    left: 8px;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
     color: #666;
     font-size: 16px;
-    pointer-events: none; /* Prevents icon from blocking input */
+    pointer-events: none;
 }
 
 .search-dropdown-menu {
     background-color: #fff;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     max-height: 200px;
     overflow-y: auto;
@@ -92,6 +241,7 @@ body {
     position: absolute;
     top: 100%;
     left: 0;
+    margin-top: 2px;
 }
 
 .search-dropdown-item {
@@ -100,6 +250,7 @@ body {
     font-size: 14px;
     color: #333;
     border-bottom: 1px solid #eee;
+    transition: background-color 0.2s ease;
 }
 
 .search-dropdown-item:last-child {
@@ -113,6 +264,7 @@ body {
 .suggestion-book-name {
     font-weight: bold;
     font-size: 14px;
+    color: #333;
 }
 
 .suggestion-author-name {
@@ -120,34 +272,67 @@ body {
     color: #666;
 }
 
-/* Nav Links */
+/* Nav Links (Taken from style.css) */
 .nav-links {
     display: flex;
     align-items: center;
-    gap: 20px;
-    position: relative;
+    gap: 30px;
+    flex-shrink: 0;
 }
 
 .nav-links span {
     display: flex;
     align-items: center;
     gap: 5px;
-    color: white;
-    font-size: 14px;
     cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    position: relative;
+    padding: 5px 0;
+}
+
+.nav-links span:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: #ffd700;
+    transition: width 0.3s ease;
+}
+
+.nav-links span:hover {
+    color: #ffd700;
+}
+
+.nav-links span:hover:after {
+    width: 100%;
 }
 
 .cart-count {
-    display: flex;
+    position: absolute;
+    background-color: #ffd700;
+    color: #8a2328;
+    border-radius: 50%;
+    padding: 2px;
+    font-size: 11px;
+    font-weight: bold;
+    min-width: 18px;
+    height: 17px;
+    display: none;
     align-items: center;
     justify-content: center;
-    background: #f44336;
-    color: white;
-    border-radius: 50%;
-    width: 18px;
-    height: 18px;
-    font-size: 12px;
-    margin-left: 2px;
+    top: -8px;
+    right: -12px;
+    border: 2px solid #A03037;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+}
+
+.nav-links span:hover .cart-count {
+    transform: scale(1.1);
 }
 
 /* Dropdown Menu */
@@ -156,8 +341,8 @@ body {
     top: 100%;
     right: 0;
     background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
     padding: 10px 0;
     min-width: 180px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -173,13 +358,13 @@ body {
 }
 
 .dropdown-item:hover {
-    background: #f2dede;
+    background: #f5f5f5;
 }
 
 .dropdown-header {
     font-weight: 600;
     color: #222;
-    padding-bottom: 5px;
+    padding: 5px 15px;
     border-bottom: 1px solid #eee;
 }
 
@@ -187,14 +372,14 @@ body {
     font-style: italic;
     color: #666;
     font-size: 13px;
-    padding-bottom: 5px;
+    padding: 5px 15px;
 }
 
 .dropdown-menu button {
     width: 100%;
     padding: 8px 15px;
-    background: #f44336;
-    color: white;
+    background: #A03037;
+    color: #fff;
     border: none;
     border-radius: 4px;
     font-size: 14px;
@@ -204,17 +389,18 @@ body {
 }
 
 .dropdown-menu button:hover {
-    background: #d32f2f;
+    background: #8a2328;
 }
 
 /* Page Content Wrapper */
 .content-wrapper {
-    margin-top: 70px;
+    margin-top: 60px;
     padding: 20px;
     width: 100%;
     max-width: 1400px;
     margin-left: auto;
     margin-right: auto;
+    flex: 1;
 }
 
 /* Page Info & Sorting */
@@ -228,12 +414,50 @@ body {
     gap: 10px;
 }
 
+.page-info h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+}
+
+.admin-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-add-book {
+    padding: 8px 16px;
+    background: #A03037;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn-add-book:hover {
+    background: #8a2328;
+    transform: translateY(-2px);
+}
+
+.btn-add-book:active {
+    transform: translateY(0);
+}
+
 .sort-dropdown {
     padding: 8px;
     border-radius: 5px;
     border: 1px solid #ccc;
     font-size: 14px;
     background-color: #fff;
+    transition: border-color 0.2s ease;
+}
+
+.sort-dropdown:focus {
+    outline: none;
+    border-color: #A03037;
 }
 
 /* Book List */
@@ -247,33 +471,24 @@ body {
     position: relative;
 }
 
-/* Loader Animation */
-.loader {
+/* Loader */
+#book-loader {
     display: none;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 50px;
-    height: 50px;
-    border: 5px solid #a52a2a;
-    border-top: 5px solid transparent;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+    font-size: 16px;
+    color: #A03037;
     z-index: 10;
-}
-
-@keyframes spin {
-    0% { transform: translate(-50%, -50%) rotate(0deg); }
-    100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
 /* Book Card */
 .book-card {
-    background-color: white;
-    border-radius: 5px;
-    box-shadow: 0 4px 16px rgba(247, 152, 152, 0.1);
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
     width: 100%;
     max-width: 280px;
     display: flex;
@@ -287,13 +502,88 @@ body {
 
 .book-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
-    background-color: #f2dede;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
 }
 
-.book-card:hover .quick-view:hover {
-    background-color: #f9f9f9;
-    color: #A03037;
+/* Out of Stock Banner */
+.out-of-stock-banner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(255, 0, 0, 0.9); /* Slightly more opaque for better readability */
+    color: #fff;
+    padding: 8px 0;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 10;
+    border-radius: 8px 8px 0 0; /* Matches book-card border-radius on top */
+}
+
+/* Dark Mode for Out of Stock Banner */
+body.dark .out-of-stock-banner {
+    background-color: rgba(200, 0, 0, 0.9); /* Slightly darker red for dark mode */
+    color: #e0e0e0;
+}
+
+/* Quick View Button (Reintroduced and Styled) */
+.quick-view {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    background: #28a745; /* Green color for visibility */
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+    z-index: 5;
+}
+
+.quick-view:hover {
+    background: #218838;
+    transform: translateY(-1px);
+}
+
+/* Admin Buttons (Edit/Delete - Adjusted Positioning) */
+.edit-book,
+.delete-book {
+    position: absolute;
+    top: 8px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+    color: #fff;
+}
+
+.edit-book {
+    right: 8px;
+    background: #007BFF;
+}
+
+.edit-book:hover {
+    background: #0056b3;
+    transform: translateY(-1px);
+}
+
+.delete-book {
+    right: 50px; /* Positioned to the left of the edit button */
+    background: #dc3545;
+}
+
+.delete-book:hover {
+    background: #bd2130;
+    transform: translateY(-1px);
 }
 
 /* Book Image */
@@ -312,35 +602,6 @@ body {
     transform: scale(1.02);
 }
 
-/* Quick View Button */
-.quick-view {
-    position: absolute;
-    top: 55%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: #A03037;
-    color: #F5F5F5;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: bold;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-@media (hover: none) {
-    .quick-view {
-        opacity: 1;
-        background-color: rgba(160, 48, 55, 0.8);
-    }
-}
-
-.book-card:hover .quick-view {
-    opacity: 1;
-}
-
 /* Book Content */
 .book-content {
     width: 100%;
@@ -348,38 +609,41 @@ body {
     padding: 0 12px;
 }
 
-.book-card h3 {
+.book-content h3 {
     font-size: 14px;
-    font-weight: bold;
+    font-weight: 600;
+    color: #333;
     margin: 5px 0;
-    color: black;
     line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.book-card p {
+.book-content p {
     font-size: 12px;
-    color: gray;
+    color: #666;
     margin-bottom: 5px;
 }
 
 .rating {
     display: inline-flex;
     align-items: center;
-    background-color: #4caf50;
-    color: white;
+    background-color: #28a745;
+    color: #fff;
     font-size: 12px;
     padding: 4px 8px;
     border-radius: 5px;
-    font-weight: bold;
+    font-weight: 600;
 }
 
 .rating-count {
-    color: black;
+    color: #666;
     font-size: 12px;
     margin-left: 4px;
-    opacity: 0.7;
 }
 
+/* Improved Price Styling */
 .price-info {
     display: flex;
     align-items: center;
@@ -390,16 +654,22 @@ body {
 }
 
 .price {
-    font-weight: bold;
-    font-size: 14px;
-    color: black;
+    font-weight: 700; /* Bolder for emphasis */
+    font-size: 16px; /* Slightly larger for prominence */
+    color: #A03037; /* Bookstore theme color for discounted price */
+    transition: color 0.2s ease;
+}
+
+.book-card:hover .price {
+    color: #8a2328; /* Darker shade on hover */
 }
 
 .old-price {
     text-decoration: line-through;
-    color: gray;
+    color: #888; /* Softer gray for less emphasis */
     font-size: 12px;
-    opacity: 0.7;
+    font-weight: 400; /* Lighter weight to de-emphasize */
+    opacity: 0.8; /* Slightly faded */
 }
 
 /* Pagination */
@@ -422,18 +692,225 @@ body {
     padding: 8px 12px;
     margin: 0 5px;
     border: none;
-    background: linear-gradient(90deg, #a52a2a, #8b1e1e);
-    color: white;
+    background: linear-gradient(90deg, #A03037, #8a2328);
+    color: #fff;
     border-radius: 5px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background 0.2s ease;
     font-size: 12px;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 .pagination button:disabled {
     background: #ccc;
     cursor: not-allowed;
+}
+
+/* Admin Tools Modal (Improved Styling for Bookstore Theme) */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+}
+
+.modal-content {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    width: 350px;
+    max-width: 90%;
+    padding: 20px;
+    position: relative;
+    border: 1px solid #ddd;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+    color: #A03037;
+}
+
+.modal-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    color: #A03037;
+}
+
+.modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.admin-tool-item {
+    padding: 10px 15px;
+    background: #A03037;
+    color: #fff;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.admin-tool-item:hover {
+    background: #8a2328;
+    transform: translateY(-2px);
+}
+
+.admin-tool-item:active {
+    transform: translateY(0);
+}
+
+/* Footer (Taken from style.css) */
+footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    background-color: #0d0c0c;
+    color: #fff;
+    text-align: center;
+    padding: 10px 0;
+    width: 100%;
+    z-index: 1001;
+}
+
+/* Add Book Section */
+.add-book-section {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding: 20px 0;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.add-book-form, .csv-upload {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.add-book-form h3, .csv-upload h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.csv-upload p {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #A03037;
+}
+
+.form-group textarea {
+    resize: vertical;
+}
+
+.btn-add-book {
+    padding: 10px 20px;
+    background: #A03037;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.btn-add-book:hover {
+    background: #8a2328;
+    transform: translateY(-2px);
+}
+
+.btn-add-book:active {
+    transform: translateY(0);
+}
+
+/* Dark Mode Adjustments */
+body.dark .add-book-form,
+body.dark .csv-upload {
+    background: #2c2c2c;
+    border-color: #444;
+}
+
+body.dark .add-book-form h3,
+body.dark .csv-upload h3 {
+    color: #e0e0e0;
+}
+
+body.dark .csv-upload p {
+    color: #bbb;
+}
+
+body.dark .form-group label {
+    color: #e0e0e0;
+}
+
+body.dark .form-group input,
+body.dark .form-group textarea {
+    background: #333;
+    color: #e0e0e0;
+    border-color: #555;
+}
+
+body.dark .form-group input:focus,
+body.dark .form-group textarea:focus {
+    border-color: #A03037;
 }
 
 /* Responsive Media Queries */
@@ -466,12 +943,17 @@ body {
         padding: 15px 20px;
     }
     .navbar {
-        flex-wrap: wrap;
+        flex-direction: column;
+        height: auto;
         padding: 10px;
     }
     .search-container {
         width: 100%;
+        max-width: none;
         margin: 10px 0;
+    }
+    .nav-links {
+        gap: 20px;
     }
     .page-info {
         flex-direction: column;
@@ -505,14 +987,24 @@ body {
     .book-image {
         height: 160px;
     }
-    .book-card h3 {
+    .book-content h3 {
         font-size: 13px;
     }
-    .book-card p {
+    .book-content p {
         font-size: 11px;
     }
     .price {
-        font-size: 13px;
+        font-size: 14px; /* Adjusted for smaller screens */
+    }
+    .old-price {
+        font-size: 11px;
+    }
+    .quick-view, .edit-book, .delete-book {
+        padding: 3px 6px;
+        font-size: 11px;
+    }
+    .delete-book {
+        right: 45px; /* Adjusted for smaller buttons */
     }
     .pagination button {
         padding: 6px 10px;
@@ -525,6 +1017,22 @@ body {
 }
 
 @media screen and (max-width: 400px) {
+    .navbar {
+        padding: 5px;
+    }
+    .logo {
+        font-size: 20px;
+    }
+    .search-bar {
+        font-size: 12px;
+        padding: 5px 30px 5px 10px;
+    }
+    .search-icon {
+        font-size: 14px;
+    }
+    .nav-links {
+        gap: 15px;
+    }
     .content-wrapper {
         padding: 10px;
     }
@@ -537,10 +1045,6 @@ body {
     }
     .book-image {
         height: 140px;
-    }
-    .quick-view {
-        padding: 6px 10px;
-        font-size: 10px;
     }
     .dropdown-menu {
         min-width: 150px;

@@ -171,7 +171,7 @@ async function loadCartItems() {
             throw new Error(data.message || "Failed to load cart");
         }
 
-        const cartItems = data.cart || []; // Extract the cart array from the response
+        const cartItems = data.cart || [];
         console.log("Cart items extracted:", cartItems);
 
         renderCartItems(cartItems);
@@ -207,7 +207,7 @@ function renderCartItems(cartItems) {
             <div class="cart-item-details">
                 <h3>${item.book_name || 'Untitled'}</h3>
                 <p>by ${item.author_name || 'Unknown'}</p>
-                <p>Rs. <span class="discounted-price">${totalDiscountedPrice}</span> <del>Rs. <span class="unit-price">${totalUnitPrice || ''}</span></del></p>
+                <p>Rs. <span class="discounted-price">${totalDiscountedPrice}</span> <del>Rs. <span class="unit-price">${totalUnitPrice || 'N/A'}</span></del></p>
                 <div class="quantity">
                     <button class="decrease">-</button>
                     <span class="quantity-value">${item.quantity || 1}</span>
@@ -268,7 +268,8 @@ async function updateQuantity(button, change) {
         });
 
         if (!response || !response.ok) {
-            throw new Error("Failed to update quantity");
+            const errorData = await response?.json();
+            throw new Error(errorData?.message || "Failed to update quantity");
         }
 
         quantityElement.textContent = newQuantity;
@@ -306,7 +307,8 @@ async function removeCartItem(button) {
         });
 
         if (!response || !response.ok) {
-            throw new Error("Failed to remove item");
+            const errorData = await response?.json();
+            throw new Error(errorData?.message || "Failed to remove item");
         }
 
         cartItem.remove();
@@ -344,6 +346,7 @@ async function loadCartSummary() {
 }
 
 // Load Order Summary
+// Load Order Summary
 async function loadOrderSummary() {
     const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
     const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
@@ -372,26 +375,33 @@ async function loadOrderSummary() {
     const stateInput = document.querySelector('input[readonly][value="Karnataka"]');
     const radio = document.querySelector(`input[name="address-type"][value="${selectedAddress.address_type || 'Work'}"]`);
 
-    if (streetTextarea) streetTextarea.value = selectedAddress.street || '';
-    if (cityInput) cityInput.value = selectedAddress.city || '';
-    if (stateInput) stateInput.value = selectedAddress.state || '';
+    if (streetTextarea) streetTextarea.value = selectedAddress.street || 'N/A';
+    if (cityInput) cityInput.value = selectedAddress.city || 'N/A';
+    if (stateInput) stateInput.value = selectedAddress.state || 'N/A';
     if (radio) radio.checked = true;
 
     const totalPrice = cartItems.reduce((sum, item) => {
-        return sum + (item.discounted_price * (item.quantity || 1));
+        const price = parseFloat(item.discounted_price) || 0;
+        const qty = parseInt(item.quantity, 10) || 1;
+        return sum + (price * qty);
     }, 0).toFixed(2);
 
-    const summaryItems = cartItems.map(item => `
+    const summaryItems = cartItems.map(item => {
+        const discountedPrice = parseFloat(item.discounted_price) || 0;
+        const unitPrice = parseFloat(item.book_mrp) || 0;
+        const quantity = parseInt(item.quantity, 10) || 1;
+        return `
         <div class="summary-item">
             <img src="${item.book_image || item.image_url || '/default-book-image.jpg'}" alt="${item.book_name || 'Unknown'}">
             <div class="summary-item-details">
                 <h3>${item.book_name || 'Untitled'}</h3>
                 <p>by ${item.author_name || 'Unknown'}</p>
-                <p>Rs. ${(item.discounted_price * (item.quantity || 1)).toFixed(2)} <del>Rs. ${(item.book_mrp * (item.quantity || 1)).toFixed(2) || ''}</del></p>
-                <p>Quantity: ${item.quantity || 1}</p>
+                <p>Rs. ${(discountedPrice * quantity).toFixed(2)} <del>Rs. ${(unitPrice * quantity).toFixed(2)}</del></p>
+                <p>Quantity: ${quantity}</p>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     summarySection.innerHTML = `
         <h2>Order Summary</h2>
@@ -401,23 +411,32 @@ async function loadOrderSummary() {
     `;
 
     document.querySelector('.checkout').addEventListener('click', async () => {
+        const requestBody = { address_id: selectedAddress.id };
+        console.log("Placing order with body:", requestBody);
+
         try {
             const response = await fetchWithAuth(`${API_BASE_URL}/orders`, {
                 method: 'POST',
-                body: JSON.stringify({ address_id: selectedAddress.id })
+                body: JSON.stringify(requestBody)
             });
 
-            if (!response || !response.ok) {
-                throw new Error("Failed to place order");
+            if (!response) {
+                throw new Error("No response from server - network issue or auth failure");
             }
 
             const orderData = await response.json();
-            console.log("Order placed:", orderData);
+            console.log("Order API response:", orderData);
+
+            if (!response.ok || !orderData.success) {
+                throw new Error(orderData.message || `Server error: ${response.status}`);
+            }
+
+            console.log("Order placed successfully:", orderData.order);
             localStorage.removeItem('cartItems');
             localStorage.removeItem('selectedAddress');
             window.location.href = `../pages/order-confirmation.html?order_id=${orderData.order.id}`;
         } catch (error) {
-            console.error("Error placing order:", error);
+            console.error("Error placing order:", error.message);
             alert(`Failed to place order: ${error.message}`);
         }
     });

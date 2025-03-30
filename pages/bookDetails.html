@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +8,6 @@
     <link rel="stylesheet" href="../styles/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-
 <body>
     <header>
         <div class="navbar">
@@ -22,6 +20,7 @@
             <div class="nav-links">
                 <span id="profile-link"><i class="fa-solid fa-user"></i> <span class="profile-name">Profile</span></span>
                 <span id="cart-link"><i class="fa-solid fa-shopping-cart"></i> <span class="cart-count">0</span></span>
+                <span id="admin-tools-link" style="display: none;"><i class="fa-solid fa-tools"></i> Admin Tools</span>
             </div>
         </div>
     </header>
@@ -71,6 +70,15 @@
                         Lorem ipsum dolor sit amet, consectetur adipiscing elit...
                     </p>
                 </div>
+                <!-- Admin Tools Section -->
+                <div class="admin-tools" style="display: none; margin-top: 20px;">
+                    <h3>Admin Actions</h3>
+                    <div class="admin-actions">
+                        <button id="edit-book-btn" class="admin-btn">Edit Book</button>
+                        <button id="delete-book-btn" class="admin-btn">Delete Book</button>
+                        <button id="delete-ratings-btn" class="admin-btn">Delete All Ratings</button>
+                    </div>
+                </div>
                 <section class="customer-feedback">
                     <h2>Customer Feedback</h2>
                     <div class="overall-rating">
@@ -93,9 +101,35 @@
                 </section>
             </div>
         </section>
+
+        <!-- Edit Book Modal -->
+        <div id="edit-book-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close-btn">&times;</span>
+                <div class="modal-header">
+                    <h2>Edit Book</h2>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-book-form">
+                        <label for="edit-book-name">Book Name:</label>
+                        <input type="text" id="edit-book-name" required>
+                        <label for="edit-author-name">Author Name:</label>
+                        <input type="text" id="edit-author-name" required>
+                        <label for="edit-discounted-price">Discounted Price:</label>
+                        <input type="number" id="edit-discounted-price" required>
+                        <label for="edit-book-mrp">MRP:</label>
+                        <input type="number" id="edit-book-mrp" required>
+                        <label for="edit-description">Description:</label>
+                        <textarea id="edit-description" required></textarea>
+                        <label for="edit-book-image">Image URL:</label>
+                        <input type="text" id="edit-book-image">
+                        <button type="submit">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script src="../scripts/bookDetails.js"></script>
 </body>
-
 </html>

@@ -141,14 +141,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const data = await response.json();
             wishlistContainer.innerHTML = "";
-            wishlistCountElement.textContent = data.length;
+            const wishlistItems = data.wishlist || []; // Access the wishlist array
+            wishlistCountElement.textContent = wishlistItems.length;
 
-            if (data.length === 0) {
+            if (wishlistItems.length === 0) {
                 wishlistContainer.innerHTML = "<p>Your wishlist is empty.</p>";
                 return;
             }
 
-            data.forEach(item => {
+            wishlistItems.forEach(item => {
                 const bookElement = document.createElement("div");
                 bookElement.classList.add("wishlist-item");
 

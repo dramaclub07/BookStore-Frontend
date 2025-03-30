@@ -21,6 +21,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     await updateCartCount();
     setupHeaderEventListeners();
     setupEventListeners();
+
+    // Check if user is admin and show admin tools
+    if (isAdmin()) {
+        document.querySelector(".admin-tools").style.display = "block";
+        document.getElementById("admin-tools-link").style.display = "inline-flex";
+    }
 });
 
 // Get auth headers
@@ -36,6 +42,11 @@ function getAuthHeaders() {
 function isAuthenticated() {
     const accessToken = localStorage.getItem("access_token");
     return accessToken !== null;
+}
+
+function isAdmin() {
+    const userRole = localStorage.getItem("user_role");
+    return userRole === "admin";
 }
 
 async function refreshAccessToken() {
@@ -122,6 +133,7 @@ async function loadUserProfile() {
         const username = userData.name || "User";
         profileNameElement.textContent = username;
         localStorage.setItem("username", username);
+        localStorage.setItem("user_role", userData.role || "user"); // Assuming role is returned
     } catch (error) {
         console.error("Profile fetch error:", error.message);
         profileNameElement.textContent = localStorage.getItem("username") || "User";
@@ -158,16 +170,16 @@ async function updateCartCount() {
     }
 }
 
-// Setup Header Event Listeners
+// Setup Header Event Listeners (unchanged for brevity, assumed correct)
 function setupHeaderEventListeners() {
     let dropdownMenu = null;
     let isDropdownOpen = false;
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
-    const logo = document.querySelector(".logo"); // Added logo selector
+    const adminToolsLink = document.getElementById("admin-tools-link");
+    const logo = document.querySelector(".logo");
     const isLoggedIn = isAuthenticated();
 
-    // Add logo click event listener
     if (logo) {
         logo.addEventListener("click", (event) => {
             event.preventDefault();
@@ -213,6 +225,13 @@ function setupHeaderEventListeners() {
                 console.log("Redirecting to cart page");
                 window.location.href = "../pages/cart.html";
             }
+        });
+    }
+
+    if (adminToolsLink && isAdmin()) {
+        adminToolsLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            console.log("Admin tools link clicked");
         });
     }
 
@@ -347,6 +366,16 @@ function displayBookDetails(book) {
     document.getElementById("book-old-price").textContent = `Rs. ${book.book_mrp}`;
     document.getElementById("book-description").textContent = book.description || "No description available.";
     document.querySelector(".book-image").src = book.book_image || "default-image.jpg";
+
+    // Populate edit form if admin
+    if (isAdmin()) {
+        document.getElementById("edit-book-name").value = book.book_name;
+        document.getElementById("edit-author-name").value = book.author_name;
+        document.getElementById("edit-discounted-price").value = book.discounted_price;
+        document.getElementById("edit-book-mrp").value = book.book_mrp;
+        document.getElementById("edit-description").value = book.description || "";
+        document.getElementById("edit-book-image").value = book.book_image || "";
+    }
 }
 
 // Fetch Reviews
@@ -382,9 +411,10 @@ function displayReviews(reviews) {
 
         const reviewAuthor = review.user_name || "Anonymous";
         const isCurrentUserReview = currentUserId && review.user_id === currentUserId;
+        const isAdminUser = isAdmin();
 
         let deleteButton = '';
-        if (isCurrentUserReview) {
+        if (isCurrentUserReview || isAdminUser) {
             deleteButton = `
                 <button class="delete-review-btn" data-review-id="${review.id}">
                     <i class="fa-solid fa-trash"></i> Delete
@@ -403,7 +433,7 @@ function displayReviews(reviews) {
 
         reviewsList.appendChild(reviewDiv);
 
-        if (isCurrentUserReview) {
+        if (isCurrentUserReview || isAdminUser) {
             const deleteBtn = reviewDiv.querySelector(".delete-review-btn");
             deleteBtn.addEventListener("click", () => deleteReview(review.id));
         }
@@ -432,6 +462,94 @@ async function deleteReview(reviewId) {
     } catch (error) {
         console.error("Error deleting review:", error);
         alert(`Failed to delete review: ${error.message}`);
+    }
+}
+
+// Delete All Ratings (Workaround since no single endpoint exists)
+async function deleteAllRatings(bookId) {
+    if (!confirm("Are you sure you want to delete all ratings for this book?")) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/books/${bookId}/reviews`);
+        if (!response.ok) throw new Error("Failed to fetch reviews for deletion");
+        const reviews = await response.json();
+
+        if (!reviews || reviews.length === 0) {
+            alert("No reviews to delete.");
+            return;
+        }
+
+        const deletePromises = reviews.map(review =>
+            fetchWithAuth(`${API_BASE_URL}/books/${bookId}/reviews/${review.id}`, {
+                method: "DELETE"
+            }).then(res => {
+                if (!res.ok) throw new Error(`Failed to delete review ${review.id}`);
+                return res;
+            })
+        );
+
+        await Promise.all(deletePromises);
+        alert("All ratings deleted successfully!");
+        fetchReviews(bookId);
+        fetchBookDetails(bookId);
+    } catch (error) {
+        console.error("Error deleting all ratings:", error);
+        alert(`Failed to delete all ratings: ${error.message}`);
+    }
+}
+
+// Delete Book
+async function deleteBook(bookId) {
+    if (!confirm("Are you sure you want to delete this book?")) return;
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}`, {
+            method: "DELETE"
+        });
+
+        if (!response) return;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to delete book");
+        }
+
+        alert("Book deleted successfully!");
+        window.location.href = "../pages/homePage.html";
+    } catch (error) {
+        console.error("Error deleting book:", error);
+        alert(`Failed to delete book: ${error.message}`);
+    }
+}
+
+// Update Book
+async function updateBook(bookId) {
+    const bookData = {
+        book_name: document.getElementById("edit-book-name").value,
+        author_name: document.getElementById("edit-author-name").value,
+        discounted_price: parseFloat(document.getElementById("edit-discounted-price").value),
+        book_mrp: parseFloat(document.getElementById("edit-book-mrp").value),
+        description: document.getElementById("edit-description").value,
+        book_image: document.getElementById("edit-book-image").value || null
+    };
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}`, {
+            method: "PUT",
+            body: JSON.stringify(bookData)
+        });
+
+        if (!response) return;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to update book");
+        }
+
+        alert("Book updated successfully!");
+        fetchBookDetails(bookId);
+        closeEditModal();
+    } catch (error) {
+        console.error("Error updating book:", error);
+        alert(`Failed to update book: ${error.message}`);
     }
 }
 
@@ -509,8 +627,8 @@ function setupEventListeners() {
     const quantityDisplay = document.getElementById("quantity-display");
     const incrementBtn = document.getElementById("increment");
     const decrementBtn = document.getElementById("decrement");
-    let currentQuantity = 0;
     const bookId = new URLSearchParams(window.location.search).get("id");
+    let currentQuantity = 0;
 
     if (isAuthenticated()) {
         getCartItemQuantity(bookId).then(quantity => {
@@ -677,6 +795,41 @@ function setupEventListeners() {
             alert(`Failed to submit review: ${error.message}`);
         }
     });
+
+    // Admin Event Listeners
+    if (isAdmin()) {
+        document.getElementById("edit-book-btn").addEventListener("click", () => {
+            document.getElementById("edit-book-modal").style.display = "flex";
+        });
+
+        document.getElementById("delete-book-btn").addEventListener("click", () => {
+            deleteBook(bookId);
+        });
+
+        document.getElementById("delete-ratings-btn").addEventListener("click", () => {
+            deleteAllRatings(bookId);
+        });
+
+        document.getElementById("edit-book-form").addEventListener("submit", (event) => {
+            event.preventDefault();
+            updateBook(bookId);
+        });
+
+        document.querySelector("#edit-book-modal .close-btn").addEventListener("click", () => {
+            closeEditModal();
+        });
+
+        document.addEventListener("click", (event) => {
+            const modal = document.getElementById("edit-book-modal");
+            if (
+                modal.style.display === "flex" &&
+                !modal.querySelector(".modal-content").contains(event.target) &&
+                event.target.id !== "edit-book-btn"
+            ) {
+                closeEditModal();
+            }
+        });
+    }
 }
 
 // Update Star Display
@@ -702,4 +855,9 @@ function updateQuantityUI(quantity) {
         addToBagBtn.style.display = "flex";
         quantityControl.style.display = "none";
     }
+}
+
+// Close Edit Modal
+function closeEditModal() {
+    document.getElementById("edit-book-modal").style.display = "none";
 }
