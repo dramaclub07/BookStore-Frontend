@@ -1,16 +1,8 @@
 const API_BASE_URL = 'http://127.0.0.1:3000/api/v1';
 
-function getAuthHeaders() {
-    const token = localStorage.getItem('token');
-    return {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    };
-}
-
 document.addEventListener("DOMContentLoaded", async function () {
-    const token = localStorage.getItem('token');
-    if (!token) {
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) {
         alert("Please log in to view order confirmation.");
         window.location.href = '../pages/login.html';
         return;
@@ -32,95 +24,171 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 });
 
+// Get auth headers
+function getAuthHeaders() {
+    const token = localStorage.getItem('access_token');
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    };
+}
+
+// Token Refresh Logic
+async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (!refreshToken) {
+        console.error("No refresh token available");
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: refreshToken })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.access_token) {
+            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
+            console.log("Access token refreshed successfully");
+            return true;
+        } else {
+            console.error("Failed to refresh token:", data.error);
+            localStorage.clear();
+            alert("Session expired. Please log in again.");
+            window.location.href = "../pages/login.html";
+            return false;
+        }
+    } catch (error) {
+        console.error("Error refreshing token:", error);
+        localStorage.clear();
+        window.location.href = "../pages/login.html";
+        return false;
+    }
+}
+
+async function fetchWithAuth(url, options = {}) {
+    if (!localStorage.getItem("access_token")) {
+        window.location.href = "../pages/login.html";
+        return null;
+    }
+
+    const expiresIn = localStorage.getItem("token_expires_in");
+    if (expiresIn && Date.now() >= expiresIn) {
+        const refreshed = await refreshAccessToken();
+        if (!refreshed) return null;
+    }
+
+    options.headers = { ...options.headers, ...getAuthHeaders() };
+    let response = await fetch(url, options);
+
+    if (response.status === 401) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+            options.headers = { ...options.headers, ...getAuthHeaders() };
+            response = await fetch(url, options);
+        } else {
+            return null;
+        }
+    }
+
+    return response;
+}
+
+// Load User Profile
 async function loadUserProfile() {
     try {
-        const response = await fetch(`${API_BASE_URL}/users/profile`, {
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem('token');
-                window.location.href = '../pages/login.html';
-                return;
-            }
-            throw new Error(`Profile fetch failed with status: ${response.status}`);
-        }
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/profile`);
+        if (!response) return;
+
+        if (!response.ok) throw new Error(`Profile fetch failed with status: ${response.status}`);
         const userData = await response.json();
-        if (userData.success) {
-            const profileElement = document.getElementById('profile-link');
-            if (profileElement) {
-                profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
-                localStorage.setItem('username', userData.name || 'User');
-            }
+        const profileElement = document.getElementById('profile-link');
+        if (profileElement) {
+            profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
+            localStorage.setItem('username', userData.name || 'User');
         }
     } catch (error) {
         console.error("Profile fetch error:", error.message);
     }
 }
 
+// Fetch Order Details
 async function fetchOrderDetails() {
     try {
-        const orderResponse = await fetch(`${API_BASE_URL}/orders`, {
-            headers: getAuthHeaders()
-        });
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('order_id'); // Expect order_id from URL query param
 
-        if (orderResponse.status === 401) {
-            handleUnauthorized();
-            return;
-        }
-        if (!orderResponse.ok) {
-            throw new Error(`Failed to fetch orders: ${orderResponse.status}`);
-        }
-
-        const orderData = await orderResponse.json();
-        console.log("Orders Response:", orderData);
-
-        if (orderData.success && orderData.orders && orderData.orders.length > 0) {
-            const latestOrder = orderData.orders.sort((a, b) => 
-                new Date(b.created_at) - new Date(a.created_at)
-            )[0];
-            console.log("Latest Order:", latestOrder);
-
-            const orderIdElement = document.getElementById('order-id');
-            if (orderIdElement) {
-                orderIdElement.innerText = `#${latestOrder.id}`;
-            } else {
-                console.error("Order ID element not found");
+        let order;
+        if (!orderId) {
+            // Fallback to fetching the latest order if no order_id is provided
+            const ordersResponse = await fetchWithAuth(`${API_BASE_URL}/orders`);
+            if (!ordersResponse) {
+                handleUnauthorized();
+                return;
             }
 
-            if (!["processing", "shipped", "delivered"].includes(latestOrder.status)) {
-                const statusResponse = await fetch(`${API_BASE_URL}/orders/${latestOrder.id}/update_status`, {
-                    method: "PATCH",
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify({ status: "processing" })
-                });
+            if (!ordersResponse.ok) {
+                throw new Error(`Failed to fetch orders: ${ordersResponse.status}`);
+            }
 
-                if (statusResponse.status === 401) {
-                    handleUnauthorized();
-                    return;
-                }
-                if (!statusResponse.ok) {
-                    const errorData = await statusResponse.json();
-                    throw new Error(`Failed to update order status: ${errorData.error || statusResponse.status}`);
-                }
+            const orderData = await ordersResponse.json();
+            console.log("Orders Response:", orderData);
 
-                const updatedOrderData = await statusResponse.json();
-                console.log("Updated Order:", updatedOrderData);
-                if (updatedOrderData.success && updatedOrderData.order) {
-                    displayOrderDetails(updatedOrderData.order);
-                } else {
-                    throw new Error("Invalid response from status update");
+            if (orderData.orders && orderData.orders.length > 0) {
+                const latestOrder = orderData.orders.sort((a, b) => 
+                    new Date(b.created_at) - new Date(a.created_at)
+                )[0];
+                console.log("Latest Order:", latestOrder);
+
+                // Fetch the book details for the order
+                const bookResponse = await fetchWithAuth(`${API_BASE_URL}/books/${latestOrder.book_id}`);
+                if (!bookResponse || !bookResponse.ok) {
+                    throw new Error(`Failed to fetch book details for book_id ${latestOrder.book_id}`);
                 }
+                const bookData = await bookResponse.json();
+                console.log("Book Data:", bookData);
+
+                // Combine the order and book data
+                order = { ...latestOrder, book: bookData };
             } else {
-                displayOrderDetails(latestOrder);
+                console.error("No orders found in response");
+                document.querySelector('.success-message').innerHTML = `
+                    <p>No recent order found. Please place an order first.</p>
+                `;
+                return;
             }
         } else {
-            console.error("No orders found in response");
-            document.querySelector('.success-message').innerHTML = `
-                <p>No recent order found. Please place an order first.</p>
-            `;
+            // Fetch specific order details using order_id
+            const orderResponse = await fetchWithAuth(`${API_BASE_URL}/orders/${orderId}`);
+            if (!orderResponse) {
+                handleUnauthorized();
+                return;
+            }
+
+            if (!orderResponse.ok) {
+                throw new Error(`Failed to fetch order ${orderId}: ${orderResponse.status}`);
+            }
+
+            const orderData = await orderResponse.json();
+            console.log("Order Response:", orderData);
+            order = orderData.order || orderData;
+
+            // Fetch the book details for the order
+            const bookResponse = await fetchWithAuth(`${API_BASE_URL}/books/${order.book_id}`);
+            if (!bookResponse || !bookResponse.ok) {
+                throw new Error(`Failed to fetch book details for book_id ${order.book_id}`);
+            }
+            const bookData = await bookResponse.json();
+            console.log("Book Data:", bookData);
+
+            // Combine the order and book data
+            order = { ...order, book: bookData };
         }
+
+        displayOrderDetails(order);
     } catch (error) {
         console.error("Error in fetchOrderDetails:", error);
         document.querySelector('.success-message').innerHTML = `
@@ -129,7 +197,18 @@ async function fetchOrderDetails() {
     }
 }
 
+// Display Order Details
 function displayOrderDetails(order) {
+    // Safely access book data and price fields with fallbacks
+    const book = order.book || {};
+    const bookName = book.book_name || 'Unknown Book';
+    const authorName = book.author_name || 'Unknown Author';
+    const quantity = order.quantity || 1;
+    const bookMrp = parseFloat(book.book_mrp) || 0; // Fallback to 0 if book_mrp is not a number
+    const discountedPrice = parseFloat(book.discounted_price) || bookMrp; // Fallback to book_mrp if discounted_price is not a number
+    const totalMrp = (bookMrp * quantity).toFixed(2); // Calculate total MRP price
+    const totalDiscountedPrice = (discountedPrice * quantity).toFixed(2); // Calculate total discounted price
+
     document.querySelector(".success-message").innerHTML = `
         <h1>Order Placed Successfully</h1>
         <p>Hurray!!! Your order is confirmed <br> 
@@ -142,26 +221,32 @@ function displayOrderDetails(order) {
     const myOrdersList = document.createElement("ul");
     myOrdersList.id = "my-orders";
     myOrdersList.innerHTML = `
-        <li>Order #${order.id} - Status: ${order.status}</li>
+        <li>
+            Order #${order.id} - Status: ${order.status}<br>
+            Book: ${bookName} by ${authorName}<br>
+            Quantity: ${quantity}<br>
+            Price: Rs. ${totalDiscountedPrice} <del>Rs. ${totalMrp}</del>
+        </li>
     `;
     document.querySelector('.success-container').appendChild(myOrdersList);
 }
 
+// Handle Unauthorized Access
 function handleUnauthorized() {
     alert("Session expired. Please log in again.");
-    localStorage.removeItem('token');
+    localStorage.removeItem('access_token');
     console.log("Redirecting to login page due to 401");
     window.location.href = '../pages/login.html';
 }
 
+// Setup Header Event Listeners
 function setupHeaderEventListeners() {
     let dropdownMenu = null;
     let isDropdownOpen = false;
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
-    const logo = document.querySelector(".logo"); // Added logo selector
+    const logo = document.querySelector(".logo");
 
-    // Add logo click event listener
     if (logo) {
         logo.addEventListener("click", (event) => {
             event.preventDefault();
@@ -262,6 +347,7 @@ function setupHeaderEventListeners() {
     }
 }
 
+// Sign Out Function
 function handleSignOut() {
     const provider = localStorage.getItem("socialProvider");
 

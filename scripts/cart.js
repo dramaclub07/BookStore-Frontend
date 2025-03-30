@@ -2,9 +2,9 @@
 const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
 
 document.addEventListener("DOMContentLoaded", async () => {
-    const token = localStorage.getItem("token");
+    const accessToken = localStorage.getItem("access_token");
 
-    if (!token) {
+    if (!accessToken) {
         alert("Please log in to view your cart.");
         window.location.href = "../pages/login.html";
         return;
@@ -18,11 +18,75 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // Get auth headers
 function getAuthHeaders() {
-    const token = localStorage.getItem("token");
+    const accessToken = localStorage.getItem("access_token");
     return {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        "Authorization": `Bearer ${accessToken}`
     };
+}
+
+// Authentication and Token Refresh
+async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (!refreshToken) {
+        console.error("No refresh token available");
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: refreshToken })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.access_token) {
+            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000)); // Assumes expires_in from backend
+            console.log("Access token refreshed successfully");
+            return true;
+        } else {
+            console.error("Failed to refresh token:", data.error);
+            localStorage.clear();
+            alert("Session expired. Please log in again.");
+            window.location.href = "../pages/login.html";
+            return false;
+        }
+    } catch (error) {
+        console.error("Error refreshing token:", error);
+        localStorage.clear();
+        window.location.href = "../pages/login.html";
+        return false;
+    }
+}
+
+async function fetchWithAuth(url, options = {}) {
+    if (!localStorage.getItem("access_token")) {
+        window.location.href = "../pages/login.html";
+        return null;
+    }
+
+    const expiresIn = localStorage.getItem("token_expires_in");
+    if (expiresIn && Date.now() >= expiresIn) {
+        const refreshed = await refreshAccessToken();
+        if (!refreshed) return null;
+    }
+
+    options.headers = { ...options.headers, ...getAuthHeaders() };
+    let response = await fetch(url, options);
+
+    if (response.status === 401) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+            options.headers = { ...options.headers, ...getAuthHeaders() };
+            response = await fetch(url, options);
+        } else {
+            return null;
+        }
+    }
+
+    return response;
 }
 
 // Update cart count in UI
@@ -32,13 +96,23 @@ function updateCartCount(count) {
     const placeOrderButton = document.querySelector(".place-order");
 
     if (cartCount) {
-        cartCount.textContent = count;
-        cartCount.style.display = count > 0 ? "flex" : "none";
+        if (count > 0) {
+            cartCount.textContent = count;
+            cartCount.style.display = "flex";
+        } else {
+            cartCount.textContent = "";
+            cartCount.style.display = "none";
+        }
     }
 
     if (sectionCount) {
-        sectionCount.textContent = count;
-        sectionCount.style.display = count > 0 ? "inline" : "none";
+        if (count > 0) {
+            sectionCount.textContent = count;
+            sectionCount.style.display = "inline";
+        } else {
+            sectionCount.textContent = "";
+            sectionCount.style.display = "none";
+        }
     }
 
     if (placeOrderButton) {
@@ -54,24 +128,25 @@ async function loadCartItems() {
     cartContainer.innerHTML = "<p>Loading cart...</p>";
 
     try {
-        const response = await fetch(`${API_BASE_URL}/cart`, {
-            method: "GET",
-            headers: getAuthHeaders()
-        });
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts`, { method: "GET" });
+        if (!response) {
+            cartContainer.innerHTML = "<p>Authentication failed. Please log in again.</p>";
+            return;
+        }
 
         if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem("token");
-                window.location.href = "../pages/login.html";
-                return;
-            }
-            throw new Error(`Error ${response.status}: Failed to fetch cart items`);
+            const errorData = await response.json();
+            throw new Error(`Error ${response.status}: ${errorData.message || "Failed to fetch cart items"}`);
         }
 
         const data = await response.json();
-        const cartItems = data.cart || [];
-        // Remove out-of-stock items from cart
+        if (!data.success) {
+            throw new Error(data.message || "Failed to load cart");
+        }
+
+        const cartItems = data.cart || []; // Access nested cart array
+
+        // Remove out-of-stock items
         for (const item of cartItems) {
             const bookResponse = await fetch(`${API_BASE_URL}/books/${item.book_id}`);
             const book = await bookResponse.json();
@@ -79,12 +154,19 @@ async function loadCartItems() {
                 await removeCartItem(item.book_id);
             }
         }
-        // Reload cart after removing out-of-stock items
-        const updatedResponse = await fetch(`${API_BASE_URL}/cart`, {
-            method: "GET",
-            headers: getAuthHeaders()
-        });
+
+        // Reload cart after cleanup
+        const updatedResponse = await fetchWithAuth(`${API_BASE_URL}/carts`, { method: "GET" });
+        if (!updatedResponse) {
+            cartContainer.innerHTML = "<p>Authentication failed. Please log in again.</p>";
+            return;
+        }
+
         const updatedData = await updatedResponse.json();
+        if (!updatedData.success) {
+            throw new Error(updatedData.message || "Failed to reload cart");
+        }
+
         const updatedCartItems = updatedData.cart || [];
         renderCartItems(updatedCartItems);
         updateCartCount(updatedCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0));
@@ -92,7 +174,8 @@ async function loadCartItems() {
         await loadCartSummary();
     } catch (error) {
         console.error("Error fetching cart items:", error);
-        cartContainer.innerHTML = `<p>Error loading cart.</p>`;
+        cartContainer.innerHTML = `<p>Error loading cart: ${error.message}</p>`;
+        updateCartCount(0);
     }
 }
 
@@ -102,7 +185,7 @@ function renderCartItems(cartItems) {
     if (!cartContainer) return;
 
     if (!cartItems || cartItems.length === 0) {
-        cartContainer.innerHTML = `<p>Your cart is empty.</p>`;
+        cartContainer.innerHTML = "<p>Your cart is empty.</p>";
         updateCartCount(0);
         return;
     }
@@ -172,7 +255,6 @@ async function updateQuantity(button, change) {
         return;
     }
 
-    // Check stock before increasing quantity
     if (change > 0) {
         const bookResponse = await fetch(`${API_BASE_URL}/books/${bookId}`);
         const book = await bookResponse.json();
@@ -186,15 +268,18 @@ async function updateQuantity(button, change) {
     const perUnitPrice = parseFloat(cartItem.dataset.unitPrice);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/cart/update_quantity`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts/${bookId}`, {
             method: "PATCH",
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ book_id: bookId, quantity: newQuantity })
+            body: JSON.stringify({ quantity: newQuantity })
         });
+        if (!response) {
+            alert("Authentication failed. Please log in again.");
+            return;
+        }
 
+        const result = await response.json();
         if (!response.ok) {
-            const result = await response.json();
-            throw new Error(result.error || "Failed to update quantity");
+            throw new Error(result.message || "Failed to update quantity");
         }
 
         quantityElement.textContent = newQuantity;
@@ -216,37 +301,36 @@ async function updateQuantity(button, change) {
 // Remove item
 async function removeCartItem(bookId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/cart/toggle_remove`, {
-            method: "PATCH",
-            headers: getAuthHeaders(),
-            body: JSON.stringify({ book_id: bookId })
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts/${bookId}/delete`, {
+            method: "PATCH"
         });
+        if (!response) {
+            alert("Authentication failed. Please log in again.");
+            return;
+        }
 
         const result = await response.json();
-        if (!response.ok || !result.success) {
-            console.warn("Failed to remove item from cart:", result.error || "Unknown error");
-            console.log("Full response from /cart/toggle_remove:", result);
-            // Continue with UI update even if removal fails
+        if (!response.ok) {
+            throw new Error(result.message || "Failed to remove item");
         }
 
         await loadCartItems(); // Refresh cart
     } catch (error) {
         console.error("Error removing item:", error);
-        console.log("Error details:", error.message);
-        // Do not show alert to user since this is not critical
-        await loadCartItems(); // Refresh cart even on error
+        alert(`Failed to remove item: ${error.message}`);
+        await loadCartItems(); // Refresh even on error
     }
 }
 
 // Fetch and display cart summary
 async function loadCartSummary() {
     try {
-        const response = await fetch(`${API_BASE_URL}/cart/summary`, {
-            headers: getAuthHeaders()
-        });
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts/summary`);
+        if (!response) return;
 
         if (!response.ok) {
-            throw new Error("Failed to fetch cart summary");
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to fetch cart summary");
         }
 
         const cartData = await response.json();
@@ -257,6 +341,7 @@ async function loadCartSummary() {
         updateCartCount(cartData.total_items || 0);
     } catch (error) {
         console.error("Error fetching cart summary:", error);
+        updateCartCount(0);
     }
 }
 
@@ -266,24 +351,14 @@ async function loadUserProfile() {
     if (!profileNameElement) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/users/profile`, {
-            headers: getAuthHeaders()
-        });
-        if (!response.ok) {
-            if (response.status === 401) {
-                alert("Session expired. Please log in again.");
-                localStorage.removeItem("token");
-                window.location.href = "../pages/login.html";
-                return;
-            }
-            throw new Error(`Profile fetch failed with status: ${response.status}`);
-        }
+        const response = await fetchWithAuth(`${API_BASE_URL}/users/profile`);
+        if (!response) return;
+
+        if (!response.ok) throw new Error(`Profile fetch failed with status: ${response.status}`);
         const userData = await response.json();
-        if (userData.success) {
-            const username = userData.name || "User";
-            profileNameElement.textContent = username;
-            localStorage.setItem("username", username);
-        }
+        const username = userData.name || "User";
+        profileNameElement.textContent = username;
+        localStorage.setItem("username", username);
     } catch (error) {
         console.error("Profile fetch error:", error.message);
         profileNameElement.textContent = localStorage.getItem("username") || "User";
@@ -409,7 +484,7 @@ function handleSignOut() {
         });
     }
 
-    if (provider === "facebook") {
+    if (provider === "facebook" && typeof FB !== "undefined") {
         console.log("Logging out from Facebook");
         FB.getLoginStatus(function (response) {
             if (response.status === "connected") {
@@ -438,11 +513,11 @@ async function saveCurrentLocationToBackend(locationData) {
             is_default: false
         };
 
-        const response = await fetch(`${API_BASE_URL}/addresses/create`, {
+        const response = await fetchWithAuth(`${API_BASE_URL}/addresses/create`, {
             method: "POST",
-            headers: getAuthHeaders(),
             body: JSON.stringify(addressData)
         });
+        if (!response) return;
 
         const result = await response.json();
         if (!response.ok) {
@@ -459,17 +534,12 @@ async function saveCurrentLocationToBackend(locationData) {
 // Fetch addresses
 async function fetchAddresses() {
     try {
-        const response = await fetch(`${API_BASE_URL}/addresses`, { headers: getAuthHeaders() });
-        if (response.status === 401) {
-            alert("Session expired. Please log in again.");
-            localStorage.removeItem("token");
-            window.location.href = "../pages/login.html";
-            return null;
-        }
+        const response = await fetchWithAuth(`${API_BASE_URL}/addresses`);
+        if (!response) return null;
+
         if (!response.ok) throw new Error(`Failed to fetch addresses: ${response.status}`);
 
         const data = await response.json();
-        if (!data.success) throw new Error("Failed to load addresses from server");
         return data.addresses || [];
     } catch (error) {
         console.error("Error fetching addresses:", error);

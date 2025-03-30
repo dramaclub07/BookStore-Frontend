@@ -1,3 +1,5 @@
+const BASE_URL = 'http://127.0.0.1:3000/api/v1'; // Consistent base URL
+
 // Password toggle
 document.getElementById("signup-toggle-password").addEventListener("click", () => {
     const passwordField = document.getElementById("signup-password");
@@ -78,42 +80,33 @@ signupForm.addEventListener("submit", async (e) => {
 
     // Call the actual API with corrected endpoint
     try {
-        const response = await fetch("http://localhost:3000/api/v1/signup", {
+        const response = await fetch(`${BASE_URL}/users`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                user: {
-                    full_name: name,
-                    email: email,
-                    password: password,
-                    mobile_number: mobile,
-                },
+                full_name: name,
+                email: email,
+                password: password,
+                mobile_number: mobile,
             }),
         });
 
-        // Check if response is OK before parsing JSON
         if (!response.ok) {
-            const text = await response.text();
-            throw new Error(text || `HTTP error! Status: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(errorData.errors ? errorData.errors.join(", ") : `HTTP error! Status: ${response.status}`);
         }
 
         const data = await response.json();
+        console.log("Signup response:", data);
 
-        // Safely handle the response
-        if (response.ok && data) {
-            alert("Signup successful! Redirecting to login...");
-            window.location.href = "../pages/login.html";
-        } else if (data && data.errors) {
-            alert(`Signup failed: ${data.errors.join(", ")}`);
-            errorMessages.forEach(el => (el.textContent = data.errors.join(", ")));
-        } else {
-            throw new Error("Unexpected response format from server");
-        }
+        alert("Signup successful! Redirecting to login...");
+        window.location.href = "../pages/login.html";
     } catch (error) {
-        alert(`An error occurred: ${error.message}. Please ensure the backend is running at http://localhost:3000.`);
         console.error("Signup Error:", error.message);
-        errorMessages.forEach(el => (el.textContent = `An error occurred: ${error.message}`));
+        alert(`Signup failed: ${error.message}. Please ensure the backend is running at ${BASE_URL}.`);
+        errorMessages.forEach(el => (el.textContent = error.message));
     }
+    FormData.clear();
 });

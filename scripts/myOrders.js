@@ -2,47 +2,111 @@ const API_BASE_URL = 'http://127.0.0.1:3000/api/v1';
 
 document.addEventListener("DOMContentLoaded", async function () {
     const ordersContainer = document.getElementById("orders-container");
-    const token = localStorage.getItem("token");
+    const accessToken = localStorage.getItem("access_token");
 
-    if (!token) {
+    if (!accessToken) {
         alert("Please log in to view your orders.");
         window.location.href = "../pages/login.html";
         return;
     }
 
-    // Load user profile, cart summary, and orders
+    // Initial fetches
     await loadUserProfile();
     await loadCartSummary();
     await fetchOrders();
     setupHeaderEventListeners();
 
+    // Get auth headers
     function getAuthHeaders() {
         return {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${localStorage.getItem("access_token")}`,
             'Content-Type': 'application/json'
         };
     }
 
+    // Token Refresh Logic
+    async function refreshAccessToken() {
+        const refreshToken = localStorage.getItem("refresh_token");
+        if (!refreshToken) {
+            console.error("No refresh token available");
+            return false;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/refresh`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refresh_token: refreshToken })
+            });
+
+            const data = await response.json();
+            if (response.ok && data.access_token) {
+                localStorage.setItem("access_token", data.access_token);
+                localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
+                console.log("Access token refreshed successfully");
+                return true;
+            } else {
+                console.error("Failed to refresh token:", data.error);
+                localStorage.clear();
+                alert("Session expired. Please log in again.");
+                window.location.href = "../pages/login.html";
+                return false;
+            }
+        } catch (error) {
+            console.error("Error refreshing token:", error);
+            localStorage.clear();
+            window.location.href = "../pages/login.html";
+            return false;
+        }
+    }
+
+    async function fetchWithAuth(url, options = {}) {
+        if (!localStorage.getItem("access_token")) {
+            window.location.href = "../pages/login.html";
+            return null;
+        }
+
+        const expiresIn = localStorage.getItem("token_expires_in");
+        if (expiresIn && Date.now() >= expiresIn) {
+            const refreshed = await refreshAccessToken();
+            if (!refreshed) return null;
+        }
+
+        options.headers = { ...options.headers, ...getAuthHeaders() };
+        let response = await fetch(url, options);
+
+        if (response.status === 401) {
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+                options.headers = { ...options.headers, ...getAuthHeaders() };
+                response = await fetch(url, options);
+            } else {
+                return null;
+            }
+        }
+
+        return response;
+    }
+
+    // Load User Profile
     async function loadUserProfile() {
         try {
-            const response = await fetch(`${API_BASE_URL}/users/profile`, {
-                headers: getAuthHeaders()
-            });
-            if (!response.ok) throw new Error(`Profile fetch failed: ${response.status}`);
+            const response = await fetchWithAuth(`${API_BASE_URL}/users/profile`);
+            if (!response) return;
 
+            if (!response.ok) throw new Error(`Profile fetch failed with status: ${response.status}`);
             const userData = await response.json();
-            if (userData.success) {
-                const profileElement = document.getElementById('profile-link');
-                if (profileElement) {
-                    profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
-                    localStorage.setItem('username', userData.name || 'User');
-                }
+            const profileElement = document.getElementById('profile-link');
+            if (profileElement) {
+                profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
+                localStorage.setItem('username', userData.name || 'User');
             }
         } catch (error) {
             console.error("Profile fetch error:", error.message);
         }
     }
 
+    // Update Cart Count
     function updateCartCount(count) {
         const cartCount = document.querySelector('#cart-link .cart-count');
         if (cartCount) {
@@ -51,46 +115,45 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
+    // Load Cart Summary
     async function loadCartSummary() {
         try {
-            const response = await fetch(`${API_BASE_URL}/cart/summary`, {
-                headers: getAuthHeaders()
-            });
+            const response = await fetchWithAuth(`${API_BASE_URL}/carts/summary`);
+            if (!response) return;
 
             if (!response.ok) throw new Error("Failed to fetch cart summary");
-
             const cartData = await response.json();
             updateCartCount(cartData.total_items || 0);
         } catch (error) {
             console.error("Error fetching cart summary:", error);
+            updateCartCount(0); // Fallback to 0 on error
         }
     }
 
+    // Fetch Orders
     async function fetchOrders() {
         try {
-            const response = await fetch(`${API_BASE_URL}/orders`, {
-                headers: getAuthHeaders()
-            });
+            const response = await fetchWithAuth(`${API_BASE_URL}/orders`);
+            if (!response) return;
 
             if (!response.ok) throw new Error(`Error fetching orders: ${response.status}`);
 
             const data = await response.json();
+            console.log("Orders Data:", data);
             ordersContainer.innerHTML = ""; // Clear previous content
 
-            if (data.success && data.orders.length > 0) {
+            if (data.orders && data.orders.length > 0) {
                 for (const order of data.orders) {
                     try {
-                        const bookResponse = await fetch(`${API_BASE_URL}/books/${order.book_id}`, {
-                            headers: getAuthHeaders()
-                        });
+                        const bookResponse = await fetchWithAuth(`${API_BASE_URL}/books/${order.book_id}`);
+                        if (!bookResponse) throw new Error("Failed to fetch book due to authentication issue");
                         if (!bookResponse.ok) throw new Error(`Failed to fetch book: ${bookResponse.status}`);
-
                         const bookData = await bookResponse.json();
+                        console.log("Book Data:", bookData);
 
                         const orderElement = document.createElement("div");
                         orderElement.classList.add("order-item");
 
-                        // Display "Cancelled" status if order is canceled
                         const orderStatus = order.status === "cancelled"
                             ? `<p class="order-status cancelled">Cancelled</p>`
                             : `<button class="cancel-order-btn" data-order-id="${order.id}">Cancel Order</button>`;
@@ -114,17 +177,45 @@ document.addEventListener("DOMContentLoaded", async function () {
                                         </div>
                                     </div>
                                 </div>
+
                             </div>
                         `;
 
                         ordersContainer.appendChild(orderElement);
 
-                        // Add event listener for cancel button (if order is not already canceled)
                         if (order.status !== "cancelled") {
                             orderElement.querySelector('.cancel-order-btn').addEventListener('click', () => cancelOrder(order.id));
                         }
                     } catch (bookError) {
-                        console.error("Error fetching book details:", bookError);
+                        console.error(`Error fetching book details for order ${order.id}:`, bookError);
+                        // Display order without book details as fallback
+                        const orderElement = document.createElement("div");
+                        orderElement.classList.add("order-item");
+                        orderElement.innerHTML = `
+                            <div class="order-item-container">
+                                <img class="book-image" src="../assets/1.png" alt="Unknown Book" />
+                                <div class="order-details">
+                                    <div class="order-main-details">
+                                        <h3>Order #${order.id}</h3>
+                                        <p>Book: <strong>Unknown</strong><span class="order-quantity">Qty: ${order.quantity}</span></p>
+                                        <p>Author: Unknown</p>
+                                        <p>Total Price: ₹${order.total_price}</p>
+                                    </div>
+                                    <div class="order-other-details">
+                                        <div class="order-date">
+                                            <p>Placed on: ${new Date(order.created_at).toLocaleDateString()}</p>
+                                        </div>
+                                        <div class="order-actions">
+                                            ${order.status === "cancelled" ? '<p class="order-status cancelled">Cancelled</p>' : `<button class="cancel-order-btn" data-order-id="${order.id}">Cancel Order</button>`}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        ordersContainer.appendChild(orderElement);
+                        if (order.status !== "cancelled") {
+                            orderElement.querySelector('.cancel-order-btn').addEventListener('click', () => cancelOrder(order.id));
+                        }
                     }
                 }
             } else {
@@ -141,10 +232,10 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (!confirm("Are you sure you want to cancel this order?")) return;
 
         try {
-            const response = await fetch(`${API_BASE_URL}/orders/${orderId}/cancel`, {
-                method: 'PATCH',  // PATCH method for updating order status
-                headers: getAuthHeaders()
+            const response = await fetchWithAuth(`${API_BASE_URL}/orders/${orderId}/cancel`, {
+                method: 'PATCH'
             });
+            if (!response) return;
 
             if (!response.ok) {
                 const errorData = await response.json();
@@ -159,14 +250,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
-    // Logout Function
-    function handleSignOut() {
-        localStorage.clear();
-        alert("Logged out successfully.");
-        window.location.href = "../pages/homePage.html";
-    }
-
-    // Header Event Listeners
+    // Setup Header Event Listeners
     function setupHeaderEventListeners() {
         let dropdownMenu = null;
         let isDropdownOpen = false;
@@ -174,64 +258,74 @@ document.addEventListener("DOMContentLoaded", async function () {
         const cartLink = document.getElementById("cart-link");
         const logo = document.querySelector(".logo");
 
-        // Add logo click event listener
         if (logo) {
             logo.addEventListener("click", (event) => {
                 event.preventDefault();
                 console.log("Logo clicked, redirecting to homepage");
                 window.location.href = "../pages/homePage.html";
             });
-        } else {
-            console.error("Logo element not found in DOM");
         }
 
-        // Profile link dropdown
-        if (profileLink) {
-            profileLink.addEventListener("click", (event) => {
-                event.preventDefault();
-                if (isDropdownOpen) {
-                    closeDropdown();
-                } else {
-                    openDropdown();
-                }
-            });
-
-            document.addEventListener("click", (event) => {
-                if (
-                    isDropdownOpen &&
-                    !profileLink.contains(event.target) &&
-                    dropdownMenu &&
-                    !dropdownMenu.contains(event.target)
-                ) {
-                    closeDropdown();
-                }
-            });
+        if (!profileLink) {
+            console.error("Profile link element (#profile-link) not found in DOM");
+            return;
         }
 
-        // Cart link
+        profileLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            if (isDropdownOpen) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            if (
+                isDropdownOpen &&
+                !profileLink.contains(event.target) &&
+                dropdownMenu &&
+                !dropdownMenu.contains(event.target)
+            ) {
+                closeDropdown();
+            }
+        });
+
         if (cartLink) {
             cartLink.addEventListener("click", (event) => {
                 event.preventDefault();
-                window.location.href = "../pages/cart.html";
+                window.location.href = '../pages/cart.html';
             });
         }
 
-        // Logout button
-        document.getElementById("logout-button")?.addEventListener("click", handleSignOut);
+        const searchInput = document.getElementById("search");
+        if (searchInput) {
+            searchInput.addEventListener("keypress", (event) => {
+                if (event.key === "Enter") {
+                    const query = event.target.value.trim();
+                    if (query) {
+                        window.location.href = `../pages/homePage.html?query=${encodeURIComponent(query)}`;
+                    }
+                }
+            });
+        }
 
         function openDropdown() {
             if (dropdownMenu) dropdownMenu.remove();
 
             dropdownMenu = document.createElement("div");
             dropdownMenu.classList.add("dropdown-menu");
+            const username = localStorage.getItem("username") || "User";
+
             dropdownMenu.innerHTML = `
+                <div class="dropdown-item dropdown-header">Hello ${username},</div>
                 <div class="dropdown-item" id="dropdown-profile">Profile</div>
                 <div class="dropdown-item" id="dropdown-orders">My Orders</div>
                 <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
                 <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
             `;
 
-            profileLink.appendChild(dropdownMenu);
+            profileLink.parentElement.appendChild(dropdownMenu);
 
             document.getElementById("dropdown-profile").addEventListener("click", () => {
                 window.location.href = "../pages/profile.html";
@@ -260,5 +354,31 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
             isDropdownOpen = false;
         }
+    }
+
+    // Sign Out Function
+    function handleSignOut() {
+        const provider = localStorage.getItem("socialProvider");
+
+        if (provider === "google" && typeof google !== "undefined" && google.accounts) {
+            google.accounts.id.disableAutoSelect();
+            google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
+                console.log("Google session revoked");
+            });
+        }
+
+        if (provider === "facebook" && typeof FB !== "undefined") {
+            FB.getLoginStatus(function (response) {
+                if (response.status === "connected") {
+                    FB.logout(function (response) {
+                        console.log("Facebook session revoked");
+                    });
+                }
+            });
+        }
+
+        localStorage.clear();
+        alert("Logged out successfully.");
+        window.location.href = "../pages/homePage.html";
     }
 });

@@ -389,6 +389,7 @@ body {
     display: flex;
     gap: 8px;
     margin-bottom: 15px;
+    cursor: pointer;
 }
 
 .overall-rating .stars .star {

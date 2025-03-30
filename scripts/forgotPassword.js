@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     const forgotPasswordForm = document.getElementById("forgot-password-form");
-    const API_BASE_URL = "http://localhost:3000";
+    const API_BASE_URL = "http://127.0.0.1:3000/api/v1"; // Consistent with your other scripts
 
     if (forgotPasswordForm) {
         forgotPasswordForm.addEventListener("submit", async (e) => {
@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.log("Forgot Password Payload:", payload);
                 console.log("Raw Forgot Password Request Body:", JSON.stringify(payload));
 
-                const response = await fetch(`${API_BASE_URL}/api/v1/forgot_password`, {
+                const response = await fetch(`${API_BASE_URL}/users/password/forgot`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.log("Forgot Password Response:", data);
 
                 if (response.ok && data.message) {
-                    alert(data.message);
+                    alert(data.message); // e.g., "Reset link sent to your email."
                     window.location.href = `resetPassword.html?email=${encodeURIComponent(email)}`;
                 } else {
                     alert(data.errors || "Failed to send reset link. Please try again.");
