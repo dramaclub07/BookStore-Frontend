@@ -290,11 +290,7 @@ label {
 .btn-social {
     flex: 1;
     min-width: 120px;
-<<<<<<< HEAD
     padding: 2px;
-=======
-    padding: 12px;
->>>>>>> 0701ce229115b70a1a1824954104aa26167a0c7a
     border: none;
     border-radius: 8px;
     cursor: pointer;
