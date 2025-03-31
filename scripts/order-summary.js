@@ -27,7 +27,7 @@ function getAuthHeaders() {
     const token = localStorage.getItem('access_token');
     return {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token || ''}`
+        'Authorization': `Bearer ${token}`
     };
 }
 
@@ -52,49 +52,47 @@ async function refreshAccessToken() {
             localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
             console.log("Access token refreshed successfully");
             return true;
+        } else {
+            console.error("Failed to refresh token:", data.error);
+            localStorage.clear();
+            alert("Session expired. Please log in again.");
+            window.location.href = "../pages/login.html";
+            return false;
         }
-        throw new Error(data.error || "Token refresh failed");
     } catch (error) {
         console.error("Error refreshing token:", error);
         localStorage.clear();
-        alert("Session expired. Please log in again.");
         window.location.href = "../pages/login.html";
         return false;
     }
 }
 
 async function fetchWithAuth(url, options = {}) {
-    const accessToken = localStorage.getItem("access_token");
-    if (!accessToken) {
+    if (!localStorage.getItem("access_token")) {
         window.location.href = "../pages/login.html";
         return null;
     }
 
-    const expiresIn = Number(localStorage.getItem("token_expires_in"));
+    const expiresIn = localStorage.getItem("token_expires_in");
     if (expiresIn && Date.now() >= expiresIn) {
         const refreshed = await refreshAccessToken();
         if (!refreshed) return null;
     }
 
     options.headers = { ...options.headers, ...getAuthHeaders() };
-    try {
-        let response = await fetch(url, options);
+    let response = await fetch(url, options);
 
-        if (response.status === 401) {
-            const refreshed = await refreshAccessToken();
-            if (refreshed) {
-                options.headers = { ...options.headers, ...getAuthHeaders() };
-                response = await fetch(url, options);
-            } else {
-                return null;
-            }
+    if (response.status === 401) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+            options.headers = { ...options.headers, ...getAuthHeaders() };
+            response = await fetch(url, options);
+        } else {
+            return null;
         }
-
-        return response;
-    } catch (error) {
-        console.error("Fetch error:", error);
-        return null;
     }
+
+    return response;
 }
 
 // Update Cart Count
@@ -111,7 +109,6 @@ function updateCartCount(count) {
             cartCount.style.display = count > 0 ? "flex" : "none";
         }
     }
-
     if (sectionCount) {
         if (isOrderSummaryPage) {
             sectionCount.style.display = 'none';
@@ -123,12 +120,6 @@ function updateCartCount(count) {
 
 // Load User Profile
 async function loadUserProfile() {
-    const profileElement = document.getElementById('profile-link');
-    if (!profileElement) {
-        console.error("Profile link element (#profile-link) not found in DOM");
-        return;
-    }
-
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/profile`);
         if (!response) return;
@@ -148,7 +139,6 @@ async function loadUserProfile() {
         }
     } catch (error) {
         console.error("Profile fetch error:", error.message);
-        profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${localStorage.getItem('username') || 'User'}</span>`;
     }
 }
 
@@ -200,7 +190,7 @@ function renderCartItems(cartItems) {
     const cartContainer = document.getElementById('cart-container');
     if (!cartContainer) return;
 
-    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+    if (!cartItems || cartItems.length === 0) {
         cartContainer.innerHTML = `<p>Your cart is empty.</p>`;
         updateCartCount(0);
         return;
@@ -232,36 +222,41 @@ function renderCartItems(cartItems) {
 // Setup Cart Event Listeners
 function setupCartEventListeners() {
     document.querySelectorAll('.increase').forEach(button => {
-        button.addEventListener('click', () => updateQuantity(button, 1));
+        button.addEventListener('click', function() {
+            updateQuantity(this, 1);
+        });
     });
 
     document.querySelectorAll('.decrease').forEach(button => {
-        button.addEventListener('click', () => updateQuantity(button, -1));
+        button.addEventListener('click', function() {
+            updateQuantity(this, -1);
+        });
     });
 
     document.querySelectorAll('.remove').forEach(button => {
-        button.addEventListener('click', () => removeCartItem(button));
+        button.addEventListener('click', function() {
+            removeCartItem(this);
+        });
     });
 }
 
 // Update Quantity
 async function updateQuantity(button, change) {
     const cartItem = button.closest('.cart-item');
-    if (!cartItem) return;
-
     const bookId = cartItem.dataset.id;
     const quantityElement = cartItem.querySelector('.quantity-value');
     const discountedPriceElement = cartItem.querySelector('.discounted-price');
     const unitPriceElement = cartItem.querySelector('.unit-price');
-    const currentQuantity = parseInt(quantityElement?.textContent || '1', 10);
+    let currentQuantity = parseInt(quantityElement.textContent, 10);
 
     if (isNaN(currentQuantity)) {
-        console.error("Invalid quantity:", quantityElement?.textContent);
+        console.error("Invalid quantity:", quantityElement.textContent);
         alert("Error: Invalid quantity.");
         return;
     }
 
     const newQuantity = currentQuantity + change;
+
     if (newQuantity <= 0) {
         await removeCartItem(button);
         return;
@@ -275,26 +270,34 @@ async function updateQuantity(button, change) {
             method: 'PATCH',
             body: JSON.stringify({ quantity: newQuantity })
         });
+        if (!response) return;
 
-        if (!response || !response.ok) {
-            throw new Error("Failed to update quantity");
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to update quantity");
         }
 
         quantityElement.textContent = newQuantity;
-        discountedPriceElement.textContent = (perUnitDiscountedPrice * newQuantity).toFixed(2);
-        unitPriceElement.textContent = (perUnitPrice * newQuantity).toFixed(2);
+        const newDiscountedPrice = (perUnitDiscountedPrice * newQuantity).toFixed(2);
+        const newUnitPrice = (perUnitPrice * newQuantity).toFixed(2);
+
+        if (discountedPriceElement) discountedPriceElement.textContent = newDiscountedPrice;
+        if (unitPriceElement) unitPriceElement.textContent = newUnitPrice;
 
         await loadCartSummary();
         await loadOrderSummary();
 
         const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
-        const updatedCartItems = cartItems.map(item =>
-            item.book_id === bookId ? { ...item, quantity: newQuantity } : item
-        );
+        const updatedCartItems = cartItems.map(item => {
+            if (item.book_id === bookId) {
+                return { ...item, quantity: newQuantity };
+            }
+            return item;
+        });
         localStorage.setItem('cartItems', JSON.stringify(updatedCartItems));
     } catch (error) {
         console.error("Error updating quantity:", error);
-        alert(`Failed to update quantity: ${error.message}`);
+        alert("Failed to update quantity.");
         quantityElement.textContent = currentQuantity;
     }
 }
@@ -302,7 +305,7 @@ async function updateQuantity(button, change) {
 // Remove Cart Item
 async function removeCartItem(button) {
     const cartItem = button.closest('.cart-item');
-    const bookId = cartItem?.dataset.id;
+    const bookId = cartItem.dataset.id;
 
     if (!bookId) {
         console.error("Book ID not found");
@@ -313,9 +316,11 @@ async function removeCartItem(button) {
         const response = await fetchWithAuth(`${API_BASE_URL}/carts/${bookId}/delete`, {
             method: 'PATCH'
         });
+        if (!response) return;
 
-        if (!response || !response.ok) {
-            throw new Error("Failed to remove item");
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to remove item");
         }
 
         cartItem.remove();
@@ -329,10 +334,11 @@ async function removeCartItem(button) {
         }
 
         const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
-        localStorage.setItem('cartItems', JSON.stringify(cartItems.filter(item => item.book_id !== bookId)));
+        const updatedCartItems = cartItems.filter(item => item.book_id !== bookId);
+        localStorage.setItem('cartItems', JSON.stringify(updatedCartItems));
     } catch (error) {
         console.error("Error removing item:", error);
-        alert(`Failed to remove item: ${error.message}`);
+        alert("Failed to remove item.");
     }
 }
 
@@ -340,9 +346,9 @@ async function removeCartItem(button) {
 async function loadCartSummary() {
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/carts/summary`);
-        if (!response || !response.ok) {
-            throw new Error("Failed to fetch cart summary");
-        }
+        if (!response) return;
+
+        if (!response.ok) throw new Error("Failed to fetch cart summary");
 
         const cartData = await response.json();
         updateCartCount(cartData.total_items || 0);
@@ -491,22 +497,37 @@ function setupHeaderEventListeners() {
     if (logo) {
         logo.addEventListener("click", (event) => {
             event.preventDefault();
+            console.log("Logo clicked, redirecting to homepage");
             window.location.href = "../pages/homePage.html";
         });
+    } else {
+        console.error("Logo element not found in DOM");
     }
 
-    if (profileLink) {
-        profileLink.addEventListener("click", (event) => {
-            event.preventDefault();
-            toggleDropdown();
-        });
-
-        document.addEventListener("click", (event) => {
-            if (isDropdownOpen && !profileLink.contains(event.target) && dropdownMenu && !dropdownMenu.contains(event.target)) {
-                closeDropdown();
-            }
-        });
+    if (!profileLink) {
+        console.error("Profile link element (#profile-link) not found in DOM");
+        return;
     }
+
+    profileLink.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (isDropdownOpen) {
+            closeDropdown();
+        } else {
+            openDropdown();
+        }
+    });
+
+    document.addEventListener("click", (event) => {
+        if (
+            isDropdownOpen &&
+            !profileLink.contains(event.target) &&
+            dropdownMenu &&
+            !dropdownMenu.contains(event.target)
+        ) {
+            closeDropdown();
+        }
+    });
 
     if (cartLink) {
         cartLink.addEventListener("click", (event) => {
@@ -518,18 +539,18 @@ function setupHeaderEventListeners() {
     const searchInput = document.getElementById("search");
     if (searchInput) {
         searchInput.addEventListener("keypress", (event) => {
-            if (event.key === "Enter" && event.target.value.trim()) {
-                window.location.href = `../pages/homePage.html?query=${encodeURIComponent(event.target.value.trim())}`;
+            if (event.key === "Enter") {
+                const query = event.target.value.trim();
+                if (query) {
+                    window.location.href = `../pages/homePage.html?query=${encodeURIComponent(query)}`;
+                }
             }
         });
     }
 
-    function toggleDropdown() {
-        isDropdownOpen ? closeDropdown() : openDropdown();
-    }
-
     function openDropdown() {
         if (dropdownMenu) dropdownMenu.remove();
+
         dropdownMenu = document.createElement("div");
         dropdownMenu.classList.add("dropdown-menu");
         const username = localStorage.getItem("username") || "User";
@@ -585,9 +606,11 @@ function handleSignOut() {
     }
 
     if (provider === "facebook" && typeof FB !== "undefined") {
-        FB.getLoginStatus((response) => {
+        FB.getLoginStatus(function (response) {
             if (response.status === "connected") {
-                FB.logout(() => console.log("Facebook session revoked"));
+                FB.logout(function (response) {
+                    console.log("Facebook session revoked");
+                });
             }
         });
     }

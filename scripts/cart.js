@@ -46,7 +46,7 @@ async function refreshAccessToken() {
         const data = await response.json();
         if (response.ok && data.access_token) {
             localStorage.setItem("access_token", data.access_token);
-            localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000)); // Assumes expires_in from backend
+            localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
             console.log("Access token refreshed successfully");
             return true;
         } else {
@@ -232,7 +232,7 @@ function renderCartItems(cartItems) {
     console.log("Rendering cart items:", cartItems); // Debug items to render
 
     if (!cartItems || cartItems.length === 0) {
-        cartContainer.innerHTML = "<p>Your cart is empty.</p>";
+        cartContainer.innerHTML = `<p>Your cart is empty.</p>`;
         updateCartCount(0);
         return;
     }
@@ -316,14 +316,11 @@ async function updateQuantity(button, change) {
             method: "PATCH",
             body: JSON.stringify({ quantity: newQuantity })
         });
-        if (!response) {
-            alert("Authentication failed. Please log in again.");
-            return;
-        }
+        if (!response) return;
 
-        const result = await response.json();
         if (!response.ok) {
-            throw new Error(result.message || "Failed to update quantity");
+            const result = await response.json();
+            throw new Error(result.error || "Failed to update quantity");
         }
 
         quantityElement.textContent = newQuantity;
@@ -347,14 +344,13 @@ async function removeCartItem(bookId) {
         const response = await fetchWithAuth(`${API_BASE_URL}/carts/${bookId}/delete`, {
             method: "PATCH"
         });
-        if (!response) {
-            alert("Authentication failed. Please log in again.");
-            return;
-        }
+        if (!response) return;
 
         const result = await response.json();
         if (!response.ok) {
-            throw new Error(result.message || "Failed to remove item");
+            console.warn("Failed to remove item from cart:", result.error || "Unknown error");
+            console.log("Full response from /carts/:id/delete:", result);
+            throw new Error(result.error || "Failed to remove item");
         }
 
         await loadCartItems(true); // Force refresh after removing item
@@ -371,10 +367,7 @@ async function loadCartSummary() {
         const response = await fetchWithAuth(`${API_BASE_URL}/carts/summary`);
         if (!response) return;
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Failed to fetch cart summary");
-        }
+        if (!response.ok) throw new Error("Failed to fetch cart summary");
 
         const cartData = await response.json();
         console.log("Cart summary data:", cartData); // Debug summary

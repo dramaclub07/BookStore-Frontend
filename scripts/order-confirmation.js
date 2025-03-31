@@ -122,7 +122,6 @@ async function fetchOrderDetails() {
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('order_id');
 
-        let order;
         if (!orderId) {
             const ordersResponse = await fetchWithAuth(`${API_BASE_URL}/orders`);
             if (!ordersResponse) {
@@ -142,23 +141,12 @@ async function fetchOrderDetails() {
                     new Date(b.created_at) - new Date(a.created_at)
                 )[0];
                 console.log("Latest Order:", latestOrder);
-
-                // Fetch the book details for the order
-                const bookResponse = await fetchWithAuth(`${API_BASE_URL}/books/${latestOrder.book_id}`);
-                if (!bookResponse || !bookResponse.ok) {
-                    throw new Error(`Failed to fetch book details for book_id ${latestOrder.book_id}`);
-                }
-                const bookData = await bookResponse.json();
-                console.log("Book Data:", bookData);
-
-                // Combine the order and book data
-                order = { ...latestOrder, book: bookData };
+                displayOrderDetails(latestOrder);
             } else {
                 console.error("No orders found in response");
                 document.querySelector('.success-message').innerHTML = `
                     <p>No recent order found. Please place an order first.</p>
                 `;
-                return;
             }
         } else {
             const orderResponse = await fetchWithAuth(`${API_BASE_URL}/orders/${orderId}`);
@@ -188,16 +176,6 @@ async function fetchOrderDetails() {
 
 // Display Order Details
 function displayOrderDetails(order) {
-    // Safely access book data and price fields with fallbacks
-    const book = order.book || {};
-    const bookName = book.book_name || 'Unknown Book';
-    const authorName = book.author_name || 'Unknown Author';
-    const quantity = order.quantity || 1;
-    const bookMrp = parseFloat(book.book_mrp) || 0; // Fallback to 0 if book_mrp is not a number
-    const discountedPrice = parseFloat(book.discounted_price) || bookMrp; // Fallback to book_mrp if discounted_price is not a number
-    const totalMrp = (bookMrp * quantity).toFixed(2); // Calculate total MRP price
-    const totalDiscountedPrice = (discountedPrice * quantity).toFixed(2); // Calculate total discounted price
-
     document.querySelector(".success-message").innerHTML = `
         <h1>Order Placed Successfully</h1>
         <p>Hurray!!! Your order is confirmed <br> 
@@ -210,12 +188,7 @@ function displayOrderDetails(order) {
     const myOrdersList = document.createElement("ul");
     myOrdersList.id = "my-orders";
     myOrdersList.innerHTML = `
-        <li>
-            Order #${order.id} - Status: ${order.status}<br>
-            Book: ${bookName} by ${authorName}<br>
-            Quantity: ${quantity}<br>
-            Price: Rs. ${totalDiscountedPrice} <del>Rs. ${totalMrp}</del>
-        </li>
+        <li>Order #${order.id} - Status: ${order.status}</li>
     `;
     document.querySelector('.success-container').appendChild(myOrdersList);
 }
