@@ -136,23 +136,47 @@ document.addEventListener("DOMContentLoaded", function () {
         try {
             const response = await fetchWithAuth(`${API_BASE_URL}/wishlists`);
             if (!response) return;
-
-            if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch wishlist`);
-
+    
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Error ${response.status}: Unable to fetch wishlist - ${errorText}`);
+            }
+    
             const data = await response.json();
+            
+            // Log the raw data for debugging
+            console.log('Raw wishlist response:', data);
+    
+            // Handle different possible response formats
+            let wishlistItems = [];
+            if (Array.isArray(data)) {
+                wishlistItems = data;
+            } else if (data && data.wishlist && Array.isArray(data.wishlist)) {
+                wishlistItems = data.wishlist;  // If data is an object with a wishlist array
+            } else if (data && data.items && Array.isArray(data.items)) {
+                wishlistItems = data.items;     // If data is an object with an items array
+            } else {
+                console.warn('Unexpected wishlist data format:', data);
+                throw new Error('Wishlist data is not in an expected array format');
+            }
+    
             wishlistContainer.innerHTML = "";
-            const wishlistItems = data.wishlist || []; // Access the wishlist array
             wishlistCountElement.textContent = wishlistItems.length;
-
+    
             if (wishlistItems.length === 0) {
                 wishlistContainer.innerHTML = "<p>Your wishlist is empty.</p>";
                 return;
             }
-
+    
             wishlistItems.forEach(item => {
+                if (!item || !item.book_id) {
+                    console.warn('Invalid wishlist item:', item);
+                    return;
+                }
+    
                 const bookElement = document.createElement("div");
                 bookElement.classList.add("wishlist-item");
-
+    
                 bookElement.innerHTML = `
                     <a href="bookDetails.html?id=${item.book_id}" class="wishlist-main-container">
                         <div class="img-container">
@@ -170,10 +194,10 @@ document.addEventListener("DOMContentLoaded", function () {
                         </div>
                     </a>
                 `;
-
+    
                 wishlistContainer.appendChild(bookElement);
             });
-
+    
             document.querySelectorAll(".remove-btn").forEach(button => {
                 button.addEventListener("click", function (event) {
                     event.preventDefault();
@@ -181,7 +205,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
             });
         } catch (error) {
-            console.error("Error fetching wishlist:", error);
+            console.error("Error fetching wishlist:", error.message);
             wishlistContainer.innerHTML = "<p>Failed to load wishlist. Please try again.</p>";
             wishlistCountElement.textContent = "0";
         }

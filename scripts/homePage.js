@@ -330,7 +330,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             : `
                 <div class="dropdown-item dropdown-header">Welcome</div>
                 <div class="dropdown-item dropdown-subheader">To access account</div>
-                <div class="dropdown-item"><button id="dropdown-login-signup">LOGIN/SIGNUP</button></div>
+                <div class="dropdown-item"><button id="dropdown-login-signup">LOGIN/SIGNUP</ Schild>
                 <div class="dropdown-item" id="dropdown-orders">My Orders</div>
                 <div class="dropdown-item" id="dropdown-wishlist">Wishlist</div>
             `;
@@ -443,8 +443,11 @@ async function updateCartCount() {
         if (!response) return;
 
         if (!response.ok) throw new Error("Failed to fetch cart");
-        const cartItems = await response.json();
-        console.log("Cart API response:", cartItems);
+        const data = await response.json();
+        console.log("Cart API response:", data);
+
+        // Extract the cart array from the response, default to empty array if not present
+        const cartItems = data.cart || [];
         const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
         cartCountElement.textContent = totalItems;
         cartCountElement.style.display = totalItems > 0 ? "flex" : "none";

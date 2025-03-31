@@ -1,4 +1,4 @@
-/* Import Google Fonts for a modern, professional look */
+
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Playfair+Display:wght@400;700&display=swap');
 
 body {
@@ -7,7 +7,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #e8f0fe, #d1e0e0); /* Soft gradient background */
+    background: linear-gradient(135deg, #e8f0fe, #d1e0e0); 
     margin: 0;
     padding: 15px;
     box-sizing: border-box;
@@ -17,7 +17,7 @@ body {
     display: flex;
     background: white;
     border-radius: 20px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); /* Deeper shadow for depth */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); 
     overflow: hidden;
     width: 900px;
     max-width: 100%;
@@ -27,7 +27,7 @@ body {
 
 .left-card {
     flex: 1;
-    background: linear-gradient(135deg, #1e3a8a, #3b82f6); /* Rich blue gradient */
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6); 
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -45,7 +45,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3); /* Enhanced shadow */
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
     overflow: hidden;
 }
 
@@ -62,7 +62,7 @@ body {
     font-weight: 700;
     margin-top: 25px;
     text-align: center;
-    letter-spacing: 1.5px; /* Elegant spacing */
+    letter-spacing: 1.5px;
 }
 
 .quote-container {
@@ -77,7 +77,7 @@ body {
     font-style: italic;
     color: #e5e7eb;
     opacity: 1;
-    transition: opacity 0.5s ease; /* Fade transition for quotes */
+    transition: opacity 0.5s ease; 
 }
 
 #quote-author {
@@ -123,7 +123,7 @@ body {
     left: 0;
     width: 0;
     height: 2px;
-    background: #b91c1c; /* Deep red accent */
+    background: #b91c1c; 
     transition: width 0.3s ease;
 }
 
@@ -187,7 +187,7 @@ label {
 .form-control:focus {
     outline: none;
     border-color: #b91c1c;
-    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1); /* Subtle focus ring */
+    box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1); 
 }
 
 .form-control.error {
@@ -266,7 +266,7 @@ label {
 .btn-submit {
     width: 100%;
     padding: 12px;
-    background: linear-gradient(135deg, #b91c1c, #dc2626); /* Gradient button */
+    background: linear-gradient(135deg, #b91c1c, #dc2626); 
     color: white;
     border: none;
     border-radius: 8px;
@@ -321,12 +321,12 @@ label {
 .btn-social {
     flex: 1;
     min-width: 120px;
-    padding: 12px;
+    padding: 2px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-weight: 700;
-    font-size: 14px;
+    font-weight: 800;
+    font-size: 12px;
     transition: background 0.3s, transform 0.1s;
     display: flex;
     align-items: center;
@@ -341,9 +341,21 @@ label {
 }
 
 .btn-google {
-    background: white;
+    /* background: white;
     color: #1f2937;
-    border: 1px solid #d1d5db;
+    border: 1wh solid #d1d5db; */
+}
+
+.g_id_signin {
+    width: 100%;
+    
+}
+
+
+.btn-signout {
+    background: linear-gradient(135deg, #b91c1c, #dc2626);
+    color: white;
+    width: 100%;
 }
 
 .btn-social:hover {

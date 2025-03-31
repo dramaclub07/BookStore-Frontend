@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     try {
         await loadUserProfile();
         await fetchOrderDetails();
+        await updateCartCount(); // Add this to refresh cart UI
         setupHeaderEventListeners();
 
         document.querySelector('.continue-button')?.addEventListener('click', function() {
@@ -119,11 +120,9 @@ async function loadUserProfile() {
 async function fetchOrderDetails() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
-        const orderId = urlParams.get('order_id'); // Expect order_id from URL query param
+        const orderId = urlParams.get('order_id');
 
-        let order;
         if (!orderId) {
-            // Fallback to fetching the latest order if no order_id is provided
             const ordersResponse = await fetchWithAuth(`${API_BASE_URL}/orders`);
             if (!ordersResponse) {
                 handleUnauthorized();
@@ -142,26 +141,14 @@ async function fetchOrderDetails() {
                     new Date(b.created_at) - new Date(a.created_at)
                 )[0];
                 console.log("Latest Order:", latestOrder);
-
-                // Fetch the book details for the order
-                const bookResponse = await fetchWithAuth(`${API_BASE_URL}/books/${latestOrder.book_id}`);
-                if (!bookResponse || !bookResponse.ok) {
-                    throw new Error(`Failed to fetch book details for book_id ${latestOrder.book_id}`);
-                }
-                const bookData = await bookResponse.json();
-                console.log("Book Data:", bookData);
-
-                // Combine the order and book data
-                order = { ...latestOrder, book: bookData };
+                displayOrderDetails(latestOrder);
             } else {
                 console.error("No orders found in response");
                 document.querySelector('.success-message').innerHTML = `
                     <p>No recent order found. Please place an order first.</p>
                 `;
-                return;
             }
         } else {
-            // Fetch specific order details using order_id
             const orderResponse = await fetchWithAuth(`${API_BASE_URL}/orders/${orderId}`);
             if (!orderResponse) {
                 handleUnauthorized();
@@ -174,21 +161,11 @@ async function fetchOrderDetails() {
 
             const orderData = await orderResponse.json();
             console.log("Order Response:", orderData);
-            order = orderData.order || orderData;
-
-            // Fetch the book details for the order
-            const bookResponse = await fetchWithAuth(`${API_BASE_URL}/books/${order.book_id}`);
-            if (!bookResponse || !bookResponse.ok) {
-                throw new Error(`Failed to fetch book details for book_id ${order.book_id}`);
-            }
-            const bookData = await bookResponse.json();
-            console.log("Book Data:", bookData);
-
-            // Combine the order and book data
-            order = { ...order, book: bookData };
+            displayOrderDetails(orderData.order || orderData);
         }
 
-        displayOrderDetails(order);
+        // Ensure cartItems is cleared from localStorage
+        localStorage.removeItem('cartItems');
     } catch (error) {
         console.error("Error in fetchOrderDetails:", error);
         document.querySelector('.success-message').innerHTML = `
@@ -199,16 +176,6 @@ async function fetchOrderDetails() {
 
 // Display Order Details
 function displayOrderDetails(order) {
-    // Safely access book data and price fields with fallbacks
-    const book = order.book || {};
-    const bookName = book.book_name || 'Unknown Book';
-    const authorName = book.author_name || 'Unknown Author';
-    const quantity = order.quantity || 1;
-    const bookMrp = parseFloat(book.book_mrp) || 0; // Fallback to 0 if book_mrp is not a number
-    const discountedPrice = parseFloat(book.discounted_price) || bookMrp; // Fallback to book_mrp if discounted_price is not a number
-    const totalMrp = (bookMrp * quantity).toFixed(2); // Calculate total MRP price
-    const totalDiscountedPrice = (discountedPrice * quantity).toFixed(2); // Calculate total discounted price
-
     document.querySelector(".success-message").innerHTML = `
         <h1>Order Placed Successfully</h1>
         <p>Hurray!!! Your order is confirmed <br> 
@@ -221,14 +188,36 @@ function displayOrderDetails(order) {
     const myOrdersList = document.createElement("ul");
     myOrdersList.id = "my-orders";
     myOrdersList.innerHTML = `
-        <li>
-            Order #${order.id} - Status: ${order.status}<br>
-            Book: ${bookName} by ${authorName}<br>
-            Quantity: ${quantity}<br>
-            Price: Rs. ${totalDiscountedPrice} <del>Rs. ${totalMrp}</del>
-        </li>
+        <li>Order #${order.id} - Status: ${order.status}</li>
     `;
     document.querySelector('.success-container').appendChild(myOrdersList);
+}
+
+// Update Cart Count
+async function updateCartCount() {
+    const cartCountElement = document.querySelector("#cart-link .cart-count");
+    if (!cartCountElement) return;
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts`);
+        if (!response) return;
+
+        if (!response.ok) throw new Error("Failed to fetch cart");
+        const data = await response.json();
+        console.log("Cart API response on confirmation:", data);
+
+        const cartItems = data.cart || [];
+        const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
+        cartCountElement.textContent = totalItems;
+        cartCountElement.style.display = totalItems > 0 ? "flex" : "none";
+
+        // Sync localStorage with backend cart state
+        localStorage.setItem('cartItems', JSON.stringify(cartItems));
+    } catch (error) {
+        console.error("Error fetching cart count:", error);
+        cartCountElement.textContent = "0";
+        cartCountElement.style.display = "none";
+    }
 }
 
 // Handle Unauthorized Access
