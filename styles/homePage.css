@@ -529,7 +529,7 @@ body.dark .out-of-stock-banner {
     color: #e0e0e0;
 }
 
-/* Quick View Button (Reintroduced and Styled) */
+/* Quick View Button (Hidden by Default, Visible on Hover) */
 .quick-view {
     position: absolute;
     top: 8px;
@@ -542,8 +542,9 @@ body.dark .out-of-stock-banner {
     background: #28a745; /* Green color for visibility */
     color: #fff;
     cursor: pointer;
-    transition: background 0.2s ease, transform 0.1s ease;
+    transition: background 0.2s ease, transform 0.1s ease, opacity 0.3s ease;
     z-index: 5;
+    opacity: 0; /* Hidden by default */
 }
 
 .quick-view:hover {
@@ -551,39 +552,52 @@ body.dark .out-of-stock-banner {
     transform: translateY(-1px);
 }
 
-/* Admin Buttons (Edit/Delete - Adjusted Positioning) */
-.edit-book,
-.delete-book {
+/* Admin Buttons Container (Hidden by Default, Visible on Hover) */
+.admin-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px; /* Space between buttons */
     position: absolute;
     top: 8px;
-    padding: 4px 8px;
-    font-size: 12px;
-    font-weight: 600;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.2s ease, transform 0.1s ease;
-    color: #fff;
-}
-
-.edit-book {
     right: 8px;
-    background: #007BFF;
+    z-index: 5;
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.3s ease;
 }
 
-.edit-book:hover {
-    background: #0056b3;
-    transform: translateY(-1px);
-}
-
+/* Admin Buttons (Edit/Delete - Updated for Icons Only) */
+.edit-book,
 .delete-book {
-    right: 50px; /* Positioned to the left of the edit button */
-    background: #dc3545;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    transition: transform 0.2s, color 0.3s;
 }
 
-.delete-book:hover {
-    background: #bd2130;
-    transform: translateY(-1px);
+/* Icon Styling for Edit and Delete */
+.edit-book i,
+.delete-book i {
+    font-size: 16px;
+    color: #6b7280; /* Neutral gray to match your theme */
+}
+
+/* Hover Effects for Icons */
+.edit-book:hover i {
+    color: #007BFF; /* Blue for edit */
+    transform: scale(1.2);
+}
+
+.delete-book:hover i {
+    color: #dc3545; /* Red for delete */
+    transform: scale(1.2);
+}
+
+/* Show Buttons on Book Card Hover */
+.book-card:hover .quick-view,
+.book-card:hover .admin-buttons {
+    opacity: 1; /* Show buttons when hovering over book card */
 }
 
 /* Book Image */
@@ -999,12 +1013,16 @@ body.dark .form-group textarea:focus {
     .old-price {
         font-size: 11px;
     }
-    .quick-view, .edit-book, .delete-book {
+    .quick-view {
         padding: 3px 6px;
         font-size: 11px;
     }
-    .delete-book {
-        right: 45px; /* Adjusted for smaller buttons */
+    .admin-buttons {
+        gap: 6px;
+    }
+    .edit-book i,
+    .delete-book i {
+        font-size: 14px;
     }
     .pagination button {
         padding: 6px 10px;

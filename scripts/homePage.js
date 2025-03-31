@@ -598,8 +598,14 @@ function displayBooks(books) {
         let adminButtons = '';
         if (userIsAdmin) {
             adminButtons = `
-                <button class="edit-book" data-id="${book.id}">Edit</button>
-                <button class="delete-book" data-id="${book.id}">Delete</button>
+                <div class="admin-buttons">
+                    <button class="edit-book" data-id="${book.id}" title="Edit Book">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="delete-book" data-id="${book.id}" title="Delete Book">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             `;
         }
 
