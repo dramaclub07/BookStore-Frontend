@@ -1,6 +1,9 @@
 // API Base URL
 const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
 
+// Global variable to store cart items after initial load
+let cartItemsCache = null;
+
 document.addEventListener("DOMContentLoaded", async () => {
     const accessToken = localStorage.getItem("access_token");
 
@@ -95,14 +98,18 @@ function updateCartCount(count) {
     const sectionCount = document.getElementById("cart-count");
     const placeOrderButton = document.querySelector(".place-order");
 
+    console.log("Updating cart count:", count, "Type:", typeof count); // Debug log
+
     if (cartCount) {
         if (count > 0) {
             cartCount.textContent = count;
             cartCount.style.display = "flex";
         } else {
-            cartCount.textContent = ""; // Clear the content when count is 0
-            cartCount.style.display = "none"; // Hide the element
+            cartCount.textContent = "";
+            cartCount.style.display = "none";
         }
+    } else {
+        console.warn("Cart count element (#cart-link .cart-count) not found");
     }
 
     if (sectionCount) {
@@ -110,62 +117,119 @@ function updateCartCount(count) {
             sectionCount.textContent = count;
             sectionCount.style.display = "inline";
         } else {
-            sectionCount.textContent = ""; // Clear the content when count is 0
-            sectionCount.style.display = "none"; // Hide the element
+            sectionCount.textContent = "";
+            sectionCount.style.display = "none";
         }
+    } else {
+        console.warn("Section count element (#cart-count) not found");
     }
 
     if (placeOrderButton) {
         placeOrderButton.style.display = count > 0 ? "block" : "none";
+        console.log("Place Order button visibility set to:", placeOrderButton.style.display); // Debug log
+    } else {
+        console.warn("Place Order button (.place-order) not found");
     }
 }
 
 // Fetch and display cart items
-async function loadCartItems() {
+async function loadCartItems(forceRefresh = false) {
     const cartContainer = document.getElementById("cart-container");
-    if (!cartContainer) return;
+    if (!cartContainer) {
+        console.error("cart-container element not found in DOM");
+        return;
+    }
+
+    // If cart items are already loaded and no refresh is forced, use the cached version
+    if (cartItemsCache && !forceRefresh) {
+        console.log("Using cached cart items:", cartItemsCache);
+        renderCartItems(cartItemsCache);
+        const totalCount = cartItemsCache.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        updateCartCount(totalCount);
+        setupCartEventListeners();
+        await loadCartSummary();
+        return;
+    }
 
     cartContainer.innerHTML = "<p>Loading cart...</p>";
+    console.log("Fetching cart items...");
 
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/carts`, { method: "GET" });
-        if (!response) return;
-
-        if (!response.ok) throw new Error(`Error ${response.status}: Failed to fetch cart items`);
-
-        const data = await response.json();
-        const cartItems = data || [];
-
-        // Remove out-of-stock items from cart
-        for (const item of cartItems) {
-            const bookResponse = await fetch(`${API_BASE_URL}/books/${item.book_id}`);
-            const book = await bookResponse.json();
-            if (book.quantity === 0) {
-                await removeCartItem(item.book_id);
-            }
+        if (!response) {
+            console.error("No response from fetchWithAuth");
+            cartContainer.innerHTML = "<p>Authentication error. Please log in again.</p>";
+            updateCartCount(0);
+            return;
         }
 
-        // Reload cart after removing out-of-stock items
-        const updatedResponse = await fetchWithAuth(`${API_BASE_URL}/carts`, { method: "GET" });
-        if (!updatedResponse) return;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Error ${response.status}: Failed to fetch cart items - ${errorData.message || "Unknown error"}`);
+        }
 
-        const updatedData = await updatedResponse.json();
-        const updatedCartItems = updatedData || [];
-        renderCartItems(updatedCartItems);
-        updateCartCount(updatedCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0));
+        const data = await response.json();
+        console.log("Cart API raw response:", data); // Debug raw response
+
+        // Handle different possible response structures
+        let cartItems = [];
+        if (Array.isArray(data)) {
+            cartItems = data;
+        } else if (data.items && Array.isArray(data.items)) {
+            cartItems = data.items;
+        } else if (data.cart && Array.isArray(data.cart)) {
+            cartItems = data.cart;
+        } else if (data.data && Array.isArray(data.data)) {
+            cartItems = data.data;
+        } else if (data.message) {
+            // Handle cases where the API returns a message (e.g., "Cart is empty")
+            console.warn("API returned a message:", data.message);
+            cartItems = [];
+        } else {
+            throw new Error(`Invalid cart data format: Expected an array or object with 'items', 'cart', or 'data' property, got ${JSON.stringify(data)}`);
+        }
+
+        console.log("Parsed cart items:", cartItems); // Debug parsed items
+
+        // Store cart items in cache and localStorage
+        cartItemsCache = cartItems;
+        localStorage.setItem("cartItems", JSON.stringify(cartItems));
+        console.log("Stored cart items in localStorage:", cartItems);
+
+        renderCartItems(cartItems);
+        const totalCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        console.log("Calculated total count:", totalCount);
+        updateCartCount(totalCount);
         setupCartEventListeners();
         await loadCartSummary();
     } catch (error) {
-        console.error("Error fetching cart items:", error);
-        cartContainer.innerHTML = `<p>Error loading cart.</p>`;
-        updateCartCount(0); // Ensure count is cleared on error
+        console.error("Error fetching cart items:", error.message);
+        // Fallback to localStorage if API fails
+        const localCartItems = JSON.parse(localStorage.getItem("cartItems") || "[]");
+        if (localCartItems.length > 0) {
+            console.log("Falling back to localStorage cart items:", localCartItems);
+            cartItemsCache = localCartItems;
+            renderCartItems(localCartItems);
+            const totalCount = localCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
+            updateCartCount(totalCount);
+            setupCartEventListeners();
+        } else {
+            cartContainer.innerHTML = `<p>Error loading cart: ${error.message}</p>`;
+            cartItemsCache = [];
+            updateCartCount(0);
+        }
     }
 }
 
 // Render cart items
 function renderCartItems(cartItems) {
     const cartContainer = document.getElementById("cart-container");
-    if (!cartContainer) return;
+    if (!cartContainer) {
+        console.error("cart-container not found during render");
+        return;
+    }
+
+    console.log("Rendering cart items:", cartItems); // Debug items to render
 
     if (!cartItems || cartItems.length === 0) {
         cartContainer.innerHTML = `<p>Your cart is empty.</p>`;
@@ -173,26 +237,32 @@ function renderCartItems(cartItems) {
         return;
     }
 
-    cartContainer.innerHTML = cartItems.map(item => {
-        const totalDiscountedPrice = (item.discounted_price * (item.quantity || 1)).toFixed(2);
-        const totalUnitPrice = (item.unit_price * (item.quantity || 1)).toFixed(2);
-        return `
-        <div class="cart-item" data-id="${item.book_id}" data-discounted-price="${item.discounted_price}" data-unit-price="${item.unit_price}">
-            <img src="${item.image_url}" alt="${item.book_name || 'Unknown'}">
-            <div class="cart-item-details">
-                <h3>${item.book_name || "Untitled"}</h3>
-                <p>by ${item.author_name || "Unknown"}</p>
-                <p>Rs. <span class="discounted-price">${totalDiscountedPrice}</span> <del>Rs. <span class="unit-price">${totalUnitPrice || ""}</span></del></p>
-                <div class="quantity">
-                    <button class="decrease">-</button>
-                    <span class="quantity-value">${item.quantity || 1}</span>
-                    <button class="increase">+</button>
+    try {
+        cartContainer.innerHTML = cartItems.map(item => {
+            const totalDiscountedPrice = ((item.discounted_price || 0) * (item.quantity || 1)).toFixed(2);
+            const totalUnitPrice = ((item.unit_price || 0) * (item.quantity || 1)).toFixed(2);
+            return `
+            <div class="cart-item" data-id="${item.book_id || 'unknown'}" data-discounted-price="${item.discounted_price || 0}" data-unit-price="${item.unit_price || 0}">
+                <img src="${item.image_url || 'default-image.jpg'}" alt="${item.book_name || 'Unknown'}">
+                <div class="cart-item-details">
+                    <h3>${item.book_name || "Untitled"}</h3>
+                    <p>by ${item.author_name || "Unknown"}</p>
+                    <p>Rs. <span class="discounted-price">${totalDiscountedPrice}</span> <del>Rs. <span class="unit-price">${totalUnitPrice || ""}</span></del></p>
+                    <div class="quantity">
+                        <button class="decrease">-</button>
+                        <span class="quantity-value">${item.quantity || 1}</span>
+                        <button class="increase">+</button>
+                    </div>
+                    <button class="remove">Remove</button>
                 </div>
-                <button class="remove">Remove</button>
             </div>
-        </div>
-    `;
-    }).join("");
+        `;
+        }).join("");
+    } catch (error) {
+        console.error("Error rendering cart items:", error);
+        cartContainer.innerHTML = "<p>Error rendering cart items.</p>";
+        updateCartCount(0);
+    }
 }
 
 // Setup event listeners for cart actions
@@ -238,16 +308,6 @@ async function updateQuantity(button, change) {
         return;
     }
 
-    // Check stock before increasing quantity
-    if (change > 0) {
-        const bookResponse = await fetch(`${API_BASE_URL}/books/${bookId}`);
-        const book = await bookResponse.json();
-        if (book.quantity < newQuantity) {
-            alert("Cannot increase quantity: insufficient stock!");
-            return;
-        }
-    }
-
     const perUnitDiscountedPrice = parseFloat(cartItem.dataset.discountedPrice);
     const perUnitPrice = parseFloat(cartItem.dataset.unitPrice);
 
@@ -270,8 +330,7 @@ async function updateQuantity(button, change) {
         if (discountedPriceElement) discountedPriceElement.textContent = newDiscountedPrice;
         if (unitPriceElement) unitPriceElement.textContent = newUnitPrice;
 
-        await loadCartSummary();
-        await loadCartItems();
+        await loadCartItems(true); // Force refresh after updating quantity
     } catch (error) {
         console.error("Error updating quantity:", error);
         alert(`Failed to update quantity: ${error.message}`);
@@ -294,11 +353,11 @@ async function removeCartItem(bookId) {
             throw new Error(result.error || "Failed to remove item");
         }
 
-        await loadCartItems(); // Refresh cart
+        await loadCartItems(true); // Force refresh after removing item
     } catch (error) {
         console.error("Error removing item:", error);
         console.log("Error details:", error.message);
-        await loadCartItems(); // Refresh cart even on error
+        await loadCartItems(true); // Force refresh even on error
     }
 }
 
@@ -311,6 +370,7 @@ async function loadCartSummary() {
         if (!response.ok) throw new Error("Failed to fetch cart summary");
 
         const cartData = await response.json();
+        console.log("Cart summary data:", cartData); // Debug summary
         const totalPriceElement = document.getElementById("cart-total");
         if (totalPriceElement) {
             totalPriceElement.textContent = cartData.total_price || 0;
@@ -318,7 +378,7 @@ async function loadCartSummary() {
         updateCartCount(cartData.total_items || 0);
     } catch (error) {
         console.error("Error fetching cart summary:", error);
-        updateCartCount(0); // Ensure count is cleared on error
+        updateCartCount(0);
     }
 }
 
@@ -627,6 +687,18 @@ function setupLocationButton() {
 
 // Handle page navigation with address choice
 document.querySelector(".place-order")?.addEventListener("click", async () => {
+    const cartContainer = document.getElementById("cart-container");
+    if (cartContainer && cartContainer.innerHTML.includes("Error loading cart")) {
+        alert("Cannot place order: There was an error loading your cart. Please try again.");
+        return;
+    }
+
+    // Use cached cart items instead of re-fetching
+    if (!cartItemsCache || cartItemsCache.length === 0) {
+        alert("Cannot place order: Your cart is empty or not loaded.");
+        return;
+    }
+
     const selectedAddress = JSON.parse(localStorage.getItem("selectedAddress") || "{}");
 
     if (selectedAddress.street) {

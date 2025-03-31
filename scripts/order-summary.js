@@ -8,10 +8,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    await loadUserProfile();
-    await loadCartItems();
-    await loadOrderSummary();
-    setupHeaderEventListeners();
+    const isOrderSummaryPage = window.location.pathname.includes('order-summary.html');
+
+    try {
+        await loadUserProfile();
+        if (!isOrderSummaryPage) {
+            await loadCartItems();
+        }
+        await loadOrderSummary();
+        setupHeaderEventListeners();
+    } catch (error) {
+        console.error("Initialization error:", error);
+    }
 });
 
 // Get auth headers
@@ -91,12 +99,22 @@ async function fetchWithAuth(url, options = {}) {
 function updateCartCount(count) {
     const cartCount = document.querySelector('#cart-link .cart-count');
     const sectionCount = document.getElementById('cart-count');
+    const isOrderSummaryPage = window.location.pathname.includes('order-summary.html');
+
     if (cartCount) {
-        cartCount.textContent = count;
-        cartCount.style.display = count > 0 ? "flex" : "none";
+        if (isOrderSummaryPage) {
+            cartCount.style.display = 'none';
+        } else {
+            cartCount.textContent = count;
+            cartCount.style.display = count > 0 ? "flex" : "none";
+        }
     }
     if (sectionCount) {
-        sectionCount.textContent = count;
+        if (isOrderSummaryPage) {
+            sectionCount.style.display = 'none';
+        } else {
+            sectionCount.textContent = count;
+        }
     }
 }
 
@@ -108,13 +126,17 @@ async function loadUserProfile() {
 
         if (!response.ok) throw new Error(`Profile fetch failed with status: ${response.status}`);
         const userData = await response.json();
-        const profileElement = document.getElementById('profile-link');
-        if (profileElement) {
-            profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
-            localStorage.setItem('username', userData.name || 'User');
+        if (userData.success) {
+            const profileElement = document.getElementById('profile-link');
+            if (profileElement) {
+                profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || 'User'}</span>`;
+                localStorage.setItem('username', userData.name || 'User');
+            }
+            const nameInput = document.querySelector('input[readonly][value="Poonam Yadav"]');
+            const mobileInput = document.querySelector('input[readonly][value="81678954778"]');
+            if (nameInput) nameInput.value = userData.name || 'Unknown';
+            if (mobileInput) mobileInput.value = userData.mobile_number || 'N/A';
         }
-        document.querySelector('input[readonly][value="Poonam Yadav"]').value = userData.name || 'Unknown';
-        document.querySelector('input[readonly][value="81678954778"]').value = userData.mobile_number || 'N/A';
     } catch (error) {
         console.error("Profile fetch error:", error.message);
     }
@@ -123,18 +145,34 @@ async function loadUserProfile() {
 // Load Cart Items
 async function loadCartItems() {
     const cartContainer = document.getElementById('cart-container');
-    if (!cartContainer) return;
+    const isOrderSummaryPage = window.location.pathname.includes('order-summary.html');
+
+    if (isOrderSummaryPage && cartContainer) {
+        cartContainer.style.display = 'none';
+        return;
+    }
+
+    if (!cartContainer) {
+        console.warn("Cart container not found in DOM, skipping cart load");
+        return;
+    }
 
     cartContainer.innerHTML = '<p>Loading cart...</p>';
 
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/carts`, { method: 'GET' });
-        if (!response) return;
+        if (!response) {
+            cartContainer.innerHTML = '<p>Failed to load cart due to authentication issues.</p>';
+            return;
+        }
 
-        if (!response.ok) throw new Error(`Error ${response.status}: Failed to fetch cart items`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Error ${response.status}: Failed to fetch cart items - ${errorText}`);
+        }
 
         const data = await response.json();
-        const cartItems = data || []; // Assuming /carts returns an array directly
+        const cartItems = data.cart || [];
         renderCartItems(cartItems);
         updateCartCount(cartItems.length);
         setupCartEventListeners();
@@ -143,8 +181,7 @@ async function loadCartItems() {
         localStorage.setItem('cartItems', JSON.stringify(cartItems));
     } catch (error) {
         console.error('Error fetching cart items:', error);
-        cartContainer.innerHTML = `<p>Error loading cart.</p>`;
-        updateCartCount(0);
+        cartContainer.innerHTML = `<p>Error loading cart: ${error.message}</p>`;
     }
 }
 
@@ -161,10 +198,11 @@ function renderCartItems(cartItems) {
 
     cartContainer.innerHTML = cartItems.map(item => {
         const totalDiscountedPrice = (item.discounted_price * (item.quantity || 1)).toFixed(2);
-        const totalUnitPrice = (item.book_mrp * (item.quantity || 1)).toFixed(2); // Assuming book_mrp is unit price
+        const totalUnitPrice = (item.unit_price * (item.quantity || 1)).toFixed(2);
+        const imageUrl = item.image_url || '../assets/default-book-image.jpg';
         return `
-        <div class="cart-item" data-id="${item.book_id}" data-discounted-price="${item.discounted_price}" data-unit-price="${item.book_mrp}">
-            <img src="${item.book_image || '/default-book-image.jpg'}" alt="${item.book_name || 'Unknown'}">
+        <div class="cart-item" data-id="${item.book_id}" data-discounted-price="${item.discounted_price}" data-unit-price="${item.unit_price}">
+            <img src="${imageUrl}" alt="${item.book_name || 'Unknown'}" onerror="this.src='../assets/default-book-image.jpg';">
             <div class="cart-item-details">
                 <h3>${item.book_name || 'Untitled'}</h3>
                 <p>by ${item.author_name || 'Unknown'}</p>
@@ -316,81 +354,136 @@ async function loadCartSummary() {
         updateCartCount(cartData.total_items || 0);
     } catch (error) {
         console.error("Error fetching cart summary:", error);
-        updateCartCount(0); // Fallback to 0 on error
     }
 }
 
-// Load Order Summary
+// Load Order Summary (Updated with Fix)
 async function loadOrderSummary() {
     const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
     const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
+    const summarySection = document.getElementById('order-summary-section');
+    const isOrderSummaryPage = window.location.pathname.includes('order-summary.html');
+
+    if (!summarySection) {
+        console.warn("Order summary section not found in DOM");
+        return;
+    }
 
     if (!cartItems.length) {
-        document.getElementById('order-summary-section').innerHTML = '<p>Your cart is empty.</p>';
+        summarySection.innerHTML = '<p>Your cart is empty. Redirecting to cart...</p>';
+        setTimeout(() => {
+            window.location.href = '../pages/cart.html';
+        }, 2000);
         return;
     }
 
-    if (!selectedAddress.id) {
-        alert("No address selected. Please select an address.");
-        window.location.href = '../pages/customer-details.html';
+    if (!selectedAddress.id && isOrderSummaryPage) {
+        summarySection.innerHTML = '<p>No address selected. Redirecting to customer details...</p>';
+        setTimeout(() => {
+            window.location.href = '../pages/customer-details.html';
+        }, 2000);
         return;
     }
 
-    document.querySelector('textarea[readonly]').value = selectedAddress.street || '';
-    document.querySelector('input[readonly][value="Bengaluru"]').value = selectedAddress.city || '';
-    document.querySelector('input[readonly][value="Karnataka"]').value = selectedAddress.state || '';
+    const addressTextarea = document.querySelector('textarea[readonly]');
+    const cityInput = document.querySelector('input[readonly][value="Bengaluru"]');
+    const stateInput = document.querySelector('input[readonly][value="Karnataka"]');
     const radio = document.querySelector(`input[name="address-type"][value="${selectedAddress.address_type || 'Work'}"]`);
+    if (addressTextarea) addressTextarea.value = selectedAddress.street || '';
+    if (cityInput) cityInput.value = selectedAddress.city || '';
+    if (stateInput) stateInput.value = selectedAddress.state || '';
     if (radio) radio.checked = true;
-
-    const summarySection = document.getElementById('order-summary-section');
-    if (!summarySection) return;
 
     const totalPrice = cartItems.reduce((sum, item) => {
         return sum + (item.discounted_price * (item.quantity || 1));
     }, 0).toFixed(2);
 
-    const summaryItems = cartItems.map(item => `
+    const summaryItems = cartItems.map(item => {
+        const imageUrl = item.image_url || '../assets/default-book-image.jpg';
+        return `
         <div class="summary-item">
-            <img src="${item.book_image || '/default-book-image.jpg'}" alt="${item.book_name || 'Unknown'}">
+            <img src="${imageUrl}" alt="${item.book_name || 'Unknown'}" onerror="this.src='../assets/default-book-image.jpg';">
             <div class="summary-item-details">
                 <h3>${item.book_name || 'Untitled'}</h3>
                 <p>by ${item.author_name || 'Unknown'}</p>
-                <p>Rs. ${(item.discounted_price * (item.quantity || 1)).toFixed(2)} <del>Rs. ${(item.book_mrp * (item.quantity || 1)).toFixed(2) || ''}</del></p>
+                <p>Rs. ${(item.discounted_price * (item.quantity || 1)).toFixed(2)} <del>Rs. ${(item.unit_price * (item.quantity || 1)).toFixed(2) || ''}</del></p>
                 <p>Quantity: ${item.quantity || 1}</p>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 
     summarySection.innerHTML = `
         <h2>Order Summary</h2>
-        ${summaryItems}
-        <p>Total Price: Rs. ${totalPrice}</p>
-        <button class="checkout">CHECKOUT</button>
+        <div class="summary-items">${summaryItems}</div>
+        <div class="summary-total">
+            <p>Total Price: Rs. ${totalPrice}</p>
+        </div>
+        <div class="summary-address">
+            <p><strong>Shipping Address:</strong> ${selectedAddress.street || 'Not set'}, ${selectedAddress.city || 'Not set'}, ${selectedAddress.state || 'Not set'}</p>
+        </div>
+        ${isOrderSummaryPage ? '<button class="checkout">CHECKOUT</button>' : ''}
     `;
 
-    document.querySelector('.checkout').addEventListener('click', async () => {
-        try {
-            const response = await fetchWithAuth(`${API_BASE_URL}/orders`, {
-                method: 'POST',
-                body: JSON.stringify({ address_id: selectedAddress.id })
-            });
-            if (!response) return;
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to place order");
+    if (isOrderSummaryPage) {
+        document.querySelector('.checkout').addEventListener('click', async () => {
+            const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
+            const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
+    
+            if (!cartItems.length) {
+                alert("Your cart is empty. Please add items to your cart before placing an order.");
+                return;
             }
-
-            const orderData = await response.json();
-            console.log("Order placed:", orderData);
-            localStorage.removeItem('cartItems');
-            localStorage.removeItem('selectedAddress');
-            window.location.href = `../pages/order-confirmation.html?order_id=${orderData.order.id}`; // Pass order ID
-        } catch (error) {
-            console.error("Error placing order:", error);
-            alert(`Failed to place order: ${error.message}`);
-        }
-    });
+    
+            if (!selectedAddress.id) {
+                alert("No address selected. Please select an address before placing an order.");
+                return;
+            }
+    
+            // Simplified payload: only send address_id since backend handles cart items
+            const payload = {
+                order: {
+                    address_id: selectedAddress.id
+                }
+            };
+    
+            console.log("Sending order payload:", JSON.stringify(payload));
+            console.log("Request headers:", getAuthHeaders());
+            try {
+                const response = await fetchWithAuth(`${API_BASE_URL}/orders`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                if (!response) {
+                    console.error("No response from fetchWithAuth");
+                    return;
+                }
+    
+                const responseText = await response.text();
+                console.log("Server response:", responseText);
+    
+                if (!response.ok) {
+                    const errorData = JSON.parse(responseText);
+                    console.error("Order placement failed:", errorData);
+                    throw new Error(errorData.message || "Failed to place order");
+                }
+    
+                const orderData = JSON.parse(responseText);
+                if (orderData.success) {
+                    localStorage.removeItem('cartItems');
+                    localStorage.removeItem('selectedAddress');
+                    // Redirect with the last order ID (or adjust if multiple orders need handling)
+                    window.location.href = `../pages/order-confirmation.html?order_id=${orderData.orders[orderData.orders.length - 1].id}`;
+                } else {
+                    console.error("Order creation unsuccessful:", orderData);
+                    alert("Order creation failed: " + (orderData.message || "Unknown error"));
+                }
+            } catch (error) {
+                console.error("Error placing order:", error);
+                alert(`Failed to place order: ${error.message}`);
+            }
+        });
+    }
 }
 
 // Setup Header Event Listeners

@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     try {
         await loadUserProfile();
         await fetchOrderDetails();
+        await updateCartCount(); // Add this to refresh cart UI
         setupHeaderEventListeners();
 
         document.querySelector('.continue-button')?.addEventListener('click', function() {
@@ -119,10 +120,9 @@ async function loadUserProfile() {
 async function fetchOrderDetails() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
-        const orderId = urlParams.get('order_id'); // Expect order_id from URL query param
+        const orderId = urlParams.get('order_id');
 
         if (!orderId) {
-            // Fallback to fetching the latest order if no order_id is provided
             const ordersResponse = await fetchWithAuth(`${API_BASE_URL}/orders`);
             if (!ordersResponse) {
                 handleUnauthorized();
@@ -149,7 +149,6 @@ async function fetchOrderDetails() {
                 `;
             }
         } else {
-            // Fetch specific order details using order_id
             const orderResponse = await fetchWithAuth(`${API_BASE_URL}/orders/${orderId}`);
             if (!orderResponse) {
                 handleUnauthorized();
@@ -162,8 +161,11 @@ async function fetchOrderDetails() {
 
             const orderData = await orderResponse.json();
             console.log("Order Response:", orderData);
-            displayOrderDetails(orderData.order || orderData); // Adjust based on response structure
+            displayOrderDetails(orderData.order || orderData);
         }
+
+        // Ensure cartItems is cleared from localStorage
+        localStorage.removeItem('cartItems');
     } catch (error) {
         console.error("Error in fetchOrderDetails:", error);
         document.querySelector('.success-message').innerHTML = `
@@ -189,6 +191,33 @@ function displayOrderDetails(order) {
         <li>Order #${order.id} - Status: ${order.status}</li>
     `;
     document.querySelector('.success-container').appendChild(myOrdersList);
+}
+
+// Update Cart Count
+async function updateCartCount() {
+    const cartCountElement = document.querySelector("#cart-link .cart-count");
+    if (!cartCountElement) return;
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/carts`);
+        if (!response) return;
+
+        if (!response.ok) throw new Error("Failed to fetch cart");
+        const data = await response.json();
+        console.log("Cart API response on confirmation:", data);
+
+        const cartItems = data.cart || [];
+        const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
+        cartCountElement.textContent = totalItems;
+        cartCountElement.style.display = totalItems > 0 ? "flex" : "none";
+
+        // Sync localStorage with backend cart state
+        localStorage.setItem('cartItems', JSON.stringify(cartItems));
+    } catch (error) {
+        console.error("Error fetching cart count:", error);
+        cartCountElement.textContent = "0";
+        cartCountElement.style.display = "none";
+    }
 }
 
 // Handle Unauthorized Access

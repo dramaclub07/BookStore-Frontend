@@ -21,6 +21,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     await updateCartCount();
     setupHeaderEventListeners();
     setupEventListeners();
+
+    // Add logo click event listener
+    const logo = document.querySelector(".logo");
+    if (logo) {
+        logo.addEventListener("click", () => {
+            window.location.href = "../pages/homePage.html";
+        });
+    }
 });
 
 // Get auth headers
@@ -133,8 +141,7 @@ async function updateCartCount() {
     const cartCountElement = document.querySelector("#cart-link .cart-count");
     if (!cartCountElement) return;
 
-    const isLoggedIn = isAuthenticated();
-    if (!isLoggedIn) {
+    if (!isAuthenticated()) {
         console.log("User not authenticated, setting cart count to 0");
         cartCountElement.textContent = "0";
         cartCountElement.style.display = "none";
@@ -318,6 +325,7 @@ async function fetchBookDetails(bookId) {
         const response = await fetch(`${API_BASE_URL}/books/${bookId}`);
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch book details`);
         const book = await response.json();
+        console.log("Book image URL from API:", book.book_image); // Debug the URL
         displayBookDetails(book);
     } catch (error) {
         console.error("Error fetching book details:", error);
@@ -334,7 +342,20 @@ function displayBookDetails(book) {
     document.getElementById("book-price").textContent = `Rs. ${book.discounted_price}`;
     document.getElementById("book-old-price").textContent = `Rs. ${book.book_mrp}`;
     document.getElementById("book-description").textContent = book.description || "No description available.";
-    document.querySelector(".book-image").src = book.book_image || "default-image.jpg";
+    
+    const bookImage = document.getElementById("book-image"); // Use ID instead of class
+    const defaultImage = "../assets/default-image.jpg"; // Place a default image in assets folder
+    const imagePath = book.book_image 
+        ? (book.book_image.startsWith('http') 
+            ? book.book_image 
+            : `${API_BASE_URL}/images/${book.book_image}`) // Assuming API serves images from /images/
+        : defaultImage;
+    
+    bookImage.src = imagePath;
+    bookImage.onerror = () => {
+        console.error(`Failed to load image: ${imagePath}`);
+        bookImage.src = defaultImage; // Fallback to default image
+    };
 }
 
 // Fetch Reviews
@@ -344,7 +365,7 @@ async function fetchReviews(bookId) {
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch reviews`);
         const reviews = await response.json();
         console.log("Fetched reviews:", reviews);
-        displayReviews(reviews);
+        displayReviews(Array.isArray(reviews) ? reviews : []);
     } catch (error) {
         console.error("Error fetching reviews:", error);
         document.getElementById("reviews-list").innerHTML = "<p>Failed to load reviews.</p>";
@@ -432,7 +453,8 @@ async function checkWishlistStatus(bookId) {
         if (!response) return;
 
         if (!response.ok) throw new Error(`Failed to fetch wishlist: ${response.status}`);
-        const wishlist = await response.json();
+        const wishlistData = await response.json();
+        const wishlist = Array.isArray(wishlistData) ? wishlistData : wishlistData.items || [];
         const isWishlisted = wishlist.some(item => item.book_id === parseInt(bookId));
         const wishlistButton = document.getElementById("add-to-wishlist");
         wishlistButton.classList.toggle("wishlisted", isWishlisted);
@@ -458,12 +480,15 @@ function getCurrentUserFromToken() {
 
 // Check if item exists in cart and get its quantity
 async function getCartItemQuantity(bookId) {
+    if (!isAuthenticated()) return 0;
+
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/carts`);
         if (!response) return 0;
 
         if (!response.ok) throw new Error("Failed to fetch cart");
-        const cart = await response.json();
+        const cartData = await response.json();
+        const cart = Array.isArray(cartData) ? cartData : cartData.items || [];
         const cartItem = cart.find(item => item.book_id === parseInt(bookId));
         return cartItem ? cartItem.quantity : 0;
     } catch (error) {
