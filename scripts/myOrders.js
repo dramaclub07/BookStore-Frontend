@@ -134,96 +134,124 @@ document.addEventListener("DOMContentLoaded", async function () {
     async function fetchOrders() {
         try {
             const response = await fetchWithAuth(`${API_BASE_URL}/orders`);
-            if (!response) return;
-
-            if (!response.ok) throw new Error(`Error fetching orders: ${response.status}`);
-
+            if (!response) {
+                ordersContainer.innerHTML = `<p>Authentication error. Please try again later.</p>`;
+                return;
+            }
+    
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Error fetching orders: ${response.status} - ${errorText}`);
+            }
+    
             const data = await response.json();
-            console.log("Orders Data:", data);
+            console.log("Raw Orders Response:", data); // Log raw response for debugging
+    
+            // Handle different possible response formats
+            let orders = [];
+            if (Array.isArray(data)) {
+                orders = data; // Direct array of orders
+            } else if (data && Array.isArray(data.orders)) {
+                orders = data.orders; // Object with orders array
+            } else {
+                console.warn("Unexpected orders data format:", data);
+                throw new Error("Orders data is not in an expected array format");
+            }
+    
             ordersContainer.innerHTML = ""; // Clear previous content
-
-            if (data.orders && data.orders.length > 0) {
-                for (const order of data.orders) {
-                    try {
-                        const bookResponse = await fetchWithAuth(`${API_BASE_URL}/books/${order.book_id}`);
-                        if (!bookResponse) throw new Error("Failed to fetch book due to authentication issue");
-                        if (!bookResponse.ok) throw new Error(`Failed to fetch book: ${bookResponse.status}`);
-                        const bookData = await bookResponse.json();
-                        console.log("Book Data:", bookData);
-
-                        const orderElement = document.createElement("div");
-                        orderElement.classList.add("order-item");
-
-                        const orderStatus = order.status === "cancelled"
-                            ? `<p class="order-status cancelled">Cancelled</p>`
-                            : `<button class="cancel-order-btn" data-order-id="${order.id}">Cancel Order</button>`;
-
-                        orderElement.innerHTML = `
-                            <div class="order-item-container">
-                                <img class="book-image" src="${bookData.book_image || '../assets/1.png'}" alt="${bookData.book_name}" />
-                                <div class="order-details">
-                                    <div class="order-main-details">
-                                        <h3>Order #${order.id}</h3>
-                                        <p>Book: <strong>${bookData.book_name}</strong><span class="order-quantity">Qty: ${order.quantity}</span></p>
-                                        <p>Author: ${bookData.author_name}</p>
-                                        <p>Total Price: ₹${order.total_price}</p>
+            console.log("Total Orders Found:", orders.length);
+    
+            if (orders.length === 0) {
+                ordersContainer.innerHTML = `<p>No orders found. Place an order first.</p>`;
+                return;
+            }
+    
+            for (const order of orders) {
+                try {
+                    if (!order.book_id) {
+                        throw new Error(`Order ${order.id} missing book_id`);
+                    }
+    
+                    const bookResponse = await fetchWithAuth(`${API_BASE_URL}/books/${order.book_id}`);
+                    let bookData = { book_name: "Unknown", author_name: "Unknown", book_image: "../assets/1.png" };
+    
+                    if (bookResponse && bookResponse.ok) {
+                        bookData = await bookResponse.json();
+                        console.log(`Book Data for Order ${order.id}:`, bookData);
+                    } else {
+                        console.warn(`Failed to fetch book for order ${order.id}:`, bookResponse?.status);
+                    }
+    
+                    const orderElement = document.createElement("div");
+                    orderElement.classList.add("order-item");
+    
+                    const orderStatus = order.status === "cancelled"
+                        ? `<p class="order-status cancelled">Cancelled</p>`
+                        : `<button class="cancel-order-btn" data-order-id="${order.id}">Cancel Order</button>`;
+    
+                    orderElement.innerHTML = `
+                        <div class="order-item-container">
+                            <img class="book-image" src="${bookData.book_image || '../assets/1.png'}" alt="${bookData.book_name}" />
+                            <div class="order-details">
+                                <div class="order-main-details">
+                                    <h3>Order #${order.id}</h3>
+                                    <p>Book: <strong>${bookData.book_name}</strong><span class="order-quantity">Qty: ${order.quantity || 1}</span></p>
+                                    <p>Author: ${bookData.author_name}</p>
+                                    <p>Total Price: ₹${order.total_price || 'N/A'}</p>
+                                </div>
+                                <div class="order-other-details">
+                                    <div class="order-date">
+                                        <p>Placed on: ${new Date(order.created_at).toLocaleDateString()}</p>
                                     </div>
-                                    <div class="order-other-details">
-                                        <div class="order-date">
-                                            <p>Placed on: ${new Date(order.created_at).toLocaleDateString()}</p>
-                                        </div>
-                                        <div class="order-actions">
-                                            ${orderStatus}
-                                        </div>
+                                    <div class="order-actions">
+                                        ${orderStatus}
                                     </div>
                                 </div>
 
                             </div>
-                        `;
-
-                        ordersContainer.appendChild(orderElement);
-
-                        if (order.status !== "cancelled") {
-                            orderElement.querySelector('.cancel-order-btn').addEventListener('click', () => cancelOrder(order.id));
-                        }
-                    } catch (bookError) {
-                        console.error(`Error fetching book details for order ${order.id}:`, bookError);
-                        // Display order without book details as fallback
-                        const orderElement = document.createElement("div");
-                        orderElement.classList.add("order-item");
-                        orderElement.innerHTML = `
-                            <div class="order-item-container">
-                                <img class="book-image" src="../assets/1.png" alt="Unknown Book" />
-                                <div class="order-details">
-                                    <div class="order-main-details">
-                                        <h3>Order #${order.id}</h3>
-                                        <p>Book: <strong>Unknown</strong><span class="order-quantity">Qty: ${order.quantity}</span></p>
-                                        <p>Author: Unknown</p>
-                                        <p>Total Price: ₹${order.total_price}</p>
+                        </div>
+                    `;
+    
+                    ordersContainer.appendChild(orderElement);
+    
+                    if (order.status !== "cancelled") {
+                        orderElement.querySelector('.cancel-order-btn').addEventListener('click', () => cancelOrder(order.id));
+                    }
+                } catch (bookError) {
+                    console.error(`Error processing order ${order.id}:`, bookError);
+                    // Fallback display for orders with missing/invalid book data
+                    const orderElement = document.createElement("div");
+                    orderElement.classList.add("order-item");
+                    orderElement.innerHTML = `
+                        <div class="order-item-container">
+                            <img class="book-image" src="../assets/1.png" alt="Unknown Book" />
+                            <div class="order-details">
+                                <div class="order-main-details">
+                                    <h3>Order #${order.id}</h3>
+                                    <p>Book: <strong>Unknown</strong><span class="order-quantity">Qty: ${order.quantity || 1}</span></p>
+                                    <p>Author: Unknown</p>
+                                    <p>Total Price: ₹${order.total_price || 'N/A'}</p>
+                                </div>
+                                <div class="order-other-details">
+                                    <div class="order-date">
+                                        <p>Placed on: ${new Date(order.created_at).toLocaleDateString()}</p>
                                     </div>
-                                    <div class="order-other-details">
-                                        <div class="order-date">
-                                            <p>Placed on: ${new Date(order.created_at).toLocaleDateString()}</p>
-                                        </div>
-                                        <div class="order-actions">
-                                            ${order.status === "cancelled" ? '<p class="order-status cancelled">Cancelled</p>' : `<button class="cancel-order-btn" data-order-id="${order.id}">Cancel Order</button>`}
-                                        </div>
+                                    <div class="order-actions">
+                                        ${order.status === "cancelled" ? '<p class="order-status cancelled">Cancelled</p>' : `<button class="cancel-order-btn" data-order-id="${order.id}">Cancel Order</button>`}
                                     </div>
                                 </div>
                             </div>
-                        `;
-                        ordersContainer.appendChild(orderElement);
-                        if (order.status !== "cancelled") {
-                            orderElement.querySelector('.cancel-order-btn').addEventListener('click', () => cancelOrder(order.id));
-                        }
+                        </div>
+                    `;
+                    ordersContainer.appendChild(orderElement);
+                    if (order.status !== "cancelled") {
+                        orderElement.querySelector('.cancel-order-btn').addEventListener('click', () => cancelOrder(order.id));
                     }
                 }
-            } else {
-                ordersContainer.innerHTML = `<p>No orders found. Place an order first.</p>`;
             }
         } catch (error) {
-            console.error("Error fetching orders:", error);
-            ordersContainer.innerHTML = `<p>Error loading orders. Please try again later.</p>`;
+            console.error("Error fetching orders:", error.message);
+            ordersContainer.innerHTML = `<p>Error loading orders: ${error.message}. Please try again later.</p>`;
         }
     }
 
