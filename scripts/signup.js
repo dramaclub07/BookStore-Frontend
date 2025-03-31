@@ -1,6 +1,6 @@
-const BASE_URL = 'http://127.0.0.1:3000/api/v1'; // Consistent base URL
+const BASE_URL = 'http://127.0.0.1:3000/api/v1';
 
-// Password toggle
+// Password toggle functionality
 document.getElementById("signup-toggle-password").addEventListener("click", () => {
     const passwordField = document.getElementById("signup-password");
     const toggleIcon = document.querySelector("#signup-toggle-password svg");
@@ -21,10 +21,21 @@ document.getElementById("signup-toggle-password").addEventListener("click", () =
     }
 });
 
-// Tab switching (redirect to login page)
+// Redirect to login page when clicking the "LOGIN" tab
 document.querySelector('.tab[data-tab="login"]').addEventListener("click", () => {
     window.location.href = "../pages/login.html";
 });
+
+// Check if in admin mode via URL parameter
+const urlParams = new URLSearchParams(window.location.search);
+const isAdminMode = urlParams.get("adminMode") === "true";
+const roleGroup = document.getElementById("role-group");
+
+if (isAdminMode) {
+    roleGroup.style.display = "block"; // Show role dropdown only in admin mode
+} else {
+    roleGroup.style.display = "none"; // Hide role dropdown by default
+}
 
 // Form validation and API submission
 const signupForm = document.getElementById("signup-form");
@@ -32,12 +43,14 @@ const signupForm = document.getElementById("signup-form");
 signupForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
+    // Get form values
     const name = document.getElementById("signup-name").value.trim();
     const email = document.getElementById("signup-email").value.trim();
     const password = document.getElementById("signup-password").value.trim();
     const mobile = document.getElementById("signup-mobile").value.trim();
-    const role = document.getElementById("signup-role").value; // Get the selected role
+    const role = isAdminMode ? document.getElementById("signup-role").value : "user"; // Default to "user" unless in admin mode
 
+    // Get form elements for error handling
     const nameField = document.getElementById("signup-name");
     const emailField = document.getElementById("signup-email");
     const passwordField = document.getElementById("signup-password");
@@ -49,21 +62,25 @@ signupForm.addEventListener("submit", async (e) => {
     const mobileError = document.getElementById("mobile-error");
     const roleError = document.getElementById("role-error");
 
-    const errorElements = [nameField, emailField, passwordField, mobileField, roleField];
-    const errorMessages = [nameError, emailError, passwordError, mobileError, roleError];
+    // Define elements and messages arrays, conditionally include role if in admin mode
+    const errorElements = [nameField, emailField, passwordField, mobileField];
+    const errorMessages = [nameError, emailError, passwordError, mobileError];
+    if (isAdminMode) {
+        errorElements.push(roleField);
+        errorMessages.push(roleError);
+    }
 
     // Reset error states
     errorElements.forEach(el => el.classList.remove("error"));
     errorMessages.forEach(el => (el.textContent = ""));
 
-    // Validation aligned with backend requirements
+    // Validation rules aligned with backend requirements
     if (!name || name.length < 3 || name.length > 50) {
         nameField.classList.add("error");
         nameError.textContent = "Full name must be between 3 and 50 characters.";
         return;
     }
 
-    // Backend allows only specific email domains: gmail.com, yahoo.com, outlook.com
     const VALID_EMAIL_REGEX = /^[\w+\-.]+@(gmail\.com|yahoo\.com|outlook\.com)$/i;
     if (!email || !VALID_EMAIL_REGEX.test(email)) {
         emailField.classList.add("error");
@@ -77,7 +94,6 @@ signupForm.addEventListener("submit", async (e) => {
         return;
     }
 
-    // Backend requires mobile numbers starting with 6, 7, 8, or 9 and exactly 10 digits
     const VALID_MOBILE_REGEX = /^[6789]\d{9}$/;
     if (!mobile || !VALID_MOBILE_REGEX.test(mobile)) {
         mobileField.classList.add("error");
@@ -85,14 +101,14 @@ signupForm.addEventListener("submit", async (e) => {
         return;
     }
 
-    // Validate role
-    if (!role || (role !== "user" && role !== "admin")) {
+    // Role validation only in admin mode
+    if (isAdminMode && (!role || (role !== "user" && role !== "admin"))) {
         roleField.classList.add("error");
         roleError.textContent = "Please select a valid role (Customer or Admin).";
         return;
     }
 
-    // Call the actual API with corrected endpoint
+    // API submission
     try {
         const response = await fetch(`${BASE_URL}/users`, {
             method: "POST",
@@ -100,12 +116,12 @@ signupForm.addEventListener("submit", async (e) => {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                user: { // Backend expects the parameters to be nested under "user"
+                user: {
                     full_name: name,
                     email: email,
                     password: password,
                     mobile_number: mobile,
-                    role: role // Include the role in the request
+                    role: role // Send the selected role or "user" by default
                 }
             }),
         });
@@ -118,16 +134,19 @@ signupForm.addEventListener("submit", async (e) => {
         const data = await response.json();
         console.log("Signup response:", data);
 
-        // Store user data in localStorage for later use (e.g., in login or other pages)
+        // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify({
             id: data.user.id,
             email: data.user.email,
             full_name: data.user.full_name,
-            role: role // Store the role (though role isn't returned in the response, we know it from the form)
+            role: role // Store the role as submitted
         }));
 
-        alert("Signup successful! Redirecting to login...");
-        window.location.href = "../pages/login.html";
+        // Provide feedback and redirect based on context
+        const roleText = role === "admin" ? "Admin" : "Customer";
+        const redirectMessage = isAdminMode ? "Returning to homepage..." : "Redirecting to login...";
+        alert(`Signup successful as ${roleText}! ${redirectMessage}`);
+        window.location.href = isAdminMode ? "../pages/homePage.html" : "../pages/login.html";
     } catch (error) {
         console.error("Signup Error:", error.message);
         alert(`Signup failed: ${error.message}. Please ensure the backend is running at ${BASE_URL}.`);

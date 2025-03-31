@@ -1,4 +1,3 @@
-// addBook.js
 const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
 
 function getAuthHeaders() {
@@ -14,7 +13,8 @@ function isAuthenticated() {
 }
 
 function isAdmin() {
-    return localStorage.getItem("user_role") === "admin";
+    const user = JSON.parse(localStorage.getItem("user")); // Parse the user object
+    return user?.role === "admin"; // Check role within user object
 }
 
 async function fetchWithAuth(url, options = {}) {
@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     window.location.replace("../pages/homePage.html");
                 }, 500);
             } else {
-                alert(`Failed to add book: ${result.errors.join(", ")}`);
+                alert(`Failed to add book: ${result.errors?.join(", ") || "Unknown error"}`);
             }
         } catch (error) {
             console.error("Error adding book:", error);
@@ -102,9 +102,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
+            // Remove Content-Type header for FormData (let browser set it)
+            const headers = getAuthHeaders();
+            delete headers["Content-Type"]; // FormData sets its own boundary
             const response = await fetchWithAuth(`${API_BASE_URL}/books`, {
                 method: "POST",
-                headers: getAuthHeaders(), // No Content-Type for FormData
+                headers: headers,
                 body: formData
             });
 
@@ -119,7 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     window.location.replace("../pages/homePage.html");
                 }, 500);
             } else {
-                alert(`Failed to upload CSV: ${result.errors.join(", ")}`);
+                alert(`Failed to upload CSV: ${result.errors?.join(", ") || "Unknown error"}`);
             }
         } catch (error) {
             console.error("Error uploading CSV:", error);

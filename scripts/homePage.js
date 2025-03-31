@@ -97,7 +97,7 @@ async function fetchWithAuth(url, options = {}) {
 
 // Check if user is admin
 function isAdmin() {
-    const userRole = localStorage.getItem("user_role");
+    const userRole = JSON.parse(localStorage.getItem("user"))?.role;
     return userRole === "admin";
 }
 
@@ -113,7 +113,7 @@ function toggleTheme() {
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM fully loaded, initializing homepage...");
     console.log("Access Token on load:", localStorage.getItem("access_token"));
-    console.log("User Role:", localStorage.getItem("user_role"));
+    console.log("User Role:", JSON.parse(localStorage.getItem("user"))?.role);
 
     const isLoggedIn = isAuthenticated();
     const userIsAdmin = isAdmin();
@@ -217,6 +217,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         adminToolsModal = document.getElementById("admin-tools-modal");
         if (adminToolsModal) {
             const toggleThemeBtn = document.getElementById("toggle-theme");
+            const registerUserBtn = document.getElementById("register-user");
             const closeBtn = adminToolsModal.querySelector(".close-btn");
 
             if (toggleThemeBtn) {
@@ -228,6 +229,17 @@ document.addEventListener("DOMContentLoaded", async () => {
                 });
             } else {
                 console.error("Toggle theme button not found");
+            }
+
+            if (registerUserBtn) {
+                registerUserBtn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("Register New User clicked");
+                    window.location.href = "../pages/signup.html?adminMode=true";
+                    closeAdminToolsModal();
+                });
+            } else {
+                console.error("Register user button not found");
             }
 
             if (closeBtn) {

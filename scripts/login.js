@@ -1,12 +1,12 @@
-// Base URL for API
-const API_BASE_URL = 'http://localhost:3000'; // Consistent with your setup
+// Base URL for API (aligned with signup.js)
+const BASE_URL = 'http://127.0.0.1:3000/api/v1'; // Consistent with signup.js
 
 console.log('login.js running');
 
 // Initialize Facebook SDK
 window.fbAsyncInit = function() {
     FB.init({
-        appId: 'your_facebook_app_id', // Replace with your Facebook App ID
+        appId: 'your_facebook_app_id', // Replace with your actual Facebook App ID
         cookie: true,
         xfbml: true,
         version: 'v20.0'
@@ -40,9 +40,9 @@ function facebookSignIn() {
 async function verifySocialToken(token, provider) {
     try {
         console.log(`Sending ${provider} token to backend for verification`);
-        const endpoint = provider === 'google' ? '/api/v1/google_auth' : '/api/v1/facebook_auth';
+        const endpoint = provider === 'google' ? '/google_auth' : '/facebook_auth';
         
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        const response = await fetch(`${BASE_URL}${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -55,15 +55,19 @@ async function verifySocialToken(token, provider) {
         if (response.ok) {
             console.log("User authenticated successfully:", data.user);
             
-            // Store tokens and user info in localStorage
+            // Store tokens and user info in localStorage (aligned with signup.js)
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('refresh_token', data.refresh_token);
+            localStorage.setItem('user', JSON.stringify({
+                id: data.user.id,
+                email: data.user.email,
+                full_name: data.user.full_name,
+                role: data.user.role // Store role from social login
+            }));
             localStorage.setItem('username', data.user.full_name || data.user.email.split('@')[0]);
             localStorage.setItem('socialEmail', data.user.email);
             localStorage.setItem('socialProvider', provider);
-            localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000)); // Store expiration time in milliseconds
-            localStorage.setItem('user_role', data.user.role); // Store the role from social login response
-            
+            localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
             localStorage.setItem('justLoggedIn', 'true'); // Flag for homepage refresh
             
             alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login successful! Welcome, ${data.user.full_name || data.user.email.split('@')[0]}`);
@@ -87,7 +91,7 @@ async function refreshAccessToken() {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/refresh`, {
+        const response = await fetch(`${BASE_URL}/refresh`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -187,20 +191,23 @@ document.addEventListener("DOMContentLoaded", async function () {
         window.location.href = '../pages/signup.html';
     });
 
+    // Password toggle functionality
     const loginPasswordInput = document.getElementById('login-password');
     const loginTogglePassword = document.getElementById('login-toggle-password');
     const loginEyeIcon = loginTogglePassword?.querySelector('svg');
     if (loginTogglePassword && loginEyeIcon) {
         loginTogglePassword.addEventListener('click', () => {
-            loginPasswordInput.type = 'text';
-            loginEyeIcon.style.opacity = '0.5';
-            setTimeout(() => {
+            if (loginPasswordInput.type === 'password') {
+                loginPasswordInput.type = 'text';
+                loginEyeIcon.style.opacity = '0.5';
+            } else {
                 loginPasswordInput.type = 'password';
                 loginEyeIcon.style.opacity = '1';
-            }, 2000);
+            }
         });
     }
 
+    // Handle "Remember Me" functionality
     const emailInput = document.getElementById('login-email');
     const passwordInput = document.getElementById('login-password');
     const rememberMeCheckbox = document.getElementById('rememberMe');
@@ -210,14 +217,16 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
     }
 
+    // Form submission for email/password login
     document.getElementById('login-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
-        const emailRegex = /^[\w+\-.]+@(gmail\.com|yahoo\.com|outlook\.com)$/i;
 
+        // Validation aligned with signup.js
+        const emailRegex = /^[\w+\-.]+@(gmail\.com|yahoo\.com|outlook\.com)$/i;
         if (!email || !emailRegex.test(email)) {
-            alert('Please enter a valid email (Gmail, Yahoo, or Outlook).');
+            alert('Please enter a valid email (e.g., user@gmail.com, user@yahoo.com, or user@outlook.com).');
             return;
         }
 
@@ -226,6 +235,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             return;
         }
 
+        // Handle "Remember Me"
         if (rememberMeCheckbox && rememberMeCheckbox.checked) {
             localStorage.setItem('rememberedEmail', email);
         } else {
@@ -235,7 +245,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         try {
             const payload = { email, password };
             console.log('Login payload:', payload);
-            const response = await fetch(`${API_BASE_URL}/api/v1/users/login`, {
+            const response = await fetch(`${BASE_URL}/users/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -244,14 +254,20 @@ document.addEventListener("DOMContentLoaded", async function () {
             const data = await response.json();
             console.log('Login response:', data);
             if (response.ok && data.access_token) {
+                // Store tokens and user info in localStorage (aligned with signup.js)
                 localStorage.setItem('access_token', data.access_token);
                 localStorage.setItem('refresh_token', data.refresh_token);
                 localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
-                const username = data.user?.full_name || email.split('@')[0];
-                localStorage.setItem('username', username);
-                localStorage.setItem('user_role', data.user.role); // Store the role from the login response
+                localStorage.setItem('user', JSON.stringify({
+                    id: data.user.id,
+                    email: data.user.email,
+                    full_name: data.user.full_name,
+                    role: data.user.role // Store role from login response
+                }));
+                localStorage.setItem('username', data.user.full_name || email.split('@')[0]);
                 localStorage.setItem('justLoggedIn', 'true'); // Flag for homepage refresh
-                console.log('Username stored in localStorage:', username);
+
+                console.log('Username stored in localStorage:', localStorage.getItem('username'));
                 console.log('User role stored in localStorage:', data.user.role);
                 alert(data.message || 'Login successful!');
                 window.location.href = '../pages/homePage.html';
@@ -260,10 +276,10 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
         } catch (error) {
             console.error('Login error:', error.message);
-            alert(`Failed to connect to the server at ${API_BASE_URL}. Error: ${error.message}`);
+            alert(`Failed to connect to the server at ${BASE_URL}. Error: ${error.message}`);
         }
     });
 
-    // Ensure token is valid on page load (optional, if you want to check immediately)
+    // Ensure token is valid on page load (optional)
     await ensureValidToken();
 });

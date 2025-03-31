@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="../styles/signup.css">
     <link rel="stylesheet" href="../styles/responsive.css">
 </head>
+
 <body>
     <div class="container">
         <div class="left-card">
@@ -61,14 +62,27 @@
                     <input type="tel" class="form-control" id="signup-mobile" placeholder="Enter mobile number" pattern="[0-9]{10}" required>
                     <span class="error-message" id="mobile-error"></span>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="role-group">
                     <label for="signup-role">Role</label>
-                    <select class="form-control" id="signup-role" required>
+                    <select class="role-select" id="signup-role" required>
                         <option value="" disabled selected>Select your role</option>
-                        <option value="user">Customer</option>
+                        <option value="customer">Customer</option>
                         <option value="admin">Admin</option>
                     </select>
                     <span class="error-message" id="role-error"></span>
+                    <!-- Alternative: Radio Buttons (commented out) -->
+                    <!--
+                    <div class="role-radio-group">
+                        <div class="role-radio">
+                            <input type="radio" id="customer" name="role" class="role-radio-input" value="customer" required>
+                            <label for="customer" class="role-radio-label">Customer</label>
+                        </div>
+                        <div class="role-radio">
+                            <input type="radio" id="admin" name="role" class="role-radio-input" value="admin">
+                            <label for="admin" class="role-radio-label">Admin</label>
+                        </div>
+                    </div>
+                    -->
                 </div>
                 <button type="submit" class="btn-submit">Sign Up</button>
             </form>
