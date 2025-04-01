@@ -320,20 +320,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         const username = localStorage.getItem("username") || "User";
 
         dropdownMenu.innerHTML = isLoggedIn
-            ? `
-                <div class="dropdown-item dropdown-header">Hello ${username},</div>
-                <div class="dropdown-item" id="dropdown-profile">Profile</div>
-                <div class="dropdown-item" id="dropdown-orders">My Orders</div>
-                <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
-                <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
-            `
-            : `
-                <div class="dropdown-item dropdown-header">Welcome</div>
-                <div class="dropdown-item dropdown-subheader">To access account</div>
-                <div class="dropdown-item"><button id="dropdown-login-signup">LOGIN/SIGNUP</ Schild>
-                <div class="dropdown-item" id="dropdown-orders">My Orders</div>
-                <div class="dropdown-item" id="dropdown-wishlist">Wishlist</div>
-            `;
+        ? `
+        <div class="dropdown-item dropdown-header">Hello ${username},</div>
+        <div class="dropdown-item" id="dropdown-profile">Profile</div>
+        <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+        <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
+        <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
+    `
+    : `
+        <div class="dropdown-item dropdown-header">Welcome</div>
+        <div class="dropdown-item dropdown-subheader">To access account</div>
+        <div class="dropdown-item"><button id="dropdown-login-signup">LOGIN/SIGNUP</button></div>
+        <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+        <div class="dropdown-item" id="dropdown-wishlist">Wishlist</div>
+    `;
 
         profileLink.parentElement.appendChild(dropdownMenu);
 
