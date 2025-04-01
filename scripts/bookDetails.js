@@ -1,9 +1,19 @@
 // API Base URL
 const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
 
+// Theme constants
+const THEME_KEY = "theme";
+const LIGHT_MODE = "light";
+const DARK_MODE = "dark";
+
+// Admin tools modal state
+let adminToolsModal = null;
+let isAdminToolsModalOpen = false;
+
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM fully loaded, initializing book details...");
     console.log("Access Token on load:", localStorage.getItem("access_token"));
+    console.log("User Role on load:", localStorage.getItem("user_role")); // Debug admin role
 
     const urlParams = new URLSearchParams(window.location.search);
     const bookId = urlParams.get("id");
@@ -22,10 +32,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupHeaderEventListeners();
     setupEventListeners();
 
-    // Check if user is admin and show admin tools
+    // Check if user is admin and show admin tools and features
     if (isAdmin()) {
-        document.querySelector(".admin-tools").style.display = "block";
+        console.log("User is admin, showing admin tools and features");
+        // Show Admin Tools link in navbar
         document.getElementById("admin-tools-link").style.display = "inline-flex";
+        // Show admin actions (Edit Book, Delete Book)
+        const adminActions = document.getElementById("admin-actions");
+        if (adminActions) {
+            adminActions.style.display = "block";
+        } else {
+            console.error("Admin actions container not found in DOM");
+        }
+    } else {
+        console.log("User is not admin, hiding admin tools and features");
+        document.getElementById("admin-tools-link").style.display = "none";
+        const adminActions = document.getElementById("admin-actions");
+        if (adminActions) {
+            adminActions.style.display = "none";
+        }
     }
 });
 
@@ -46,6 +71,7 @@ function isAuthenticated() {
 
 function isAdmin() {
     const userRole = localStorage.getItem("user_role");
+    console.log("Checking isAdmin, user_role:", userRole); // Debug
     return userRole === "admin";
 }
 
@@ -112,6 +138,15 @@ async function fetchWithAuth(url, options = {}) {
     return response;
 }
 
+// Toggle theme function
+function toggleTheme() {
+    const currentTheme = localStorage.getItem(THEME_KEY) || LIGHT_MODE;
+    const newTheme = currentTheme === LIGHT_MODE ? DARK_MODE : LIGHT_MODE;
+    document.body.classList.toggle("dark", newTheme === DARK_MODE); // Fixed to use "dark" class
+    localStorage.setItem(THEME_KEY, newTheme);
+    console.log(`Theme switched to: ${newTheme}`);
+}
+
 // Fetch and display user profile
 async function loadUserProfile() {
     const profileNameElement = document.querySelector(".profile-name");
@@ -134,6 +169,7 @@ async function loadUserProfile() {
         profileNameElement.textContent = username;
         localStorage.setItem("username", username);
         localStorage.setItem("user_role", userData.role || "user"); // Assuming role is returned
+        console.log("User profile loaded, role:", userData.role); // Debug
     } catch (error) {
         console.error("Profile fetch error:", error.message);
         profileNameElement.textContent = localStorage.getItem("username") || "User";
@@ -169,7 +205,7 @@ async function updateCartCount() {
     }
 }
 
-// Setup Header Event Listeners (unchanged for brevity, assumed correct)
+// Setup Header Event Listeners with Admin Tools Modal
 function setupHeaderEventListeners() {
     let dropdownMenu = null;
     let isDropdownOpen = false;
@@ -230,8 +266,67 @@ function setupHeaderEventListeners() {
     if (adminToolsLink && isAdmin()) {
         adminToolsLink.addEventListener("click", (event) => {
             event.preventDefault();
-            console.log("Admin tools link clicked");
+            console.log("Admin tools link clicked, toggling modal");
+            if (isAdminToolsModalOpen) {
+                closeAdminToolsModal();
+            } else {
+                openAdminToolsModal();
+            }
         });
+
+        document.addEventListener("click", (event) => {
+            if (
+                isAdminToolsModalOpen &&
+                !adminToolsLink.contains(event.target) &&
+                adminToolsModal &&
+                !adminToolsModal.contains(event.target) &&
+                !event.target.classList.contains("close-btn")
+            ) {
+                closeAdminToolsModal();
+            }
+        });
+
+        // Set up admin tools modal listeners once
+        adminToolsModal = document.getElementById("admin-tools-modal");
+        if (adminToolsModal) {
+            const toggleThemeBtn = document.getElementById("toggle-theme");
+            const registerUserBtn = document.getElementById("register-user");
+            const closeBtn = adminToolsModal.querySelector(".close-btn");
+
+            if (toggleThemeBtn) {
+                toggleThemeBtn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("Toggle Theme clicked");
+                    toggleTheme();
+                    closeAdminToolsModal();
+                });
+            } else {
+                console.error("Toggle theme button not found");
+            }
+
+            if (registerUserBtn) {
+                registerUserBtn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("Register New User clicked");
+                    window.location.href = "../pages/signup.html?adminMode=true";
+                    closeAdminToolsModal();
+                });
+            } else {
+                console.error("Register user button not found");
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("Close button clicked");
+                    closeAdminToolsModal();
+                });
+            } else {
+                console.error("Close button not found");
+            }
+        } else {
+            console.error("Admin tools modal not found in DOM");
+        }
     }
 
     document.getElementById("search")?.addEventListener("keypress", (event) => {
@@ -310,6 +405,24 @@ function setupHeaderEventListeners() {
             dropdownMenu = null;
         }
         isDropdownOpen = false;
+    }
+
+    function openAdminToolsModal() {
+        adminToolsModal = document.getElementById("admin-tools-modal");
+        if (!adminToolsModal) {
+            console.error("Admin tools modal not found in DOM");
+            return;
+        }
+
+        adminToolsModal.style.display = "flex";
+        isAdminToolsModalOpen = true;
+    }
+
+    function closeAdminToolsModal() {
+        if (adminToolsModal) {
+            adminToolsModal.style.display = "none";
+        }
+        isAdminToolsModalOpen = false;
     }
 }
 
@@ -802,31 +915,47 @@ function setupEventListeners() {
 
     // Admin Event Listeners
     if (isAdmin()) {
-        document.getElementById("edit-book-btn").addEventListener("click", () => {
-            document.getElementById("edit-book-modal").style.display = "flex";
-        });
+        const editBookBtn = document.getElementById("edit-book-btn");
+        const deleteBookBtn = document.getElementById("delete-book-btn");
+        const deleteRatingsBtn = document.getElementById("delete-ratings-btn");
 
-        document.getElementById("delete-book-btn").addEventListener("click", () => {
-            deleteBook(bookId);
-        });
+        if (editBookBtn) {
+            editBookBtn.addEventListener("click", () => {
+                document.getElementById("edit-book-modal").style.display = "flex";
+            });
+        } else {
+            console.error("Edit Book button not found in DOM");
+        }
 
-        document.getElementById("delete-ratings-btn").addEventListener("click", () => {
-            deleteAllRatings(bookId);
-        });
+        if (deleteBookBtn) {
+            deleteBookBtn.addEventListener("click", () => {
+                deleteBook(bookId);
+            });
+        } else {
+            console.error("Delete Book button not found in DOM");
+        }
 
-        document.getElementById("edit-book-form").addEventListener("submit", (event) => {
+        if (deleteRatingsBtn) {
+            deleteRatingsBtn.addEventListener("click", () => {
+                deleteAllRatings(bookId);
+            });
+        } else {
+            console.error("Delete All Ratings button not found in DOM");
+        }
+
+        document.getElementById("edit-book-form")?.addEventListener("submit", (event) => {
             event.preventDefault();
             updateBook(bookId);
         });
 
-        document.querySelector("#edit-book-modal .close-btn").addEventListener("click", () => {
+        document.querySelector("#edit-book-modal .close-btn")?.addEventListener("click", () => {
             closeEditModal();
         });
 
         document.addEventListener("click", (event) => {
             const modal = document.getElementById("edit-book-modal");
             if (
-                modal.style.display === "flex" &&
+                modal?.style.display === "flex" &&
                 !modal.querySelector(".modal-content").contains(event.target) &&
                 event.target.id !== "edit-book-btn"
             ) {
@@ -835,7 +964,6 @@ function setupEventListeners() {
         });
     }
 }
-
 // Update Star Display
 function updateStarDisplay(rating) {
     const stars = document.querySelectorAll("#rating-stars .star");

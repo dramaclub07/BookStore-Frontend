@@ -1,34 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bookstore - Book Details</title>
-    <link rel="stylesheet" href="../styles/bookDetails.css">
-    <link rel="stylesheet" href="../styles/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
+    <link rel="stylesheet" href="../styles/bookDetails.css" />
+    <link rel="stylesheet" href="../styles/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
     <header>
-        <div class="navbar">
-            <div class="logo">
-                <img src="../assets/education@2x.png" style="width: 50px; height: 30px;"> Bookstore
-            </div>
-            <div class="search-container">
-                <input type="text" id="search" class="search-bar" placeholder="Search books...">
-            </div>
-            <div class="nav-links">
-                <span id="profile-link"><i class="fa-solid fa-user"></i> <span class="profile-name">Profile</span></span>
-                <span id="cart-link"><i class="fa-solid fa-shopping-cart"></i> <span class="cart-count">0</span></span>
-                <span id="admin-tools-link" style="display: none;"><i class="fa-solid fa-tools"></i> Admin Tools</span>
-            </div>
+      <div class="navbar">
+        <div class="logo">
+          <img
+            src="../assets/education@2x.png"
+            style="width: 50px; height: 30px"
+          />
+          Bookstore
         </div>
+        <div class="search-container">
+          <input
+            type="text"
+            id="search"
+            class="search-bar"
+            placeholder="Search books..."
+          />
+        </div>
+        <div class="nav-links">
+          <span id="profile-link"
+            ><i class="fa-solid fa-user"></i>
+            <span class="profile-name">Profile</span></span
+          >
+          <span id="cart-link"
+            ><i class="fa-solid fa-shopping-cart"></i>
+            <span class="cart-count">0</span></span
+          >
+          <span id="admin-tools-link" style="display: none"
+            ><i class="fa-solid fa-tools"></i> Admin Tools</span
+          >
+        </div>
+      </div>
     </header>
 
     <main class="content-wrapper">
-        <div class="breadcrumb">
-            <a href="Homepage.html">Home</a> > <span>Book Details</span>
-        </div>
+      <div class="breadcrumb">
+        <a href="Homepage.html">Home</a> > <span>Book Details</span>
+      </div>
 
         <section class="book-details">
             <div class="book-details-left">
@@ -52,84 +72,123 @@
                     </button>
                 </div>
             </div>
-            <div class="book-details-right">
-                <h1 id="book-title">Don't Make Me Think</h1>
-                <p id="book-author">by Steve Krug</p>
-                <div class="rating">
-                    <span id="book-rating-value">4.5</span>
-                    <span class="star">★</span>
-                    <span id="book-rating-count">(210)</span>
-                </div>
-                <div class="price-info">
-                    <span id="book-price">Rs. 1500</span>
-                    <span id="book-old-price">Rs. 2000</span>
-                </div>
-                <div class="book-description">
-                    <h3>Book Detail</h3>
-                    <p id="book-description">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit...
-                    </p>
-                </div>
-                <!-- Admin Tools Section -->
-                <div class="admin-tools" style="display: none; margin-top: 20px;">
-                    <h3>Admin Actions</h3>
-                    <div class="admin-actions">
-                        <button id="edit-book-btn" class="admin-btn">Edit Book</button>
-                        <button id="delete-book-btn" class="admin-btn">Delete Book</button>
-                        <button id="delete-ratings-btn" class="admin-btn">Delete All Ratings</button>
-                    </div>
-                </div>
-                <section class="customer-feedback">
-                    <h2>Customer Feedback</h2>
-                    <div class="overall-rating">
-                        <h3>Overall Rating</h3>
-                        <div class="stars" id="rating-stars">
-                            <span class="star" data-value="1">★</span>
-                            <span class="star" data-value="2">★</span>
-                            <span class="star" data-value="3">★</span>
-                            <span class="star" data-value="4">★</span>
-                            <span class="star" data-value="5">★</span>
-                        </div>
-                        <form id="review-form">
-                            <textarea id="review-text" placeholder="Write your review" required></textarea>
-                            <button type="submit" id="submit-review">Submit</button>
-                        </form>
-                    </div>
-                    <div id="reviews-list" class="reviews-list">
-                        <!-- Reviews will be dynamically inserted here -->
-                    </div>
-                </section>
+          </div>
+          
+          <div class="action-buttons">
+            <button id="add-to-bag" class="add-to-bag">ADD TO BAG</button>
+            <div
+              id="quantity-control"
+              class="quantity-control"
+              style="display: none"
+            >
+              <button id="decrement">-</button>
+              <span id="quantity-display">1</span>
+              <button id="increment">+</button>
             </div>
-        </section>
-
-        <!-- Edit Book Modal -->
-        <div id="edit-book-modal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <span class="close-btn">&times;</span>
-                <div class="modal-header">
-                    <h2>Edit Book</h2>
-                </div>
-                <div class="modal-body">
-                    <form id="edit-book-form">
-                        <label for="edit-book-name">Book Name:</label>
-                        <input type="text" id="edit-book-name" required>
-                        <label for="edit-author-name">Author Name:</label>
-                        <input type="text" id="edit-author-name" required>
-                        <label for="edit-discounted-price">Discounted Price:</label>
-                        <input type="number" id="edit-discounted-price" required>
-                        <label for="edit-book-mrp">MRP:</label>
-                        <input type="number" id="edit-book-mrp" required>
-                        <label for="edit-description">Description:</label>
-                        <textarea id="edit-description" required></textarea>
-                        <label for="edit-book-image">Image URL:</label>
-                        <input type="text" id="edit-book-image">
-                        <button type="submit">Save Changes</button>
-                    </form>
-                </div>
-            </div>
+            <button id="add-to-wishlist" class="wishlist">
+              <i class="far fa-heart"></i> WISHLIST
+            </button>
+          </div>
         </div>
+        <div class="book-details-right">
+          <h1 id="book-title">Don't Make Me Think</h1>
+          <p id="book-author">by Steve Krug</p>
+          <div class="rating">
+            <span id="book-rating-value">4.5</span>
+            <span class="star">★</span>
+            <span id="book-rating-count">(210)</span>
+          </div>
+          <div class="price-info">
+            <span id="book-price">Rs. 1500</span>
+            <span id="book-old-price">Rs. 2000</span>
+          </div>
+          <!-- Admin Actions: Edit Book and Delete Book -->
+          <div class="admin-actions" id="admin-actions" style="display: none;">
+            <button id="edit-book-btn">Edit Book</button>
+            <button id="delete-book-btn">Delete Book</button>
+            <button id="delete-ratings-btn">Delete All Ratings</button>
+          </div>
+          
+          <div class="book-description">
+            <h3>Book Detail</h3>
+            <p id="book-description">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit...
+            </p>
+          </div>
+
+          <section class="customer-feedback">
+            <h2>Customer Feedback</h2>
+            <div class="overall-rating">
+              <h3>Overall Rating</h3>
+              <div class="stars" id="rating-stars">
+                <span class="star" data-value="1">★</span>
+                <span class="star" data-value="2">★</span>
+                <span class="star" data-value="3">★</span>
+                <span class="star" data-value="4">★</span>
+                <span class="star" data-value="5">★</span>
+              </div>
+              <form id="review-form">
+                <textarea
+                  id="review-text"
+                  placeholder="Write your review"
+                  required
+                ></textarea>
+                <button type="submit" id="submit-review">Submit</button>
+              </form>
+            </div>
+            <div id="reviews-list" class="reviews-list">
+              <!-- Reviews will be dynamically inserted here -->
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- Admin Tools Modal -->
+      <div id="admin-tools-modal" class="modal" style="display: none">
+        <div class="modal-content">
+          <span class="close-btn">×</span>
+          <div class="modal-header">
+            <h2>Admin Tools</h2>
+          </div>
+          <div class="modal-body">
+            <div class="admin-tool-item" id="toggle-theme">
+              Toggle Light/Dark Mode
+            </div>
+            <div class="admin-tool-item" id="register-user">
+              Register New User
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Edit Book Modal -->
+      <div id="edit-book-modal" class="modal" style="display: none">
+        <div class="modal-content">
+          <span class="close-btn">×</span>
+          <div class="modal-header">
+            <h2>Edit Book</h2>
+          </div>
+          <div class="modal-body">
+            <form id="edit-book-form">
+              <label for="edit-book-name">Book Name:</label>
+              <input type="text" id="edit-book-name" required />
+              <label for="edit-author-name">Author Name:</label>
+              <input type="text" id="edit-author-name" required />
+              <label for="edit-discounted-price">Discounted Price:</label>
+              <input type="number" id="edit-discounted-price" required />
+              <label for="edit-book-mrp">MRP:</label>
+              <input type="number" id="edit-book-mrp" required />
+              <label for="edit-description">Description:</label>
+              <textarea id="edit-description" required></textarea>
+              <label for="edit-book-image">Image URL:</label>
+              <input type="text" id="edit-book-image" />
+              <button type="submit">Save Changes</button>
+            </form>
+          </div>
+        </div>
+      </div>
     </main>
 
     <script src="../scripts/bookDetails.js"></script>
-</body>
+  </body>
 </html>
