@@ -126,6 +126,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (userIsAdmin) {
         document.querySelector(".admin-actions").style.display = "block";
         document.getElementById("admin-tools-link").style.display = "inline-flex";
+        // Hide the cart icon for admins
+        const cartLink = document.getElementById("cart-link");
+        if (cartLink) {
+            cartLink.style.display = "none";
+        }
+    } else {
+        // Ensure the cart icon is visible for non-admin users
+        const cartLink = document.getElementById("cart-link");
+        if (cartLink) {
+            cartLink.style.display = "inline-flex";
+        }
     }
 
     const sortBooks = document.getElementById("sort-books");

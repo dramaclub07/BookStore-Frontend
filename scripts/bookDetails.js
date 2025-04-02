@@ -13,7 +13,7 @@ let isAdminToolsModalOpen = false;
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM fully loaded, initializing book details...");
     console.log("Access Token on load:", localStorage.getItem("access_token"));
-    console.log("User Role on load:", localStorage.getItem("user_role")); // Debug admin role
+    console.log("User Role on load:", localStorage.getItem("user_role"));
 
     const urlParams = new URLSearchParams(window.location.search);
     const bookId = urlParams.get("id");
@@ -35,14 +35,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Check if user is admin and show admin tools and features
     if (isAdmin()) {
         console.log("User is admin, showing admin tools and features");
-        // Show Admin Tools link in navbar
         document.getElementById("admin-tools-link").style.display = "inline-flex";
-        // Show admin actions (Edit Book, Delete Book)
         const adminActions = document.getElementById("admin-actions");
         if (adminActions) {
             adminActions.style.display = "block";
         } else {
             console.error("Admin actions container not found in DOM");
+        }
+        // Hide the cart icon for admins
+        const cartLink = document.getElementById("cart-link");
+        if (cartLink) {
+            cartLink.style.display = "none";
+        } else {
+            console.error("Cart link not found in DOM");
         }
     } else {
         console.log("User is not admin, hiding admin tools and features");
@@ -50,6 +55,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         const adminActions = document.getElementById("admin-actions");
         if (adminActions) {
             adminActions.style.display = "none";
+        }
+        // Ensure the cart icon is visible for non-admin users
+        const cartLink = document.getElementById("cart-link");
+        if (cartLink) {
+            cartLink.style.display = "inline-flex"; // Match the display style used for other nav-links
+        } else {
+            console.error("Cart link not found in DOM");
         }
     }
 });
