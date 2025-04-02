@@ -422,6 +422,48 @@ label {
         padding: 30px 20px;
     }
 }
+/* Add this to your existing login.css */
+
+.btn-github {
+    background: #24292e; /* GitHub's official dark color */
+    color: white;
+}
+
+/* Ensure the social-login section accommodates the new button */
+.social-login {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-social {
+    flex: 1;
+    min-width: 120px;
+    padding: 12px; /* Adjusted padding for consistency */
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 14px; /* Adjusted font size */
+    transition: background 0.3s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-social:hover {
+    opacity: 0.9;
+}
+
+.btn-social:active {
+    transform: scale(0.98);
+}
+
+/* No changes needed for Google button since it uses Google's styling */
 
 @media (max-width: 768px) {
     .container {

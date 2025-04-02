@@ -1,18 +1,12 @@
+
 // Base URL for API
-const API_BASE_URL = 'http://localhost:3000'; // Consistent with your setup
+const API_BASE_URL = 'http://127.0.0.1:3000/';
+
+// GitHub OAuth configuration
+const GITHUB_CLIENT_ID = 'Ov23liI3VxGwFnrQoeL1'; // Replace with your actual GitHub Client ID
+const GITHUB_REDIRECT_URI = 'http://127.0.0.1:5500/pages/login.html'; // Must match GitHub OAuth app settings
 
 console.log('login.js running');
-
-// Initialize Facebook SDK
-window.fbAsyncInit = function() {
-    FB.init({
-        appId: 'your_facebook_app_id', // Replace with your Facebook App ID
-        cookie: true,
-        xfbml: true,
-        version: 'v20.0'
-    });
-    FB.AppEvents.logPageView();
-};
 
 // Function to handle Google Sign-In response
 function handleCredentialResponse(response) {
@@ -21,59 +15,52 @@ function handleCredentialResponse(response) {
     verifySocialToken(id_token, 'google');
 }
 
-// Function to handle Facebook Sign-In
-function facebookSignIn() {
-    console.log("Initiating Facebook Sign-In");
-    FB.login(function(response) {
-        if (response.authResponse) {
-            const accessToken = response.authResponse.accessToken;
-            console.log("Facebook Sign-In successful! Access token received.");
-            verifySocialToken(accessToken, 'facebook');
-        } else {
-            console.error('User cancelled Facebook login or did not fully authorize.');
-            alert('Facebook login cancelled');
-        }
-    }, { scope: 'email' });
+// Function to handle GitHub Sign-In
+function githubSignIn() {
+    console.log("Initiating GitHub Sign-In");
+    const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_REDIRECT_URI)}&scope=user:email`;
+    window.location.href = authUrl; // Redirect to GitHub
 }
 
-// Function to verify social tokens (Google or Facebook) with your backend
-async function verifySocialToken(token, provider) {
+// Function to verify social tokens (Google or GitHub) with your backend
+async function verifySocialToken(tokenOrCode, provider) {
     try {
-        console.log(`Sending ${provider} token to backend for verification`);
-        const endpoint = provider === 'google' ? '/api/v1/google_auth' : '/api/v1/facebook_auth';
-        
+        console.log(`Sending ${provider} ${provider === 'google' ? 'token' : 'code'} to backend for verification`);
+        const endpoint = provider === 'google' ? '/api/v1/google_auth' : '/api/v1/github_auth/login';
+        const payload = provider === 'google' ? { token: tokenOrCode } : { code: tokenOrCode };
+
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ token })
+            body: JSON.stringify(payload)
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
             console.log("User authenticated successfully:", data.user);
-            
+
             // Store tokens and user info in localStorage
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('refresh_token', data.refresh_token);
             localStorage.setItem('username', data.user.full_name || data.user.email.split('@')[0]);
             localStorage.setItem('socialEmail', data.user.email);
             localStorage.setItem('socialProvider', provider);
-            localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000)); // Store expiration time in milliseconds
-            
+            localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
+
             localStorage.setItem('justLoggedIn', 'true'); // Flag for homepage refresh
-            
+
             alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login successful! Welcome, ${data.user.full_name || data.user.email.split('@')[0]}`);
-            window.location.href = '../pages/homePage.html';
+            window.location.href = '../pages/homePage.html'; // Redirect to homepage
         } else {
             console.error(`${provider} authentication failed:`, data.error || "Unknown error");
-            alert(`Authentication failed: ${data.error || "Unknown error"}`);
+            alert(`Authentication failed: ${data.error || "Unknown error"}`); // Show the specific error
         }
     } catch (error) {
-        console.error(`Error verifying ${provider} token:`, error);
-        alert(`Failed to verify ${provider} token: ${error.message}`);
+        console.error(`Error verifying ${provider} ${provider === 'google' ? 'token' : 'code'}:`, error);
+        alert(`Failed to verify ${provider} ${provider === 'google' ? 'token' : 'code'}: ${error.message}`);
     }
 }
 
@@ -176,10 +163,24 @@ function displayRandomQuote() {
     setInterval(updateQuote, 10000);
 }
 
+// Handle GitHub callback on page load
+function handleGitHubCallback() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+        console.log("GitHub code received:", code);
+        verifySocialToken(code, 'github');
+        // Clear the URL parameters to avoid re-processing
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
+
 // Initialize on DOM load
 document.addEventListener("DOMContentLoaded", async function () {
     displayRandomQuote();
+    handleGitHubCallback(); // Check for GitHub code on page load
 
+    // Tab switching logic
     document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', (e) => {
             e.preventDefault();
@@ -191,6 +192,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     });
 
+    // Toggle to signup form
     document.querySelector('.toggle-signup').addEventListener('click', (e) => {
         e.preventDefault();
         document.querySelector('.tab[data-tab="login"]').classList.remove('active');
@@ -199,6 +201,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         document.querySelector('#signup-form').classList.add('active');
     });
 
+    // Password visibility toggle for login form
     const loginPasswordInput = document.getElementById('login-password');
     const loginTogglePassword = document.getElementById('login-toggle-password');
     const loginEyeIcon = loginTogglePassword?.querySelector('svg');
@@ -213,6 +216,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
+    // Password visibility toggle for signup form
     const signupPasswordInput = document.getElementById('signup-password');
     const signupTogglePassword = document.getElementById('signup-toggle-password');
     const signupEyeIcon = signupTogglePassword?.querySelector('svg');
@@ -227,6 +231,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
+    // Remember Me functionality
     const emailInput = document.getElementById('login-email');
     const passwordInput = document.getElementById('login-password');
     const rememberMeCheckbox = document.getElementById('rememberMe');
@@ -236,6 +241,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
     }
 
+    // Login form submission
     document.getElementById('login-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = emailInput.value.trim();
@@ -288,6 +294,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     });
 
+    // Signup form submission
     document.getElementById('signup-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const nameInput = document.getElementById('signup-name');
@@ -341,6 +348,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     });
 
-    // Ensure token is valid on page load (optional, if you want to check immediately)
+    // Ensure token is valid on page load
     await ensureValidToken();
 });
