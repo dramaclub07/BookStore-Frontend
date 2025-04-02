@@ -435,7 +435,6 @@ body {
     font-size: 14px;
     font-weight: 600;
     transition: background 0.2s ease, transform 0.1s ease;
-
 }
 
 .btn-add-book:hover {
@@ -621,7 +620,6 @@ body.dark .out-of-stock-banner {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(0, 0, 0, 0.1);
     background-color: #fff;
-
 }
 
 /* Book Content */
@@ -642,7 +640,6 @@ body.dark .out-of-stock-banner {
     text-overflow: ellipsis;
     cursor: pointer;
     transition: color 0.2s ease;
-    
 }
 
 .book-content p {
@@ -655,8 +652,8 @@ body.dark .out-of-stock-banner {
     text-overflow: ellipsis;
     transition: color 0.2s ease;
     cursor: pointer;
-    white-space: nowrap; 
-    color:rgb(245, 10, 10) 
+    white-space: nowrap;
+    color: rgb(245, 10, 10);
 }
 
 .rating {
@@ -681,8 +678,7 @@ body.dark .out-of-stock-banner {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color:black;
-
+    color: black;
 }
 
 /* Improved Price Styling */
@@ -710,13 +706,10 @@ body.dark .out-of-stock-banner {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-
 }
 
 .book-card:hover .price {
     color: #8a2328; /* Darker shade on hover */
-
-
 }
 
 .old-price {
@@ -740,14 +733,12 @@ body.dark .out-of-stock-banner {
     align-items: center;
     flex-wrap: wrap;
     gap: 5px;
-
 }
 
 .pagination span {
     margin: 0 10px;
     font-size: 14px;
     color: #333;
-    
 }
 
 .pagination button {
@@ -869,7 +860,8 @@ footer {
     margin: 0 auto;
 }
 
-.add-book-form, .csv-upload {
+.add-book-form,
+.csv-upload {
     background: #fff;
     padding: 20px;
     border-radius: 8px;
@@ -877,7 +869,8 @@ footer {
     border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.add-book-form h3, .csv-upload h3 {
+.add-book-form h3,
+.csv-upload h3 {
     font-size: 20px;
     font-weight: 600;
     color: #333;
@@ -973,6 +966,225 @@ body.dark .form-group textarea {
 body.dark .form-group input:focus,
 body.dark .form-group textarea:focus {
     border-color: #A03037;
+}
+
+/* Edit Book Modal */
+#edit-book-modal.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+    overflow: hidden;
+    animation: fadeInBackdrop 0.3s ease forwards;
+    display: flex;
+    min-height: 100vh;
+}
+
+@keyframes fadeInBackdrop {
+    from {
+        background: rgba(0, 0, 0, 0);
+    }
+    to {
+        background: rgba(0, 0, 0, 0.6);
+    }
+}
+
+#edit-book-modal .modal-content {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 400px;
+    padding: 20px;
+    position: relative;
+    border: none;
+    transform: scale(0.95);
+    animation: popIn 0.3s ease forwards;
+    margin: 15px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+body.dark #edit-book-modal .modal-content {
+    background: #333;
+}
+
+#edit-book-modal .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #888;
+    transition: all 0.3s ease;
+}
+
+#edit-book-modal .close-btn:hover {
+    color: #A03037;
+    transform: rotate(90deg);
+}
+
+body.dark #edit-book-modal .close-btn {
+    color: #aaa;
+}
+
+#edit-book-modal .modal-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+#edit-book-modal .modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #A03037;
+    letter-spacing: 0.5px;
+}
+
+body.dark #edit-book-modal .modal-header h2 {
+    color: #e0e0e0;
+}
+
+#edit-book-modal .modal-body form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#edit-book-modal .modal-body label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+body.dark #edit-book-modal .modal-body label {
+    color: #e0e0e0;
+}
+
+#edit-book-modal .modal-body input,
+#edit-book-modal .modal-body textarea {
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    font-size: 14px;
+    width: 100%;
+    transition: all 0.3s ease;
+}
+
+#edit-book-modal .modal-body input:focus,
+#edit-book-modal .modal-body textarea:focus {
+    outline: none;
+    border-color: #A03037;
+    box-shadow: 0 0 6px rgba(165, 42, 42, 0.3);
+}
+
+body.dark #edit-book-modal .modal-body input,
+body.dark #edit-book-modal .modal-body textarea {
+    background: #444;
+    color: #e0e0e0;
+    border-color: #555;
+}
+
+#edit-book-modal .modal-body textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+#edit-book-modal .modal-body button {
+    padding: 10px;
+    background: linear-gradient(90deg, #A03037, #8b1e1e);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 700;
+    transition: all 0.3s ease;
+}
+
+#edit-book-modal .modal-body button:hover {
+    background: linear-gradient(90deg, #8b1e1e, #6e1515);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive Design for Edit Book Modal */
+@media (max-width: 768px) {
+    #edit-book-modal .modal-content {
+        max-width: 350px;
+        padding: 15px;
+    }
+
+    #edit-book-modal .modal-header h2 {
+        font-size: 18px;
+    }
+
+    #edit-book-modal .modal-body label {
+        font-size: 13px;
+    }
+
+    #edit-book-modal .modal-body input,
+    #edit-book-modal .modal-body textarea {
+        padding: 8px;
+        font-size: 13px;
+    }
+
+    #edit-book-modal .modal-body textarea {
+        min-height: 80px;
+    }
+
+    #edit-book-modal .modal-body button {
+        padding: 8px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    #edit-book-modal .modal-content {
+        max-width: 300px;
+        padding: 12px;
+        margin: 10px;
+    }
+
+    #edit-book-modal .close-btn {
+        font-size: 20px;
+        top: 8px;
+        right: 8px;
+    }
+
+    #edit-book-modal .modal-header h2 {
+        font-size: 16px;
+        margin-bottom: 15px;
+    }
+
+    #edit-book-modal .modal-body form {
+        gap: 10px;
+    }
+
+    #edit-book-modal .modal-body label {
+        font-size: 12px;
+    }
+
+    #edit-book-modal .modal-body input,
+    #edit-book-modal .modal-body textarea {
+        padding: 6px;
+        font-size: 12px;
+    }
+
+    #edit-book-modal .modal-body textarea {
+        min-height: 60px;
+    }
+
+    #edit-book-modal .modal-body button {
+        padding: 6px;
+        font-size: 13px;
+    }
 }
 
 /* Responsive Media Queries */

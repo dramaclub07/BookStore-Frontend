@@ -1033,21 +1033,36 @@ body.dark #admin-tools-modal .modal-header h2 {
     justify-content: center;
     align-items: center;
     z-index: 1050;
-    overflow: auto;
-    animation: fadeInBackdrop 0.3s ease;
+    overflow: hidden; /* Changed from auto to hidden to prevent scrolling */
+    animation: fadeInBackdrop 0.3s ease forwards; /* Ensure animation runs */
+    display: flex; /* Ensure flexbox centering works */
+    min-height: 100vh; /* Ensure it takes full viewport height */
+}
+
+/* Ensure the backdrop fades in properly */
+@keyframes fadeInBackdrop {
+    from {
+        background: rgba(0, 0, 0, 0); /* Start fully transparent */
+    }
+    to {
+        background: rgba(0, 0, 0, 0.6); /* End at desired opacity */
+    }
 }
 
 #edit-book-modal .modal-content {
     background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-    width: 450px;
-    max-width: 95%;
-    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 400px;
+    padding: 20px;
     position: relative;
     border: none;
-    transform: scale(0.9);
+    transform: scale(0.95);
     animation: popIn 0.3s ease forwards;
+    margin: 15px;
+    max-height: 80vh; /* Limit height to avoid overflow */
+    overflow-y: auto; /* Allow scrolling within modal content if needed */
 }
 
 body.dark #edit-book-modal .modal-content {
@@ -1056,9 +1071,9 @@ body.dark #edit-book-modal .modal-content {
 
 #edit-book-modal .close-btn {
     position: absolute;
-    top: 15px;
-    right: 15px;
-    font-size: 28px;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
     cursor: pointer;
     color: #888;
     transition: all 0.3s ease;
@@ -1075,12 +1090,12 @@ body.dark #edit-book-modal .close-btn {
 
 #edit-book-modal .modal-header {
     text-align: center;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
 }
 
 #edit-book-modal .modal-header h2 {
     margin: 0;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
     color: #A03037;
     letter-spacing: 0.5px;
@@ -1093,11 +1108,11 @@ body.dark #edit-book-modal .modal-header h2 {
 #edit-book-modal .modal-body form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 15px;
 }
 
 #edit-book-modal .modal-body label {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     color: #333;
 }
@@ -1108,10 +1123,10 @@ body.dark #edit-book-modal .modal-body label {
 
 #edit-book-modal .modal-body input,
 #edit-book-modal .modal-body textarea {
-    padding: 12px;
+    padding: 10px;
     border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    font-size: 15px;
+    border-radius: 5px;
+    font-size: 14px;
     width: 100%;
     transition: all 0.3s ease;
 }
@@ -1120,7 +1135,7 @@ body.dark #edit-book-modal .modal-body label {
 #edit-book-modal .modal-body textarea:focus {
     outline: none;
     border-color: #A03037;
-    box-shadow: 0 0 8px rgba(165, 42, 42, 0.3);
+    box-shadow: 0 0 6px rgba(165, 42, 42, 0.3);
 }
 
 body.dark #edit-book-modal .modal-body input,
@@ -1131,18 +1146,18 @@ body.dark #edit-book-modal .modal-body textarea {
 }
 
 #edit-book-modal .modal-body textarea {
-    min-height: 120px;
+    min-height: 100px;
     resize: vertical;
 }
 
 #edit-book-modal .modal-body button {
-    padding: 12px;
+    padding: 10px;
     background: linear-gradient(90deg, #A03037, #8b1e1e);
     color: #fff;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     transition: all 0.3s ease;
 }
@@ -1150,11 +1165,39 @@ body.dark #edit-book-modal .modal-body textarea {
 #edit-book-modal .modal-body button:hover {
     background: linear-gradient(90deg, #8b1e1e, #6e1515);
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    #edit-book-modal .modal-content {
+        max-width: 350px;
+        padding: 15px;
+    }
+
+    #edit-book-modal .modal-header h2 {
+        font-size: 18px;
+    }
+
+    #edit-book-modal .modal-body label {
+        font-size: 13px;
+    }
+
+    #edit-book-modal .modal-body input,
+    #edit-book-modal .modal-body textarea {
+        padding: 8px;
+        font-size: 13px;
+    }
+
+    #edit-book-modal .modal-body textarea {
+        min-height: 80px;
+    }
+
+    #edit-book-modal .modal-body button {
+        padding: 8px;
+        font-size: 14px;
+    }
+
     .content-wrapper {
         padding: 20px;
     }
@@ -1193,6 +1236,46 @@ body.dark #edit-book-modal .modal-body textarea {
 }
 
 @media (max-width: 480px) {
+    #edit-book-modal .modal-content {
+        max-width: 300px;
+        padding: 12px;
+        margin: 10px;
+    }
+
+    #edit-book-modal .close-btn {
+        font-size: 20px;
+        top: 8px;
+        right: 8px;
+    }
+
+    #edit-book-modal .modal-header h2 {
+        font-size: 16px;
+        margin-bottom: 15px;
+    }
+
+    #edit-book-modal .modal-body form {
+        gap: 10px;
+    }
+
+    #edit-book-modal .modal-body label {
+        font-size: 12px;
+    }
+
+    #edit-book-modal .modal-body input,
+    #edit-book-modal .modal-body textarea {
+        padding: 6px;
+        font-size: 12px;
+    }
+
+    #edit-book-modal .modal-body textarea {
+        min-height: 60px;
+    }
+
+    #edit-book-modal .modal-body button {
+        padding: 6px;
+        font-size: 13px;
+    }
+
     .content-wrapper {
         padding: 15px;
     }

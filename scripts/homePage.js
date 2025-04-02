@@ -12,6 +12,10 @@ let isSearchDropdownOpen = false;
 let adminToolsModal = null;
 let isAdminToolsModalOpen = false;
 
+// Edit book modal state
+let editBookModal = null;
+let isEditBookModalOpen = false;
+
 // Theme constants
 const THEME_KEY = "theme";
 const LIGHT_MODE = "light";
@@ -30,6 +34,12 @@ function getAuthHeaders() {
 function isAuthenticated() {
     const accessToken = localStorage.getItem("access_token");
     return accessToken !== null;
+}
+
+function isAdmin() {
+    const userRole = localStorage.getItem("user_role");
+    console.log("Checking isAdmin, user_role:", userRole);
+    return userRole === "admin";
 }
 
 async function refreshAccessToken() {
@@ -95,12 +105,6 @@ async function fetchWithAuth(url, options = {}) {
     return response;
 }
 
-// Check if user is admin
-function isAdmin() {
-    const userRole = JSON.parse(localStorage.getItem("user"))?.role;
-    return userRole === "admin";
-}
-
 // Toggle theme function
 function toggleTheme() {
     const currentTheme = localStorage.getItem(THEME_KEY) || LIGHT_MODE;
@@ -113,7 +117,7 @@ function toggleTheme() {
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM fully loaded, initializing homepage...");
     console.log("Access Token on load:", localStorage.getItem("access_token"));
-    console.log("User Role:", JSON.parse(localStorage.getItem("user"))?.role);
+    console.log("User Role:", localStorage.getItem("user_role"));
 
     const isLoggedIn = isAuthenticated();
     const userIsAdmin = isAdmin();
@@ -249,7 +253,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     closeAdminToolsModal();
                 });
             } else {
-                console.error("Close button not found");
+                console.error("Close buttonnot found");
             }
         } else {
             console.error("Admin tools modal not found in DOM");
@@ -262,6 +266,48 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.log("Add Book button clicked, redirecting to addBook.html");
             window.location.href = "../pages/addBook.html";
         });
+    }
+
+    // Set up edit book modal listeners
+    if (userIsAdmin) {
+        editBookModal = document.getElementById("edit-book-modal");
+        if (editBookModal) {
+            const closeBtn = editBookModal.querySelector(".close-btn");
+            const editBookForm = document.getElementById("edit-book-form");
+
+            if (closeBtn) {
+                closeBtn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("Close button clicked for edit book modal");
+                    closeEditBookModal();
+                });
+            } else {
+                console.error("Close button for edit book modal not found");
+            }
+
+            if (editBookForm) {
+                editBookForm.addEventListener("submit", async (event) => {
+                    event.preventDefault();
+                    const bookId = editBookForm.dataset.bookId;
+                    await updateBook(bookId);
+                });
+            } else {
+                console.error("Edit book form not found");
+            }
+
+            document.addEventListener("click", (event) => {
+                if (
+                    isEditBookModalOpen &&
+                    !editBookModal.querySelector(".modal-content").contains(event.target) &&
+                    !event.target.classList.contains("edit-book") &&
+                    !event.target.closest(".edit-book")
+                ) {
+                    closeEditBookModal();
+                }
+            });
+        } else {
+            console.error("Edit book modal not found in DOM");
+        }
     }
 
     const searchInput = document.getElementById("search");
@@ -420,6 +466,7 @@ async function loadUserProfile() {
         const username = userData.name || "User";
         profileNameElement.textContent = username;
         localStorage.setItem("username", username);
+        localStorage.setItem("user_role", userData.role || "user");
     } catch (error) {
         console.error("Profile fetch error:", error.message);
         profileNameElement.textContent = localStorage.getItem("username") || "User";
@@ -446,7 +493,6 @@ async function updateCartCount() {
         const data = await response.json();
         console.log("Cart API response:", data);
 
-        // Extract the cart array from the response, default to empty array if not present
         const cartItems = data.cart || [];
         const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
         cartCountElement.textContent = totalItems;
@@ -651,9 +697,9 @@ function displayBooks(books) {
             const deleteButton = bookCard.querySelector(".delete-book");
 
             if (editButton) {
-                editButton.addEventListener("click", () => {
+                editButton.addEventListener("click", async () => {
                     console.log("Edit book clicked for ID:", book.id);
-                    window.location.href = `../pages/bookDetails.html?id=${book.id}`;
+                    await openEditBookModal(book.id);
                 });
             }
 
@@ -667,6 +713,79 @@ function displayBooks(books) {
             }
         }
     });
+}
+
+async function openEditBookModal(bookId) {
+    editBookModal = document.getElementById("edit-book-modal");
+    if (!editBookModal) {
+        console.error("Edit book modal not found in DOM");
+        return;
+    }
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}`);
+        if (!response) return;
+
+        if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch book details`);
+        const book = await response.json();
+        console.log("Fetched book details for editing:", book);
+
+        // Populate the form with book details
+        document.getElementById("edit-book-name").value = book.book_name || "";
+        document.getElementById("edit-author-name").value = book.author_name || "";
+        document.getElementById("edit-discounted-price").value = book.discounted_price || "";
+        document.getElementById("edit-book-mrp").value = book.book_mrp || "";
+        document.getElementById("edit-description").value = book.description || "";
+        document.getElementById("edit-book-image").value = book.book_image || "";
+
+        // Store book ID in the form for submission
+        const editBookForm = document.getElementById("edit-book-form");
+        editBookForm.dataset.bookId = bookId;
+
+        editBookModal.style.display = "flex";
+        isEditBookModalOpen = true;
+    } catch (error) {
+        console.error("Error fetching book details for edit:", error);
+        alert("Failed to load book details for editing.");
+    }
+}
+
+function closeEditBookModal() {
+    if (editBookModal) {
+        editBookModal.style.display = "none";
+    }
+    isEditBookModalOpen = false;
+}
+
+async function updateBook(bookId) {
+    const bookData = {
+        book_name: document.getElementById("edit-book-name").value,
+        author_name: document.getElementById("edit-author-name").value,
+        discounted_price: parseFloat(document.getElementById("edit-discounted-price").value),
+        book_mrp: parseFloat(document.getElementById("edit-book-mrp").value),
+        description: document.getElementById("edit-description").value,
+        book_image: document.getElementById("edit-book-image").value || null
+    };
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}`, {
+            method: "PUT",
+            body: JSON.stringify(bookData)
+        });
+
+        if (!response) return;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to update book");
+        }
+
+        alert("Book updated successfully!");
+        closeEditBookModal();
+        fetchBooks(document.getElementById("sort-books").value, currentPage, true);
+    } catch (error) {
+        console.error("Error updating book:", error);
+        alert(`Failed to update book: ${error.message}`);
+    }
 }
 
 async function deleteBook(bookId) {

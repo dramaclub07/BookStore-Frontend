@@ -72,6 +72,33 @@
         </div>
     </div>
 
+    <!-- Edit Book Modal -->
+    <div id="edit-book-modal" class="modal" style="display: none">
+        <div class="modal-content">
+            <span class="close-btn">×</span>
+            <div class="modal-header">
+                <h2>Edit Book</h2>
+            </div>
+            <div class="modal-body">
+                <form id="edit-book-form">
+                    <label for="edit-book-name">Book Name:</label>
+                    <input type="text" id="edit-book-name" required />
+                    <label for="edit-author-name">Author Name:</label>
+                    <input type="text" id="edit-author-name" required />
+                    <label for="edit-discounted-price">Discounted Price:</label>
+                    <input type="number" id="edit-discounted-price" required />
+                    <label for="edit-book-mrp">MRP:</label>
+                    <input type="number" id="edit-book-mrp" required />
+                    <label for="edit-description">Description:</label>
+                    <textarea id="edit-description" required></textarea>
+                    <label for="edit-book-image">Image URL:</label>
+                    <input type="text" id="edit-book-image" />
+                    <button type="submit">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <footer class="footer">
         <p>Copyright © 2020, Bookstore Private Limited. All Rights Reserved</p>
     </footer>
