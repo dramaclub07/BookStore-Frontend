@@ -1,18 +1,11 @@
-// Base URL for API (aligned with signup.js)
-const BASE_URL = 'http://127.0.0.1:3000/api/v1'; // Consistent with signup.js
+// Base URL for API
+const API_BASE_URL = 'http://127.0.0.1:3000/';
+
+// GitHub OAuth configuration
+const GITHUB_CLIENT_ID = 'Ov23liI3VxGwFnrQoeL1'; // Replace with your actual GitHub Client ID
+const GITHUB_REDIRECT_URI = 'http://127.0.0.1:5500/pages/login.html'; // Must match GitHub OAuth app settings
 
 console.log('login.js running');
-
-// Initialize Facebook SDK
-window.fbAsyncInit = function() {
-    FB.init({
-        appId: 'your_facebook_app_id', // Replace with your actual Facebook App ID
-        cookie: true,
-        xfbml: true,
-        version: 'v20.0'
-    });
-    FB.AppEvents.logPageView();
-};
 
 // Function to handle Google Sign-In response
 function handleCredentialResponse(response) {
@@ -21,64 +14,52 @@ function handleCredentialResponse(response) {
     verifySocialToken(id_token, 'google');
 }
 
-// Function to handle Facebook Sign-In
-function facebookSignIn() {
-    console.log("Initiating Facebook Sign-In");
-    FB.login(function(response) {
-        if (response.authResponse) {
-            const accessToken = response.authResponse.accessToken;
-            console.log("Facebook Sign-In successful! Access token received.");
-            verifySocialToken(accessToken, 'facebook');
-        } else {
-            console.error('User cancelled Facebook login or did not fully authorize.');
-            alert('Facebook login cancelled');
-        }
-    }, { scope: 'email' });
+// Function to handle GitHub Sign-In
+function githubSignIn() {
+    console.log("Initiating GitHub Sign-In");
+    const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_REDIRECT_URI)}&scope=user:email`;
+    window.location.href = authUrl; // Redirect to GitHub
 }
 
-// Function to verify social tokens (Google or Facebook) with your backend
-async function verifySocialToken(token, provider) {
+// Function to verify social tokens (Google or GitHub) with your backend
+async function verifySocialToken(tokenOrCode, provider) {
     try {
-        console.log(`Sending ${provider} token to backend for verification`);
-        const endpoint = provider === 'google' ? '/google_auth' : '/facebook_auth';
-        
-        const response = await fetch(`${BASE_URL}${endpoint}`, {
+        console.log(`Sending ${provider} ${provider === 'google' ? 'token' : 'code'} to backend for verification`);
+        const endpoint = provider === 'google' ? '/api/v1/google_auth' : '/api/v1/github_auth/login';
+        const payload = provider === 'google' ? { token: tokenOrCode } : { code: tokenOrCode };
+
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ token })
+            body: JSON.stringify(payload)
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
             console.log("User authenticated successfully:", data.user);
-            
-            // Store tokens and user info in localStorage (aligned with signup.js)
+
+            // Store tokens and user info in localStorage
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('refresh_token', data.refresh_token);
-            localStorage.setItem('user', JSON.stringify({
-                id: data.user.id,
-                email: data.user.email,
-                full_name: data.user.full_name,
-                role: data.user.role // Store role from social login
-            }));
             localStorage.setItem('username', data.user.full_name || data.user.email.split('@')[0]);
             localStorage.setItem('socialEmail', data.user.email);
             localStorage.setItem('socialProvider', provider);
             localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
+
             localStorage.setItem('justLoggedIn', 'true'); // Flag for homepage refresh
-            
+
             alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login successful! Welcome, ${data.user.full_name || data.user.email.split('@')[0]}`);
-            window.location.href = '../pages/homePage.html';
+            window.location.href = '../pages/homePage.html'; // Redirect to homepage
         } else {
             console.error(`${provider} authentication failed:`, data.error || "Unknown error");
-            alert(`Authentication failed: ${data.error || "Unknown error"}`);
+            alert(`Authentication failed: ${data.error || "Unknown error"}`); // Show the specific error
         }
     } catch (error) {
-        console.error(`Error verifying ${provider} token:`, error);
-        alert(`Failed to verify ${provider} token: ${error.message}`);
+        console.error(`Error verifying ${provider} ${provider === 'google' ? 'token' : 'code'}:`, error);
+        alert(`Failed to verify ${provider} ${provider === 'google' ? 'token' : 'code'}: ${error.message}`);
     }
 }
 
@@ -91,7 +72,7 @@ async function refreshAccessToken() {
     }
 
     try {
-        const response = await fetch(`${BASE_URL}/refresh`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/refresh`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -181,33 +162,75 @@ function displayRandomQuote() {
     setInterval(updateQuote, 10000);
 }
 
+// Handle GitHub callback on page load
+function handleGitHubCallback() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+        console.log("GitHub code received:", code);
+        verifySocialToken(code, 'github');
+        // Clear the URL parameters to avoid re-processing
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
+
 // Initialize on DOM load
 document.addEventListener("DOMContentLoaded", async function () {
     displayRandomQuote();
+    handleGitHubCallback(); // Check for GitHub code on page load
 
-    // Redirect to signup.html when "Signup" tab is clicked
-    document.querySelector('.tab[data-tab="signup"]').addEventListener('click', (e) => {
-        e.preventDefault();
-        window.location.href = '../pages/signup.html';
+    // Tab switching logic
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const tabId = tab.getAttribute('data-tab');
+            document.querySelectorAll('.auth-card').forEach(card => card.classList.remove('active'));
+            document.getElementById(`${tabId}-form`).classList.add('active');
+        });
     });
 
-    // Password toggle functionality
+    // Toggle to signup form
+    document.querySelector('.toggle-signup').addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelector('.tab[data-tab="login"]').classList.remove('active');
+        document.querySelector('.tab[data-tab="signup"]').classList.add('active');
+        document.querySelector('#login-form').classList.remove('active');
+        document.querySelector('#signup-form').classList.add('active');
+    });
+
+    // Password visibility toggle for login form
     const loginPasswordInput = document.getElementById('login-password');
     const loginTogglePassword = document.getElementById('login-toggle-password');
     const loginEyeIcon = loginTogglePassword?.querySelector('svg');
     if (loginTogglePassword && loginEyeIcon) {
         loginTogglePassword.addEventListener('click', () => {
-            if (loginPasswordInput.type === 'password') {
-                loginPasswordInput.type = 'text';
-                loginEyeIcon.style.opacity = '0.5';
-            } else {
+            loginPasswordInput.type = 'text';
+            loginEyeIcon.style.opacity = '0.5';
+            setTimeout(() => {
                 loginPasswordInput.type = 'password';
                 loginEyeIcon.style.opacity = '1';
-            }
+            }, 2000);
         });
     }
 
-    // Handle "Remember Me" functionality
+    // Password visibility toggle for signup form
+    const signupPasswordInput = document.getElementById('signup-password');
+    const signupTogglePassword = document.getElementById('signup-toggle-password');
+    const signupEyeIcon = signupTogglePassword?.querySelector('svg');
+    if (signupTogglePassword && signupEyeIcon) {
+        signupTogglePassword.addEventListener('click', () => {
+            signupPasswordInput.type = 'text';
+            signupEyeIcon.style.opacity = '0.5';
+            setTimeout(() => {
+                signupPasswordInput.type = 'password';
+                signupEyeIcon.style.opacity = '1';
+            }, 2000);
+        });
+    }
+
+    // Remember Me functionality
     const emailInput = document.getElementById('login-email');
     const passwordInput = document.getElementById('login-password');
     const rememberMeCheckbox = document.getElementById('rememberMe');
@@ -217,16 +240,15 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
     }
 
-    // Form submission for email/password login
+    // Login form submission
     document.getElementById('login-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = emailInput.value.trim();
         const password = passwordInput.value.trim();
-
-        // Validation aligned with signup.js
         const emailRegex = /^[\w+\-.]+@(gmail\.com|yahoo\.com|outlook\.com)$/i;
+
         if (!email || !emailRegex.test(email)) {
-            alert('Please enter a valid email (e.g., user@gmail.com, user@yahoo.com, or user@outlook.com).');
+            alert('Please enter a valid email (Gmail, Yahoo, or Outlook).');
             return;
         }
 
@@ -235,7 +257,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             return;
         }
 
-        // Handle "Remember Me"
         if (rememberMeCheckbox && rememberMeCheckbox.checked) {
             localStorage.setItem('rememberedEmail', email);
         } else {
@@ -245,7 +266,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         try {
             const payload = { email, password };
             console.log('Login payload:', payload);
-            const response = await fetch(`${BASE_URL}/users/login`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/users/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -254,21 +275,13 @@ document.addEventListener("DOMContentLoaded", async function () {
             const data = await response.json();
             console.log('Login response:', data);
             if (response.ok && data.access_token) {
-                // Store tokens and user info in localStorage (aligned with signup.js)
                 localStorage.setItem('access_token', data.access_token);
                 localStorage.setItem('refresh_token', data.refresh_token);
                 localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
-                localStorage.setItem('user', JSON.stringify({
-                    id: data.user.id,
-                    email: data.user.email,
-                    full_name: data.user.full_name,
-                    role: data.user.role // Store role from login response
-                }));
-                localStorage.setItem('username', data.user.full_name || email.split('@')[0]);
+                const username = data.user?.full_name || email.split('@')[0];
+                localStorage.setItem('username', username);
                 localStorage.setItem('justLoggedIn', 'true'); // Flag for homepage refresh
-
-                console.log('Username stored in localStorage:', localStorage.getItem('username'));
-                console.log('User role stored in localStorage:', data.user.role);
+                console.log('Username stored in localStorage:', username);
                 alert(data.message || 'Login successful!');
                 window.location.href = '../pages/homePage.html';
             } else {
@@ -276,10 +289,64 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
         } catch (error) {
             console.error('Login error:', error.message);
-            alert(`Failed to connect to the server at ${BASE_URL}. Error: ${error.message}`);
+            alert(`Failed to connect to the server at ${API_BASE_URL}. Error: ${error.message}`);
         }
     });
 
-    // Ensure token is valid on page load (optional)
+    // Signup form submission
+    document.getElementById('signup-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nameInput = document.getElementById('signup-name');
+        const emailInput = document.getElementById('signup-email');
+        const passwordInput = document.getElementById('signup-password');
+        const mobileInput = document.getElementById('signup-mobile');
+        const name = nameInput.value.trim();
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+        const mobile = mobileInput.value.trim();
+        const emailRegex = /^[\w+\-.]+@(gmail\.com|yahoo\.com|outlook\.com)$/i;
+        const mobileRegex = /^[6789]\d{9}$/;
+
+        if (!name || name.length < 3 || name.length > 50) {
+            alert('Full Name must be between 3 and 50 characters.');
+            return;
+        }
+
+        if (!email || !emailRegex.test(email)) {
+            alert('Please enter a valid email (Gmail, Yahoo, or Outlook).');
+            return;
+        }
+
+        if (!password || password.length < 6) {
+            alert('Password must be at least 6 characters.');
+            return;
+        }
+
+        if (!mobile || !mobileRegex.test(mobile)) {
+            alert('Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/users`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user: { full_name: name, email, password, mobile_number: mobile } })
+            });
+
+            const data = await response.json();
+            if (response.ok && data.message) {
+                alert(data.message);
+                document.querySelector('.tab[data-tab="login"]').click();
+            } else {
+                alert(data.errors || data.error || 'Failed to sign up. Please try again.');
+            }
+        } catch (error) {
+            console.error('Signup error:', error.message);
+            alert(`Failed to connect to the server at ${API_BASE_URL}. Error: ${error.message}`);
+        }
+    });
+
+    // Ensure token is valid on page load
     await ensureValidToken();
 });
