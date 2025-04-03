@@ -207,7 +207,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                                         ${orderStatus}
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     `;

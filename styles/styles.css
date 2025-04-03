@@ -252,6 +252,12 @@ body {
     transition: all var(--transition-fast);
     position: relative;
     padding: var(--spacing-xs) 0;
+    color: var(--text-white);
+    text-decoration: none;
+    user-select: none;
+    
+
+
 }
 
 .nav-links span:after {
@@ -267,6 +273,7 @@ body {
 
 .nav-links span:hover {
     color: var(--accent-color);
+
 }
 
 .nav-links span:hover:after {
@@ -291,8 +298,8 @@ body {
     display: none;
     align-items: center;
     justify-content: center;
-    top: -8px;
-    right: -12px;
+    top: -16px;
+    right:16px;
     border: 2px solid var(--primary-color);
     box-shadow: var(--shadow-sm);
     transition: transform var(--transition-fast);

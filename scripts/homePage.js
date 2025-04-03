@@ -8,6 +8,19 @@ const booksPerPage = 12;
 let searchDropdown = null;
 let isSearchDropdownOpen = false;
 
+// Admin tools modal state
+let adminToolsModal = null;
+let isAdminToolsModalOpen = false;
+
+// Edit book modal state
+let editBookModal = null;
+let isEditBookModalOpen = false;
+
+// Theme constants
+const THEME_KEY = "theme";
+const LIGHT_MODE = "light";
+const DARK_MODE = "dark";
+
 // Get auth headers
 function getAuthHeaders() {
     const accessToken = localStorage.getItem("access_token");
@@ -21,6 +34,12 @@ function getAuthHeaders() {
 function isAuthenticated() {
     const accessToken = localStorage.getItem("access_token");
     return accessToken !== null;
+}
+
+function isAdmin() {
+    const userRole = localStorage.getItem("user_role");
+    console.log("Checking isAdmin, user_role:", userRole);
+    return userRole === "admin";
 }
 
 async function refreshAccessToken() {
@@ -61,7 +80,7 @@ async function refreshAccessToken() {
 async function fetchWithAuth(url, options = {}) {
     if (!isAuthenticated()) {
         console.log("User not authenticated, proceeding without auth for public routes");
-        return fetch(url, options); // Allow public routes without redirect
+        return fetch(url, options);
     }
 
     const expiresIn = localStorage.getItem("token_expires_in");
@@ -86,11 +105,39 @@ async function fetchWithAuth(url, options = {}) {
     return response;
 }
 
+// Toggle theme function
+function toggleTheme() {
+    const currentTheme = localStorage.getItem(THEME_KEY) || LIGHT_MODE;
+    const newTheme = currentTheme === LIGHT_MODE ? DARK_MODE : LIGHT_MODE;
+    document.body.classList.toggle(DARK_MODE, newTheme === DARK_MODE);
+    localStorage.setItem(THEME_KEY, newTheme);
+    console.log(`Theme switched to: ${newTheme}`);
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM fully loaded, initializing homepage...");
     console.log("Access Token on load:", localStorage.getItem("access_token"));
+    console.log("User Role:", localStorage.getItem("user_role"));
 
     const isLoggedIn = isAuthenticated();
+    const userIsAdmin = isAdmin();
+
+    // Show admin-specific UI elements
+    if (userIsAdmin) {
+        document.querySelector(".admin-actions").style.display = "block";
+        document.getElementById("admin-tools-link").style.display = "inline-flex";
+        // Hide the cart icon for admins
+        const cartLink = document.getElementById("cart-link");
+        if (cartLink) {
+            cartLink.style.display = "none";
+        }
+    } else {
+        // Ensure the cart icon is visible for non-admin users
+        const cartLink = document.getElementById("cart-link");
+        if (cartLink) {
+            cartLink.style.display = "inline-flex";
+        }
+    }
 
     const sortBooks = document.getElementById("sort-books");
     const initialSortOption = sortBooks?.value || "relevance";
@@ -103,6 +150,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.log("Review submitted previously, forcing refresh of books...");
         localStorage.removeItem("reviewSubmitted");
         fetchBooks(initialSortOption, 1, true);
+    } else if (localStorage.getItem("bookAdded") === "true") {
+        console.log("Book added previously, forcing refresh of books...");
+        localStorage.removeItem("bookAdded");
+        fetchBooks(initialSortOption, 1, true);
     } else {
         fetchBooks(initialSortOption, 1);
     }
@@ -114,6 +165,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     let isDropdownOpen = false;
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
+    const adminToolsLink = document.getElementById("admin-tools-link");
 
     if (profileLink) {
         profileLink.addEventListener("click", (event) => {
@@ -151,6 +203,122 @@ document.addEventListener("DOMContentLoaded", async () => {
                 window.location.href = "../pages/cart.html";
             }
         });
+    }
+
+    if (adminToolsLink && userIsAdmin) {
+        adminToolsLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            console.log("Admin tools link clicked, toggling modal");
+            if (isAdminToolsModalOpen) {
+                closeAdminToolsModal();
+            } else {
+                openAdminToolsModal();
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            if (
+                isAdminToolsModalOpen &&
+                !adminToolsLink.contains(event.target) &&
+                adminToolsModal &&
+                !adminToolsModal.contains(event.target) &&
+                !event.target.classList.contains("close-btn")
+            ) {
+                closeAdminToolsModal();
+            }
+        });
+
+        // Set up admin tools modal listeners once
+        adminToolsModal = document.getElementById("admin-tools-modal");
+        if (adminToolsModal) {
+            const toggleThemeBtn = document.getElementById("toggle-theme");
+            const registerUserBtn = document.getElementById("register-user");
+            const closeBtn = adminToolsModal.querySelector(".close-btn");
+
+            if (toggleThemeBtn) {
+                toggleThemeBtn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("Toggle Theme clicked");
+                    toggleTheme();
+                    closeAdminToolsModal();
+                });
+            } else {
+                console.error("Toggle theme button not found");
+            }
+
+            if (registerUserBtn) {
+                registerUserBtn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("Register New User clicked");
+                    window.location.href = "../pages/signup.html?adminMode=true";
+                    closeAdminToolsModal();
+                });
+            } else {
+                console.error("Register user button not found");
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("Close button clicked");
+                    closeAdminToolsModal();
+                });
+            } else {
+                console.error("Close buttonnot found");
+            }
+        } else {
+            console.error("Admin tools modal not found in DOM");
+        }
+    }
+
+    const addBookBtn = document.getElementById("add-book-btn");
+    if (addBookBtn && userIsAdmin) {
+        addBookBtn.addEventListener("click", () => {
+            console.log("Add Book button clicked, redirecting to addBook.html");
+            window.location.href = "../pages/addBook.html";
+        });
+    }
+
+    // Set up edit book modal listeners
+    if (userIsAdmin) {
+        editBookModal = document.getElementById("edit-book-modal");
+        if (editBookModal) {
+            const closeBtn = editBookModal.querySelector(".close-btn");
+            const editBookForm = document.getElementById("edit-book-form");
+
+            if (closeBtn) {
+                closeBtn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("Close button clicked for edit book modal");
+                    closeEditBookModal();
+                });
+            } else {
+                console.error("Close button for edit book modal not found");
+            }
+
+            if (editBookForm) {
+                editBookForm.addEventListener("submit", async (event) => {
+                    event.preventDefault();
+                    const bookId = editBookForm.dataset.bookId;
+                    await updateBook(bookId);
+                });
+            } else {
+                console.error("Edit book form not found");
+            }
+
+            document.addEventListener("click", (event) => {
+                if (
+                    isEditBookModalOpen &&
+                    !editBookModal.querySelector(".modal-content").contains(event.target) &&
+                    !event.target.classList.contains("edit-book") &&
+                    !event.target.closest(".edit-book")
+                ) {
+                    closeEditBookModal();
+                }
+            });
+        } else {
+            console.error("Edit book modal not found in DOM");
+        }
     }
 
     const searchInput = document.getElementById("search");
@@ -209,20 +377,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         const username = localStorage.getItem("username") || "User";
 
         dropdownMenu.innerHTML = isLoggedIn
-            ? `
-                <div class="dropdown-item dropdown-header">Hello ${username},</div>
-                <div class="dropdown-item" id="dropdown-profile">Profile</div>
-                <div class="dropdown-item" id="dropdown-orders">My Orders</div>
-                <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
-                <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
-            `
-            : `
-                <div class="dropdown-item dropdown-header">Welcome</div>
-                <div class="dropdown-item dropdown-subheader">To access account</div>
-                <div class="dropdown-item"><button id="dropdown-login-signup">LOGIN/SIGNUP</ Schild>
-                <div class="dropdown-item" id="dropdown-orders">My Orders</div>
-                <div class="dropdown-item" id="dropdown-wishlist">Wishlist</div>
-            `;
+        ? `
+        <div class="dropdown-item dropdown-header">Hello ${username},</div>
+        <div class="dropdown-item" id="dropdown-profile">Profile</div>
+        <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+        <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
+        <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
+    `
+    : `
+        <div class="dropdown-item dropdown-header">Welcome</div>
+        <div class="dropdown-item dropdown-subheader">To access account</div>
+        <div class="dropdown-item"><button id="dropdown-login-signup">LOGIN/SIGNUP</button></div>
+        <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+        <div class="dropdown-item" id="dropdown-wishlist">Wishlist</div>
+    `;
 
         profileLink.parentElement.appendChild(dropdownMenu);
 
@@ -269,6 +437,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         isDropdownOpen = false;
     }
+
+    function openAdminToolsModal() {
+        adminToolsModal = document.getElementById("admin-tools-modal");
+        if (!adminToolsModal) {
+            console.error("Admin tools modal not found in DOM");
+            return;
+        }
+
+        adminToolsModal.style.display = "flex";
+        isAdminToolsModalOpen = true;
+    }
+
+    function closeAdminToolsModal() {
+        if (adminToolsModal) {
+            adminToolsModal.style.display = "none";
+        }
+        isAdminToolsModalOpen = false;
+    }
 });
 
 async function loadUserProfile() {
@@ -291,6 +477,7 @@ async function loadUserProfile() {
         const username = userData.name || "User";
         profileNameElement.textContent = username;
         localStorage.setItem("username", username);
+        localStorage.setItem("user_role", userData.role || "user");
     } catch (error) {
         console.error("Profile fetch error:", error.message);
         profileNameElement.textContent = localStorage.getItem("username") || "User";
@@ -317,7 +504,6 @@ async function updateCartCount() {
         const data = await response.json();
         console.log("Cart API response:", data);
 
-        // Extract the cart array from the response, default to empty array if not present
         const cartItems = data.cart || [];
         const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
         cartCountElement.textContent = totalItems;
@@ -362,7 +548,7 @@ async function handleSignOut() {
 
         console.log("Clearing local storage");
         localStorage.clear();
-        
+
         window.location.replace(homePath);
         setTimeout(() => {
             if (!window.location.pathname.includes("homePage.html")) {
@@ -460,15 +646,38 @@ function displayBooks(books) {
         return;
     }
 
+    const userIsAdmin = isAdmin();
+
     books.forEach(book => {
         const bookCard = document.createElement("div");
         bookCard.classList.add("book-card");
 
         const bookImage = book.book_image || "default-image.jpg";
+        const isOutOfStock = book.quantity === 0;
+
+        let adminButtons = '';
+        if (userIsAdmin) {
+            adminButtons = `
+                <div class="admin-buttons">
+                    <button class="edit-book" data-id="${book.id}" title="Edit Book">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="delete-book" data-id="${book.id}" title="Delete Book">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        }
+
+        const outOfStockBanner = isOutOfStock
+            ? `<div class="out-of-stock-banner">Out of Stock</div>`
+            : '';
 
         bookCard.innerHTML = `
+            ${outOfStockBanner}
             <img src="${bookImage}" alt="${book.book_name}" class="book-image">
-            <button class="quick-view" data-id="${book.id}">Quick View</button>
+            <button class="quick-view" data-id="${book.id}" ${isOutOfStock ? 'disabled' : ''}>Quick View</button>
+            ${adminButtons}
             <div class="book-content">
                 <h3>${book.book_name}</h3>
                 <p>${book.author_name}</p>
@@ -485,10 +694,133 @@ function displayBooks(books) {
 
         bookContainer.appendChild(bookCard);
 
-        bookCard.querySelector(".quick-view").addEventListener("click", () => {
-            viewBookDetails(book.id);
-        });
+        const quickViewButton = bookCard.querySelector(".quick-view");
+        if (quickViewButton) {
+            quickViewButton.addEventListener("click", () => {
+                if (!isOutOfStock) {
+                    viewBookDetails(book.id);
+                }
+            });
+        }
+
+        if (userIsAdmin) {
+            const editButton = bookCard.querySelector(".edit-book");
+            const deleteButton = bookCard.querySelector(".delete-book");
+
+            if (editButton) {
+                editButton.addEventListener("click", async () => {
+                    console.log("Edit book clicked for ID:", book.id);
+                    await openEditBookModal(book.id);
+                });
+            }
+
+            if (deleteButton) {
+                deleteButton.addEventListener("click", async () => {
+                    console.log("Delete book clicked for ID:", book.id);
+                    if (confirm(`Are you sure you want to delete "${book.book_name}"?`)) {
+                        await deleteBook(book.id);
+                    }
+                });
+            }
+        }
     });
+}
+
+async function openEditBookModal(bookId) {
+    editBookModal = document.getElementById("edit-book-modal");
+    if (!editBookModal) {
+        console.error("Edit book modal not found in DOM");
+        return;
+    }
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}`);
+        if (!response) return;
+
+        if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch book details`);
+        const book = await response.json();
+        console.log("Fetched book details for editing:", book);
+
+        // Populate the form with book details
+        document.getElementById("edit-book-name").value = book.book_name || "";
+        document.getElementById("edit-author-name").value = book.author_name || "";
+        document.getElementById("edit-discounted-price").value = book.discounted_price || "";
+        document.getElementById("edit-book-mrp").value = book.book_mrp || "";
+        document.getElementById("edit-description").value = book.description || "";
+        document.getElementById("edit-book-image").value = book.book_image || "";
+
+        // Store book ID in the form for submission
+        const editBookForm = document.getElementById("edit-book-form");
+        editBookForm.dataset.bookId = bookId;
+
+        editBookModal.style.display = "flex";
+        isEditBookModalOpen = true;
+    } catch (error) {
+        console.error("Error fetching book details for edit:", error);
+        alert("Failed to load book details for editing.");
+    }
+}
+
+function closeEditBookModal() {
+    if (editBookModal) {
+        editBookModal.style.display = "none";
+    }
+    isEditBookModalOpen = false;
+}
+
+async function updateBook(bookId) {
+    const bookData = {
+        book_name: document.getElementById("edit-book-name").value,
+        author_name: document.getElementById("edit-author-name").value,
+        discounted_price: parseFloat(document.getElementById("edit-discounted-price").value),
+        book_mrp: parseFloat(document.getElementById("edit-book-mrp").value),
+        description: document.getElementById("edit-description").value,
+        book_image: document.getElementById("edit-book-image").value || null
+    };
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}`, {
+            method: "PUT",
+            body: JSON.stringify(bookData)
+        });
+
+        if (!response) return;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to update book");
+        }
+
+        alert("Book updated successfully!");
+        closeEditBookModal();
+        fetchBooks(document.getElementById("sort-books").value, currentPage, true);
+    } catch (error) {
+        console.error("Error updating book:", error);
+        alert(`Failed to update book: ${error.message}`);
+    }
+}
+
+async function deleteBook(bookId) {
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}`, {
+            method: "DELETE"
+        });
+
+        if (!response) {
+            alert("Failed to delete book. Please try again.");
+            return;
+        }
+
+        if (response.ok) {
+            alert("Book deleted successfully!");
+            fetchBooks(document.getElementById("sort-books").value, currentPage, true);
+        } else {
+            const errorData = await response.json();
+            alert(`Failed to delete book: ${errorData.error || "Unknown error"}`);
+        }
+    } catch (error) {
+        console.error("Error deleting book:", error);
+        alert("Failed to delete book. Please try again.");
+    }
 }
 
 function updatePagination(totalPagesFromAPI, currentPageFromAPI) {

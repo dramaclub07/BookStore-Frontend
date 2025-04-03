@@ -1,9 +1,19 @@
 // API Base URL
 const API_BASE_URL = "http://127.0.0.1:4000/api/v1";
 
+// Theme constants
+const THEME_KEY = "theme";
+const LIGHT_MODE = "light";
+const DARK_MODE = "dark";
+
+// Admin tools modal state
+let adminToolsModal = null;
+let isAdminToolsModalOpen = false;
+
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM fully loaded, initializing book details...");
     console.log("Access Token on load:", localStorage.getItem("access_token"));
+    console.log("User Role on load:", localStorage.getItem("user_role"));
 
     const urlParams = new URLSearchParams(window.location.search);
     const bookId = urlParams.get("id");
@@ -22,12 +32,37 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupHeaderEventListeners();
     setupEventListeners();
 
-    // Add logo click event listener
-    const logo = document.querySelector(".logo");
-    if (logo) {
-        logo.addEventListener("click", () => {
-            window.location.href = "../pages/homePage.html";
-        });
+    // Check if user is admin and show admin tools and features
+    if (isAdmin()) {
+        console.log("User is admin, showing admin tools and features");
+        document.getElementById("admin-tools-link").style.display = "inline-flex";
+        const adminActions = document.getElementById("admin-actions");
+        if (adminActions) {
+            adminActions.style.display = "block";
+        } else {
+            console.error("Admin actions container not found in DOM");
+        }
+        // Hide the cart icon for admins
+        const cartLink = document.getElementById("cart-link");
+        if (cartLink) {
+            cartLink.style.display = "none";
+        } else {
+            console.error("Cart link not found in DOM");
+        }
+    } else {
+        console.log("User is not admin, hiding admin tools and features");
+        document.getElementById("admin-tools-link").style.display = "none";
+        const adminActions = document.getElementById("admin-actions");
+        if (adminActions) {
+            adminActions.style.display = "none";
+        }
+        // Ensure the cart icon is visible for non-admin users
+        const cartLink = document.getElementById("cart-link");
+        if (cartLink) {
+            cartLink.style.display = "inline-flex"; // Match the display style used for other nav-links
+        } else {
+            console.error("Cart link not found in DOM");
+        }
     }
 });
 
@@ -44,6 +79,12 @@ function getAuthHeaders() {
 function isAuthenticated() {
     const accessToken = localStorage.getItem("access_token");
     return accessToken !== null;
+}
+
+function isAdmin() {
+    const userRole = localStorage.getItem("user_role");
+    console.log("Checking isAdmin, user_role:", userRole); // Debug
+    return userRole === "admin";
 }
 
 async function refreshAccessToken() {
@@ -109,6 +150,15 @@ async function fetchWithAuth(url, options = {}) {
     return response;
 }
 
+// Toggle theme function
+function toggleTheme() {
+    const currentTheme = localStorage.getItem(THEME_KEY) || LIGHT_MODE;
+    const newTheme = currentTheme === LIGHT_MODE ? DARK_MODE : LIGHT_MODE;
+    document.body.classList.toggle("dark", newTheme === DARK_MODE); // Fixed to use "dark" class
+    localStorage.setItem(THEME_KEY, newTheme);
+    console.log(`Theme switched to: ${newTheme}`);
+}
+
 // Fetch and display user profile
 async function loadUserProfile() {
     const profileNameElement = document.querySelector(".profile-name");
@@ -130,6 +180,8 @@ async function loadUserProfile() {
         const username = userData.name || "User";
         profileNameElement.textContent = username;
         localStorage.setItem("username", username);
+        localStorage.setItem("user_role", userData.role || "user"); // Assuming role is returned
+        console.log("User profile loaded, role:", userData.role); // Debug
     } catch (error) {
         console.error("Profile fetch error:", error.message);
         profileNameElement.textContent = localStorage.getItem("username") || "User";
@@ -165,16 +217,16 @@ async function updateCartCount() {
     }
 }
 
-// Setup Header Event Listeners
+// Setup Header Event Listeners with Admin Tools Modal
 function setupHeaderEventListeners() {
     let dropdownMenu = null;
     let isDropdownOpen = false;
     const profileLink = document.getElementById("profile-link");
     const cartLink = document.getElementById("cart-link");
-    const logo = document.querySelector(".logo"); // Added logo selector
+    const adminToolsLink = document.getElementById("admin-tools-link");
+    const logo = document.querySelector(".logo");
     const isLoggedIn = isAuthenticated();
 
-    // Add logo click event listener
     if (logo) {
         logo.addEventListener("click", (event) => {
             event.preventDefault();
@@ -221,6 +273,72 @@ function setupHeaderEventListeners() {
                 window.location.href = "../pages/cart.html";
             }
         });
+    }
+
+    if (adminToolsLink && isAdmin()) {
+        adminToolsLink.addEventListener("click", (event) => {
+            event.preventDefault();
+            console.log("Admin tools link clicked, toggling modal");
+            if (isAdminToolsModalOpen) {
+                closeAdminToolsModal();
+            } else {
+                openAdminToolsModal();
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            if (
+                isAdminToolsModalOpen &&
+                !adminToolsLink.contains(event.target) &&
+                adminToolsModal &&
+                !adminToolsModal.contains(event.target) &&
+                !event.target.classList.contains("close-btn")
+            ) {
+                closeAdminToolsModal();
+            }
+        });
+
+        // Set up admin tools modal listeners once
+        adminToolsModal = document.getElementById("admin-tools-modal");
+        if (adminToolsModal) {
+            const toggleThemeBtn = document.getElementById("toggle-theme");
+            const registerUserBtn = document.getElementById("register-user");
+            const closeBtn = adminToolsModal.querySelector(".close-btn");
+
+            if (toggleThemeBtn) {
+                toggleThemeBtn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("Toggle Theme clicked");
+                    toggleTheme();
+                    closeAdminToolsModal();
+                });
+            } else {
+                console.error("Toggle theme button not found");
+            }
+
+            if (registerUserBtn) {
+                registerUserBtn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("Register New User clicked");
+                    window.location.href = "../pages/signup.html?adminMode=true";
+                    closeAdminToolsModal();
+                });
+            } else {
+                console.error("Register user button not found");
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    console.log("Close button clicked");
+                    closeAdminToolsModal();
+                });
+            } else {
+                console.error("Close button not found");
+            }
+        } else {
+            console.error("Admin tools modal not found in DOM");
+        }
     }
 
     document.getElementById("search")?.addEventListener("keypress", (event) => {
@@ -300,6 +418,24 @@ function setupHeaderEventListeners() {
         }
         isDropdownOpen = false;
     }
+
+    function openAdminToolsModal() {
+        adminToolsModal = document.getElementById("admin-tools-modal");
+        if (!adminToolsModal) {
+            console.error("Admin tools modal not found in DOM");
+            return;
+        }
+
+        adminToolsModal.style.display = "flex";
+        isAdminToolsModalOpen = true;
+    }
+
+    function closeAdminToolsModal() {
+        if (adminToolsModal) {
+            adminToolsModal.style.display = "none";
+        }
+        isAdminToolsModalOpen = false;
+    }
 }
 
 // Sign Out (Logout) functionality
@@ -354,20 +490,17 @@ function displayBookDetails(book) {
     document.getElementById("book-price").textContent = `Rs. ${book.discounted_price}`;
     document.getElementById("book-old-price").textContent = `Rs. ${book.book_mrp}`;
     document.getElementById("book-description").textContent = book.description || "No description available.";
-    
-    const bookImage = document.getElementById("book-image"); // Use ID instead of class
-    const defaultImage = "../assets/default-image.jpg"; // Place a default image in assets folder
-    const imagePath = book.book_image 
-        ? (book.book_image.startsWith('http') 
-            ? book.book_image 
-            : `${API_BASE_URL}/images/${book.book_image}`) // Assuming API serves images from /images/
-        : defaultImage;
-    
-    bookImage.src = imagePath;
-    bookImage.onerror = () => {
-        console.error(`Failed to load image: ${imagePath}`);
-        bookImage.src = defaultImage; // Fallback to default image
-    };
+    document.querySelector(".book-image").src = book.book_image || "default-image.jpg";
+
+    // Populate edit form if admin
+    if (isAdmin()) {
+        document.getElementById("edit-book-name").value = book.book_name;
+        document.getElementById("edit-author-name").value = book.author_name;
+        document.getElementById("edit-discounted-price").value = book.discounted_price;
+        document.getElementById("edit-book-mrp").value = book.book_mrp;
+        document.getElementById("edit-description").value = book.description || "";
+        document.getElementById("edit-book-image").value = book.book_image || "";
+    }
 }
 
 // Fetch Reviews
@@ -403,9 +536,10 @@ function displayReviews(reviews) {
 
         const reviewAuthor = review.user_name || "Anonymous";
         const isCurrentUserReview = currentUserId && review.user_id === currentUserId;
+        const isAdminUser = isAdmin();
 
         let deleteButton = '';
-        if (isCurrentUserReview) {
+        if (isCurrentUserReview || isAdminUser) {
             deleteButton = `
                 <button class="delete-review-btn" data-review-id="${review.id}">
                     <i class="fa-solid fa-trash"></i> Delete
@@ -424,7 +558,7 @@ function displayReviews(reviews) {
 
         reviewsList.appendChild(reviewDiv);
 
-        if (isCurrentUserReview) {
+        if (isCurrentUserReview || isAdminUser) {
             const deleteBtn = reviewDiv.querySelector(".delete-review-btn");
             deleteBtn.addEventListener("click", () => deleteReview(review.id));
         }
@@ -453,6 +587,94 @@ async function deleteReview(reviewId) {
     } catch (error) {
         console.error("Error deleting review:", error);
         alert(`Failed to delete review: ${error.message}`);
+    }
+}
+
+// Delete All Ratings (Workaround since no single endpoint exists)
+async function deleteAllRatings(bookId) {
+    if (!confirm("Are you sure you want to delete all ratings for this book?")) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/books/${bookId}/reviews`);
+        if (!response.ok) throw new Error("Failed to fetch reviews for deletion");
+        const reviews = await response.json();
+
+        if (!reviews || reviews.length === 0) {
+            alert("No reviews to delete.");
+            return;
+        }
+
+        const deletePromises = reviews.map(review =>
+            fetchWithAuth(`${API_BASE_URL}/books/${bookId}/reviews/${review.id}`, {
+                method: "DELETE"
+            }).then(res => {
+                if (!res.ok) throw new Error(`Failed to delete review ${review.id}`);
+                return res;
+            })
+        );
+
+        await Promise.all(deletePromises);
+        alert("All ratings deleted successfully!");
+        fetchReviews(bookId);
+        fetchBookDetails(bookId);
+    } catch (error) {
+        console.error("Error deleting all ratings:", error);
+        alert(`Failed to delete all ratings: ${error.message}`);
+    }
+}
+
+// Delete Book
+async function deleteBook(bookId) {
+    if (!confirm("Are you sure you want to delete this book?")) return;
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}`, {
+            method: "DELETE"
+        });
+
+        if (!response) return;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to delete book");
+        }
+
+        alert("Book deleted successfully!");
+        window.location.href = "../pages/homePage.html";
+    } catch (error) {
+        console.error("Error deleting book:", error);
+        alert(`Failed to delete book: ${error.message}`);
+    }
+}
+
+// Update Book
+async function updateBook(bookId) {
+    const bookData = {
+        book_name: document.getElementById("edit-book-name").value,
+        author_name: document.getElementById("edit-author-name").value,
+        discounted_price: parseFloat(document.getElementById("edit-discounted-price").value),
+        book_mrp: parseFloat(document.getElementById("edit-book-mrp").value),
+        description: document.getElementById("edit-description").value,
+        book_image: document.getElementById("edit-book-image").value || null
+    };
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}`, {
+            method: "PUT",
+            body: JSON.stringify(bookData)
+        });
+
+        if (!response) return;
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to update book");
+        }
+
+        alert("Book updated successfully!");
+        fetchBookDetails(bookId);
+        closeEditModal();
+    } catch (error) {
+        console.error("Error updating book:", error);
+        alert(`Failed to update book: ${error.message}`);
     }
 }
 
@@ -534,8 +756,8 @@ function setupEventListeners() {
     const quantityDisplay = document.getElementById("quantity-display");
     const incrementBtn = document.getElementById("increment");
     const decrementBtn = document.getElementById("decrement");
-    let currentQuantity = 0;
     const bookId = new URLSearchParams(window.location.search).get("id");
+    let currentQuantity = 0;
 
     if (isAuthenticated()) {
         getCartItemQuantity(bookId).then(quantity => {
@@ -702,8 +924,58 @@ function setupEventListeners() {
             alert(`Failed to submit review: ${error.message}`);
         }
     });
-}
 
+    // Admin Event Listeners
+    if (isAdmin()) {
+        const editBookBtn = document.getElementById("edit-book-btn");
+        const deleteBookBtn = document.getElementById("delete-book-btn");
+        const deleteRatingsBtn = document.getElementById("delete-ratings-btn");
+
+        if (editBookBtn) {
+            editBookBtn.addEventListener("click", () => {
+                document.getElementById("edit-book-modal").style.display = "flex";
+            });
+        } else {
+            console.error("Edit Book button not found in DOM");
+        }
+
+        if (deleteBookBtn) {
+            deleteBookBtn.addEventListener("click", () => {
+                deleteBook(bookId);
+            });
+        } else {
+            console.error("Delete Book button not found in DOM");
+        }
+
+        if (deleteRatingsBtn) {
+            deleteRatingsBtn.addEventListener("click", () => {
+                deleteAllRatings(bookId);
+            });
+        } else {
+            console.error("Delete All Ratings button not found in DOM");
+        }
+
+        document.getElementById("edit-book-form")?.addEventListener("submit", (event) => {
+            event.preventDefault();
+            updateBook(bookId);
+        });
+
+        document.querySelector("#edit-book-modal .close-btn")?.addEventListener("click", () => {
+            closeEditModal();
+        });
+
+        document.addEventListener("click", (event) => {
+            const modal = document.getElementById("edit-book-modal");
+            if (
+                modal?.style.display === "flex" &&
+                !modal.querySelector(".modal-content").contains(event.target) &&
+                event.target.id !== "edit-book-btn"
+            ) {
+                closeEditModal();
+            }
+        });
+    }
+}
 // Update Star Display
 function updateStarDisplay(rating) {
     const stars = document.querySelectorAll("#rating-stars .star");
@@ -727,4 +999,9 @@ function updateQuantityUI(quantity) {
         addToBagBtn.style.display = "flex";
         quantityControl.style.display = "none";
     }
+}
+
+// Close Edit Modal
+function closeEditModal() {
+    document.getElementById("edit-book-modal").style.display = "none";
 }

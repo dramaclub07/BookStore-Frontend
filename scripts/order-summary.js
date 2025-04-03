@@ -358,6 +358,191 @@ async function loadCartSummary() {
 }
 
 // Load Order Summary (Updated with Fix)
+// async function loadOrderSummary() {
+//     const summarySection = document.getElementById('order-summary-section');
+//     const isOrderSummaryPage = window.location.pathname.includes('order-summary.html');
+
+//     if (!summarySection) {
+//         console.warn("Order summary section not found in DOM");
+//         return;
+//     }
+
+//     // Fetch the latest cart items from the backend
+//     let cartItems = [];
+//     try {
+//         const response = await fetchWithAuth(`${API_BASE_URL}/carts`, { method: 'GET' });
+//         if (!response) {
+//             summarySection.innerHTML = '<p>Failed to load cart due to authentication issues. Redirecting to cart...</p>';
+//             setTimeout(() => {
+//                 window.location.href = '../pages/cart.html';
+//             }, 2000);
+//             return;
+//         }
+
+//         if (!response.ok) {
+//             const errorText = await response.text();
+//             throw new Error(`Error ${response.status}: Failed to fetch cart items - ${errorText}`);
+//         }
+
+//         const data = await response.json();
+//         cartItems = data.cart || [];
+//         // Update localStorage with the latest cart items
+//         localStorage.setItem('cartItems', JSON.stringify(cartItems));
+//     } catch (error) {
+//         console.error('Error fetching cart items for order summary:', error);
+//         summarySection.innerHTML = `<p>Error loading cart: ${error.message}. Redirecting to cart...</p>`;
+//         setTimeout(() => {
+//             window.location.href = '../pages/cart.html';
+//         }, 2000);
+//         return;
+//     }
+
+//     // Check if cart is empty
+//     if (!cartItems.length) {
+//         summarySection.innerHTML = '<p>Your cart is empty. Redirecting to cart...</p>';
+//         setTimeout(() => {
+//             window.location.href = '../pages/cart.html';
+//         }, 2000);
+//         return;
+//     }
+
+//     const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
+
+//     if (!selectedAddress.id && isOrderSummaryPage) {
+//         summarySection.innerHTML = '<p>No address selected. Redirecting to customer details...</p>';
+//         setTimeout(() => {
+//             window.location.href = '../pages/customer-details.html';
+//         }, 2000);
+//         return;
+//     }
+
+//     const addressTextarea = document.querySelector('textarea[readonly]');
+//     const cityInput = document.querySelector('input[readonly][value="Bengaluru"]');
+//     const stateInput = document.querySelector('input[readonly][value="Karnataka"]');
+//     const radio = document.querySelector(`input[name="address-type"][value="${selectedAddress.address_type || 'Work'}"]`);
+//     if (addressTextarea) addressTextarea.value = selectedAddress.street || '';
+//     if (cityInput) cityInput.value = selectedAddress.city || '';
+//     if (stateInput) stateInput.value = selectedAddress.state || '';
+//     if (radio) radio.checked = true;
+
+//     const totalPrice = cartItems.reduce((sum, item) => {
+//         return sum + (item.discounted_price * (item.quantity || 1));
+//     }, 0).toFixed(2);
+
+//     const summaryItems = cartItems.map(item => {
+//         const imageUrl = item.image_url || '../assets/default-book-image.jpg';
+//         return `
+//         <div class="summary-item">
+//             <img src="${imageUrl}" alt="${item.book_name || 'Unknown'}" onerror="this.src='../assets/default-book-image.jpg';">
+//             <div class="summary-item-details">
+//                 <h3>${item.book_name || 'Untitled'}</h3>
+//                 <p>by ${item.author_name || 'Unknown'}</p>
+//                 <p>Rs. ${(item.discounted_price * (item.quantity || 1)).toFixed(2)} <del>Rs. ${(item.unit_price * (item.quantity || 1)).toFixed(2) || ''}</del></p>
+//                 <p>Quantity: ${item.quantity || 1}</p>
+//             </div>
+//         </div>
+//     `;
+//     }).join('');
+
+//     summarySection.innerHTML = `
+//         <h2>Order Summary</h2>
+//         <div class="summary-items">${summaryItems}</div>
+//         <div class="summary-total">
+//             <p>Total Price: Rs. ${totalPrice}</p>
+//         </div>
+//         <div class="summary-address">
+//             <p><strong>Shipping Address:</strong> ${selectedAddress.street || 'Not set'}, ${selectedAddress.city || 'Not set'}, ${selectedAddress.state || 'Not set'}</p>
+//         </div>
+//         ${isOrderSummaryPage ? '<button class="checkout">CHECKOUT</button>' : ''}
+//     `;
+
+//     if (isOrderSummaryPage) {
+//         document.querySelector('.checkout').addEventListener('click', async () => {
+//             // Fetch the latest cart items again before placing the order
+//             let latestCartItems = [];
+//             try {
+//                 const response = await fetchWithAuth(`${API_BASE_URL}/carts`, { method: 'GET' });
+//                 if (!response) {
+//                     alert("Authentication failed. Please log in again.");
+//                     return;
+//                 }
+
+//                 if (!response.ok) {
+//                     const errorText = await response.text();
+//                     throw new Error(`Error ${response.status}: Failed to fetch cart items - ${errorText}`);
+//                 }
+
+//                 const data = await response.json();
+//                 latestCartItems = data.cart || [];
+//                 localStorage.setItem('cartItems', JSON.stringify(latestCartItems));
+//             } catch (error) {
+//                 console.error('Error fetching cart items before placing order:', error);
+//                 alert(`Failed to verify cart: ${error.message}`);
+//                 return;
+//             }
+
+//             if (!latestCartItems.length) {
+//                 alert("Your cart is empty. Please add items to your cart before placing an order.");
+//                 window.location.href = '../pages/cart.html';
+//                 return;
+//             }
+
+//             const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
+
+//             if (!selectedAddress.id) {
+//                 alert("No address selected. Please select an address before placing an order.");
+//                 window.location.href = '../pages/customer-details.html';
+//                 return;
+//             }
+
+//             const payload = {
+//                 order: {
+//                     address_id: selectedAddress.id
+//                 }
+//             };
+
+//             console.log("Sending order payload:", JSON.stringify(payload));
+//             console.log("Request headers:", getAuthHeaders());
+//             try {
+//                 const response = await fetchWithAuth(`${API_BASE_URL}/orders`, {
+//                     method: 'POST',
+//                     body: JSON.stringify(payload)
+//                 });
+//                 if (!response) {
+//                     console.error("No response from fetchWithAuth");
+//                     return;
+//                 }
+
+//                 const responseText = await response.text();
+//                 console.log("Server response:", responseText);
+
+//                 if (!response.ok) {
+//                     const errorData = JSON.parse(responseText);
+//                     console.error("Order placement failed:", errorData);
+//                     throw new Error(errorData.message || "Failed to place order");
+//                 }
+
+//                 const orderData = JSON.parse(responseText);
+//                 if (orderData.success) {
+//                     // Clear localStorage after successful order placement
+//                     localStorage.removeItem('cartItems');
+//                     localStorage.removeItem('selectedAddress');
+//                     updateCartCount(0); // Update cart count to 0
+//                     window.location.href = `../pages/order-confirmation.html?order_id=${orderData.orders[orderData.orders.length - 1].id}`;
+//                 } else {
+//                     console.error("Order creation unsuccessful:", orderData);
+//                     alert("Order creation failed: " + (orderData.message || "Unknown error"));
+//                 }
+//             } catch (error) {
+//                 console.error("Error placing order:", error);
+//                 alert(`Failed to place order: ${error.message}`);
+//             }
+//         });
+//     }
+// }
+
+
+
 async function loadOrderSummary() {
     const cartItems = JSON.parse(localStorage.getItem('cartItems') || '[]');
     const selectedAddress = JSON.parse(localStorage.getItem('selectedAddress') || '{}');
@@ -485,6 +670,21 @@ async function loadOrderSummary() {
         });
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Setup Header Event Listeners
 function setupHeaderEventListeners() {

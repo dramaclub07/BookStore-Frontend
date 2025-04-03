@@ -3,7 +3,7 @@ const API_BASE_URL = 'http://127.0.0.1:3000/';
 
 // GitHub OAuth configuration
 const GITHUB_CLIENT_ID = 'Ov23liI3VxGwFnrQoeL1'; // Replace with your actual GitHub Client ID
-const GITHUB_REDIRECT_URI = 'http://127.0.0.1:5500/pages/login.html'; // Must match GitHub OAuth app settings
+const GITHUB_REDIRECT_URI = 'http://127.0.0.1:5500/BookStore-Frontend/pages/login.html'; // Must match GitHub OAuth app settings
 
 console.log('login.js running');
 

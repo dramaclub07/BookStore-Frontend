@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Playfair+Display:wght@400;700&display=swap');
 
 body {
@@ -309,6 +308,11 @@ label {
     color: white;
 }
 
+.btn-github {
+    background: #24292e; /* GitHub's dark gray-black */
+    color: white;
+}
+
 .btn-google {
     /* background: white;
     color: #1f2937;
@@ -317,9 +321,7 @@ label {
 
 .g_id_signin {
     width: 100%;
-    
 }
-
 
 .btn-signout {
     background: linear-gradient(135deg, #b91c1c, #dc2626);

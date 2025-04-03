@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,8 +19,7 @@
                     <circle cx="70" cy="95" r="5" fill="#000" />
                     <path d="M25 70 L25 60 L75 60 L75 70" stroke="#000" fill="none" />
                     <circle cx="50" cy="40" r="10" fill="#fff" stroke="#003366" stroke-width="1" />
-                    <path d="M45 40 C45 40, 40 45, 40 50 L60 50 C60 45, 55 40, 55 40 Z" fill="#fff" stroke="#003366"
-                        stroke-width="1" />
+                    <path d="M45 40 C45 40, 40 45, 40 50 L60 50 C60 45, 55 40, 55 40 Z" fill="#fff" stroke="#003366" stroke-width="1" />
                     <path d="M40 50 L35 70 L65 70 L60 50" fill="#6c46a6" stroke="#003366" stroke-width="0.5" />
                     <path d="M45 34 C45 34, 50 28, 55 34" fill="none" stroke="#000" stroke-width="2" />
                     <rect x="35" y="40" width="8" height="12" fill="#003366" />
@@ -49,14 +47,11 @@
                 <div class="form-group">
                     <label for="signup-password">Password</label>
                     <div class="password-field">
-                        <input type="password" class="form-control" id="signup-password"
-                            placeholder="Enter your password" required minlength="6">
+                        <input type="password" class="form-control" id="signup-password" placeholder="Enter your password" required minlength="6">
                         <span class="password-toggle" id="signup-toggle-password">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                                viewBox="0 0 16 16">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z" />
-                                <path
-                                    d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
+                                <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
                             </svg>
                         </span>
                         <span class="error-message" id="password-error"></span>
@@ -64,9 +59,17 @@
                 </div>
                 <div class="form-group">
                     <label for="signup-mobile">Mobile Number</label>
-                    <input type="tel" class="form-control" id="signup-mobile" placeholder="Enter mobile number"
-                        pattern="[0-9]{10}" required>
+                    <input type="tel" class="form-control" id="signup-mobile" placeholder="Enter mobile number" pattern="[0-9]{10}" required>
                     <span class="error-message" id="mobile-error"></span>
+                </div>
+                <div class="form-group" id="role-group">
+                    <label for="signup-role">Role</label>
+                    <select class="role-select" id="signup-role" required>
+                        <option value="" disabled selected>Select your role</option>
+                        <option value="customer">Customer</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <span class="error-message" id="role-error"></span>
                 </div>
                 <button type="submit" class="btn-submit">Sign Up</button>
             </form>
@@ -74,5 +77,4 @@
     </div>
     <script src="../scripts/signup.js"></script>
 </body>
-
 </html>
