@@ -1,4 +1,4 @@
-const BASE_URL = 'http://127.0.0.1:3000/api/v1'; // Updated to include /api/v1 in BASE_URL
+const BASE_URL = 'http://127.0.0.1:4000/api/v1'; // Updated to include /api/v1 in BASE_URL
 
 let isEditingPersonalDetails = false;
 let isEditingAddress = {};

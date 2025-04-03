@@ -1,4 +1,3 @@
-
 // Base URL for API
 const API_BASE_URL = 'http://127.0.0.1:3000/';
 
@@ -18,7 +17,17 @@ function handleCredentialResponse(response) {
 // Function to handle GitHub Sign-In
 function githubSignIn() {
     console.log("Initiating GitHub Sign-In");
-    const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_REDIRECT_URI)}&scope=user:email`;
+    // Clear existing session data to allow new account login
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('username');
+    localStorage.removeItem('socialEmail');
+    localStorage.removeItem('socialProvider');
+    localStorage.removeItem('token_expires_in');
+    localStorage.removeItem('justLoggedIn');
+
+    // Add prompt=select_account to force GitHub to show account selection
+    const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_REDIRECT_URI)}&scope=user:email&prompt=select_account`;
     window.location.href = authUrl; // Redirect to GitHub
 }
 
@@ -45,18 +54,17 @@ async function verifySocialToken(tokenOrCode, provider) {
             // Store tokens and user info in localStorage
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('refresh_token', data.refresh_token);
-            localStorage.setItem('username', data.user.full_name || data.user.email.split('@')[0]);
-            localStorage.setItem('socialEmail', data.user.email);
+            localStorage.setItem('username', data.user.full_name || data.user.email?.split('@')[0] || 'GitHub User');
+            localStorage.setItem('socialEmail', data.user.email || 'No email provided');
             localStorage.setItem('socialProvider', provider);
             localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
+            localStorage.setItem('justLoggedIn', 'true');
 
-            localStorage.setItem('justLoggedIn', 'true'); // Flag for homepage refresh
-
-            alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login successful! Welcome, ${data.user.full_name || data.user.email.split('@')[0]}`);
-            window.location.href = '../pages/homePage.html'; // Redirect to homepage
+            alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login successful! Welcome, ${data.user.full_name || data.user.email?.split('@')[0] || 'GitHub User'}`);
+            window.location.href = '../pages/homePage.html';
         } else {
             console.error(`${provider} authentication failed:`, data.error || "Unknown error");
-            alert(`Authentication failed: ${data.error || "Unknown error"}`); // Show the specific error
+            alert(`Authentication failed: ${data.error || "Unknown error"}`);
         }
     } catch (error) {
         console.error(`Error verifying ${provider} ${provider === 'google' ? 'token' : 'code'}:`, error);
@@ -112,6 +120,12 @@ async function ensureValidToken() {
     return true;
 }
 
+// Function to logout and clear session
+function logout() {
+    localStorage.clear();
+    window.location.href = '../pages/login.html';
+}
+
 // Fallback quotes in case the API fails
 const fallbackQuotes = [
     { quote: "A room without books is like a body without a soul.", author: "Marcus Tullius Cicero" },
@@ -163,7 +177,7 @@ function displayRandomQuote() {
     setInterval(updateQuote, 10000);
 }
 
-// Handle GitHub callback on page load
+// Function to handle GitHub callback on page load
 function handleGitHubCallback() {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
@@ -179,6 +193,12 @@ function handleGitHubCallback() {
 document.addEventListener("DOMContentLoaded", async function () {
     displayRandomQuote();
     handleGitHubCallback(); // Check for GitHub code on page load
+
+    // Add logout button listener (assuming you add a logout button in HTML)
+    const logoutButton = document.getElementById('logout-button');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', logout);
+    }
 
     // Tab switching logic
     document.querySelectorAll('.tab').forEach(tab => {
@@ -281,7 +301,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                 localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
                 const username = data.user?.full_name || email.split('@')[0];
                 localStorage.setItem('username', username);
-                localStorage.setItem('justLoggedIn', 'true'); // Flag for homepage refresh
+                localStorage.setItem('justLoggedIn', 'true');
                 console.log('Username stored in localStorage:', username);
                 alert(data.message || 'Login successful!');
                 window.location.href = '../pages/homePage.html';
