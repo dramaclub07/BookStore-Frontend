@@ -1,5 +1,6 @@
-// API Base URL and Pagination Settings
-const API_BASE_URL = "http://127.0.0.1:4000/api/v1";
+// API Base URLs and Pagination Settings
+const API_BASE_URL = "http://127.0.0.1:3000/api/v1"; // Backend URL
+const PROXY_URL = "http://127.0.0.1:4000/api/v1"; // Proxy URL as fallback
 let currentPage = 1;
 let totalPages = 1;
 const booksPerPage = 12;
@@ -49,12 +50,24 @@ async function refreshAccessToken() {
         return false;
     }
 
+    const backendUrl = `${API_BASE_URL}/refresh`;
+    const proxyUrl = `${PROXY_URL}/refresh`;
+
     try {
-        const response = await fetch(`${API_BASE_URL}/refresh`, {
+        let response = await fetch(backendUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ refresh_token: refreshToken })
         });
+
+        if (!response.ok && response.status >= 500) {
+            console.warn("Backend refresh failed, trying proxy");
+            response = await fetch(proxyUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refresh_token: refreshToken })
+            });
+        }
 
         const data = await response.json();
         if (response.ok && data.access_token) {
@@ -71,6 +84,22 @@ async function refreshAccessToken() {
         }
     } catch (error) {
         console.error("Error refreshing token:", error);
+        try {
+            const proxyResponse = await fetch(proxyUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refresh_token: refreshToken })
+            });
+            const data = await proxyResponse.json();
+            if (proxyResponse.ok && data.access_token) {
+                localStorage.setItem("access_token", data.access_token);
+                localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
+                console.log("Access token refreshed via proxy");
+                return true;
+            }
+        } catch (proxyError) {
+            console.error("Proxy refresh also failed:", proxyError);
+        }
         localStorage.clear();
         window.location.href = "../pages/login.html";
         return false;
@@ -80,7 +109,22 @@ async function refreshAccessToken() {
 async function fetchWithAuth(url, options = {}) {
     if (!isAuthenticated()) {
         console.log("User not authenticated, proceeding without auth for public routes");
-        return fetch(url, options);
+        try {
+            let response = await fetch(url, options);
+            if (!response.ok && response.status >= 500) {
+                console.warn(`Backend failed for ${url}, falling back to proxy`);
+                response = await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
+            }
+            return response;
+        } catch (error) {
+            console.error(`Fetch error with backend: ${error.message}, trying proxy`);
+            try {
+                return await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
+            } catch (proxyError) {
+                console.error(`Proxy fetch also failed: ${proxyError.message}`);
+                return null;
+            }
+        }
     }
 
     const expiresIn = localStorage.getItem("token_expires_in");
@@ -90,19 +134,38 @@ async function fetchWithAuth(url, options = {}) {
     }
 
     options.headers = { ...options.headers, ...getAuthHeaders() };
-    let response = await fetch(url, options);
 
-    if (response.status === 401) {
-        const refreshed = await refreshAccessToken();
-        if (refreshed) {
-            options.headers = { ...options.headers, ...getAuthHeaders() };
-            response = await fetch(url, options);
-        } else {
+    try {
+        let response = await fetch(url, options);
+        if (!response.ok && response.status >= 500) {
+            console.warn(`Backend failed for ${url}, falling back to proxy`);
+            response = await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
+        }
+
+        if (response.status === 401) {
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+                options.headers = { ...options.headers, ...getAuthHeaders() };
+                response = await fetch(url, options);
+                if (!response.ok && response.status >= 500) {
+                    response = await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
+                }
+            } else {
+                return null;
+            }
+        }
+
+        return response;
+    } catch (error) {
+        console.error(`Fetch error with backend: ${error.message}, trying proxy`);
+        try {
+            const proxyResponse = await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
+            return proxyResponse;
+        } catch (proxyError) {
+            console.error(`Proxy fetch also failed: ${proxyError.message}`);
             return null;
         }
     }
-
-    return response;
 }
 
 // Toggle theme function
@@ -264,7 +327,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     closeAdminToolsModal();
                 });
             } else {
-                console.error("Close buttonnot found");
+                console.error("Close button not found");
             }
         } else {
             console.error("Admin tools modal not found in DOM");
@@ -377,20 +440,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         const username = localStorage.getItem("username") || "User";
 
         dropdownMenu.innerHTML = isLoggedIn
-        ? `
-        <div class="dropdown-item dropdown-header">Hello ${username},</div>
-        <div class="dropdown-item" id="dropdown-profile">Profile</div>
-        <div class="dropdown-item" id="dropdown-orders">My Orders</div>
-        <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
-        <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
-    `
-    : `
-        <div class="dropdown-item dropdown-header">Welcome</div>
-        <div class="dropdown-item dropdown-subheader">To access account</div>
-        <div class="dropdown-item"><button id="dropdown-login-signup">LOGIN/SIGNUP</button></div>
-        <div class="dropdown-item" id="dropdown-orders">My Orders</div>
-        <div class="dropdown-item" id="dropdown-wishlist">Wishlist</div>
-    `;
+            ? `
+                <div class="dropdown-item dropdown-header">Hello ${username},</div>
+                <div class="dropdown-item" id="dropdown-profile">Profile</div>
+                <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+                <div class="dropdown-item" id="dropdown-wishlist">My Wishlist</div>
+                <div class="dropdown-item"><button id="dropdown-logout">Logout</button></div>
+            `
+            : `
+                <div class="dropdown-item dropdown-header">Welcome</div>
+                <div class="dropdown-item dropdown-subheader">To access account</div>
+                <div class="dropdown-item"><button id="dropdown-login-signup">LOGIN/SIGNUP</button></div>
+                <div class="dropdown-item" id="dropdown-orders">My Orders</div>
+                <div class="dropdown-item" id="dropdown-wishlist">Wishlist</div>
+            `;
 
         profileLink.parentElement.appendChild(dropdownMenu);
 
@@ -519,6 +582,15 @@ async function handleSignOut() {
     console.log("=== Starting logout process ===");
     const provider = localStorage.getItem("socialProvider");
     const homePath = "../pages/homePage.html";
+
+    try {
+        await fetchWithAuth(`${API_BASE_URL}/logout`, {
+            method: "POST",
+            headers: getAuthHeaders()
+        });
+    } catch (error) {
+        console.error("Error invalidating cache on logout:", error);
+    }
 
     try {
         if (provider === "google" && typeof google !== "undefined" && google.accounts) {

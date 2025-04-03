@@ -1,15 +1,16 @@
-// Base URL for API
-const API_BASE_URL = 'http://127.0.0.1:3000/';
+// Base URL for API (use proxy)
+const API_BASE_URL = 'http://127.0.0.1:3000/api/v1';
 
 // GitHub OAuth configuration
 const GITHUB_CLIENT_ID = 'Ov23liI3VxGwFnrQoeL1'; // Replace with your actual GitHub Client ID
-const GITHUB_REDIRECT_URI = 'http://127.0.0.1:5500/BookStore-Frontend/pages/login.html'; // Must match GitHub OAuth app settings
+const GITHUB_REDIRECT_URI = 'http://127.0.0.1:5500/pages/login.html'; // Must match GitHub OAuth app settings
 
 console.log('login.js running');
 
 // Function to handle Google Sign-In response
 function handleCredentialResponse(response) {
     console.log("Google Sign-In successful!");
+    localStorage.clear(); // Clear previous session data before new login
     const id_token = response.credential;
     verifySocialToken(id_token, 'google');
 }
@@ -17,16 +18,7 @@ function handleCredentialResponse(response) {
 // Function to handle GitHub Sign-In
 function githubSignIn() {
     console.log("Initiating GitHub Sign-In");
-    // Clear existing session data to allow new account login
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('socialEmail');
-    localStorage.removeItem('socialProvider');
-    localStorage.removeItem('token_expires_in');
-    localStorage.removeItem('justLoggedIn');
-
-    // Add prompt=select_account to force GitHub to show account selection
+    localStorage.clear(); // Clear existing session data to ensure fresh login
     const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_REDIRECT_URI)}&scope=user:email&prompt=select_account`;
     window.location.href = authUrl; // Redirect to GitHub
 }
@@ -35,7 +27,7 @@ function githubSignIn() {
 async function verifySocialToken(tokenOrCode, provider) {
     try {
         console.log(`Sending ${provider} ${provider === 'google' ? 'token' : 'code'} to backend for verification`);
-        const endpoint = provider === 'google' ? '/api/v1/google_auth' : '/api/v1/github_auth/login';
+        const endpoint = provider === 'google' ? '/google_auth' : '/github_auth/login';
         const payload = provider === 'google' ? { token: tokenOrCode } : { code: tokenOrCode };
 
         const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -46,21 +38,35 @@ async function verifySocialToken(tokenOrCode, provider) {
             body: JSON.stringify(payload)
         });
 
+        console.log(`Response status from ${provider} auth: ${response.status}`);
         const data = await response.json();
+        console.log(`${provider} auth response data:`, data);
 
         if (response.ok) {
             console.log("User authenticated successfully:", data.user);
 
+            // Clear localStorage again to ensure no residual data
+            localStorage.clear();
+
             // Store tokens and user info in localStorage
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('refresh_token', data.refresh_token);
-            localStorage.setItem('username', data.user.full_name || data.user.email?.split('@')[0] || 'GitHub User');
-            localStorage.setItem('socialEmail', data.user.email || 'No email provided');
+            const username = data.user.full_name || data.user.email.split('@')[0];
+            localStorage.setItem('username', username);
+            localStorage.setItem('socialEmail', data.user.email);
             localStorage.setItem('socialProvider', provider);
             localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
             localStorage.setItem('justLoggedIn', 'true');
 
-            alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login successful! Welcome, ${data.user.full_name || data.user.email?.split('@')[0] || 'GitHub User'}`);
+            // Log stored data for debugging
+            console.log("Stored localStorage data after login:", {
+                username: localStorage.getItem('username'),
+                socialEmail: localStorage.getItem('socialEmail'),
+                socialProvider: localStorage.getItem('socialProvider'),
+                access_token: localStorage.getItem('access_token')
+            });
+
+            alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login successful! Welcome, ${username}`);
             window.location.href = '../pages/homePage.html';
         } else {
             console.error(`${provider} authentication failed:`, data.error || "Unknown error");
@@ -81,7 +87,7 @@ async function refreshAccessToken() {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/refresh`, {
+        const response = await fetch(`${API_BASE_URL}/refresh`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -117,11 +123,13 @@ async function ensureValidToken() {
         console.log('Token expired or not set, attempting to refresh');
         return await refreshAccessToken();
     }
+    console.log('Token is still valid');
     return true;
 }
 
 // Function to logout and clear session
 function logout() {
+    console.log('Logging out and clearing session');
     localStorage.clear();
     window.location.href = '../pages/login.html';
 }
@@ -183,6 +191,7 @@ function handleGitHubCallback() {
     const code = urlParams.get('code');
     if (code) {
         console.log("GitHub code received:", code);
+        localStorage.clear(); // Clear previous session data before processing GitHub callback
         verifySocialToken(code, 'github');
         // Clear the URL parameters to avoid re-processing
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -194,7 +203,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     displayRandomQuote();
     handleGitHubCallback(); // Check for GitHub code on page load
 
-    // Add logout button listener (assuming you add a logout button in HTML)
+    // Add logout button listener (if you add a logout button in HTML)
     const logoutButton = document.getElementById('logout-button');
     if (logoutButton) {
         logoutButton.addEventListener('click', logout);
@@ -213,7 +222,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     });
 
     // Toggle to signup form
-    document.querySelector('.toggle-signup').addEventListener('click', (e) => {
+    document.querySelector('.toggle-signup')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.querySelector('.tab[data-tab="login"]').classList.remove('active');
         document.querySelector('.tab[data-tab="signup"]').classList.add('active');
@@ -287,7 +296,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         try {
             const payload = { email, password };
             console.log('Login payload:', payload);
-            const response = await fetch(`${API_BASE_URL}/api/v1/users/login`, {
+            const response = await fetch(`${API_BASE_URL}/users/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -296,13 +305,18 @@ document.addEventListener("DOMContentLoaded", async function () {
             const data = await response.json();
             console.log('Login response:', data);
             if (response.ok && data.access_token) {
+                localStorage.clear(); // Clear previous session data before storing new data
                 localStorage.setItem('access_token', data.access_token);
                 localStorage.setItem('refresh_token', data.refresh_token);
                 localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
                 const username = data.user?.full_name || email.split('@')[0];
                 localStorage.setItem('username', username);
                 localStorage.setItem('justLoggedIn', 'true');
-                console.log('Username stored in localStorage:', username);
+                // Log stored data for debugging
+                console.log("Stored localStorage data after email login:", {
+                    username: localStorage.getItem('username'),
+                    access_token: localStorage.getItem('access_token')
+                });
                 alert(data.message || 'Login successful!');
                 window.location.href = '../pages/homePage.html';
             } else {
@@ -349,7 +363,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/users`, {
+            const response = await fetch(`${API_BASE_URL}/users`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user: { full_name: name, email, password, mobile_number: mobile } })
@@ -368,6 +382,10 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     });
 
-    // Ensure token is valid on page load
+    // Ensure token is valid on page load and log current state
+    console.log("Checking token validity on page load:", {
+        username: localStorage.getItem('username'),
+        access_token: localStorage.getItem('access_token')
+    });
     await ensureValidToken();
 });

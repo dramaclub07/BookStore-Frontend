@@ -1,4 +1,5 @@
-const BASE_URL = 'http://127.0.0.1:4000/api/v1'; // Updated to include /api/v1 in BASE_URL
+const BASE_URL = "http://127.0.0.1:3000/api/v1"; // Backend URL
+const PROXY_URL = "http://127.0.0.1:4000/api/v1"; // Proxy URL as fallback
 
 let isEditingPersonalDetails = false;
 let isEditingAddress = {};
@@ -41,12 +42,24 @@ async function refreshAccessToken() {
         return false;
     }
 
+    const backendUrl = `${BASE_URL}/refresh`;
+    const proxyUrl = `${PROXY_URL}/refresh`;
+
     try {
-        const response = await fetch(`${BASE_URL}/refresh`, {
+        let response = await fetch(backendUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ refresh_token: refreshToken })
         });
+
+        if (!response.ok && response.status >= 500) {
+            console.warn("Backend refresh failed, trying proxy");
+            response = await fetch(proxyUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refresh_token: refreshToken })
+            });
+        }
 
         const data = await response.json();
         if (response.ok && data.access_token) {
@@ -63,6 +76,22 @@ async function refreshAccessToken() {
         }
     } catch (error) {
         console.error("Error refreshing token:", error);
+        try {
+            const proxyResponse = await fetch(proxyUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refresh_token: refreshToken })
+            });
+            const data = await proxyResponse.json();
+            if (proxyResponse.ok && data.access_token) {
+                localStorage.setItem("access_token", data.access_token);
+                localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
+                console.log("Access token refreshed via proxy");
+                return true;
+            }
+        } catch (proxyError) {
+            console.error("Proxy refresh also failed:", proxyError);
+        }
         localStorage.clear();
         window.location.href = "../pages/login.html";
         return false;
@@ -82,19 +111,38 @@ async function fetchWithAuth(url, options = {}) {
     }
 
     options.headers = { ...options.headers, ...getAuthHeaders() };
-    let response = await fetch(url, options);
 
-    if (response.status === 401) {
-        const refreshed = await refreshAccessToken();
-        if (refreshed) {
-            options.headers = { ...options.headers, ...getAuthHeaders() };
-            response = await fetch(url, options);
-        } else {
+    try {
+        let response = await fetch(url, options);
+        if (!response.ok && response.status >= 500) {
+            console.warn(`Backend failed for ${url}, falling back to proxy`);
+            response = await fetch(url.replace(BASE_URL, PROXY_URL), options);
+        }
+
+        if (response.status === 401) {
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+                options.headers = { ...options.headers, ...getAuthHeaders() };
+                response = await fetch(url, options);
+                if (!response.ok && response.status >= 500) {
+                    response = await fetch(url.replace(BASE_URL, PROXY_URL), options);
+                }
+            } else {
+                return null;
+            }
+        }
+
+        return response;
+    } catch (error) {
+        console.error(`Fetch error with backend: ${error.message}, trying proxy`);
+        try {
+            const proxyResponse = await fetch(url.replace(BASE_URL, PROXY_URL), options);
+            return proxyResponse;
+        } catch (proxyError) {
+            console.error(`Proxy fetch also failed: ${proxyError.message}`);
             return null;
         }
     }
-
-    return response;
 }
 
 function logoutAndRedirect() {
@@ -213,7 +261,7 @@ async function savePersonalDetails() {
 
     if (currentPassword && newPassword) {
         updatedData.current_password = currentPassword;
-        updatedData.password = newPassword; // Changed to 'password' as per typical Rails convention
+        updatedData.password = newPassword;
     }
 
     try {
@@ -387,7 +435,7 @@ async function saveNewAddress() {
     try {
         const response = await fetchWithAuth(`${BASE_URL}/addresses/create`, {
             method: 'POST',
-            body: JSON.stringify(newAddress) // Removed unnecessary nesting
+            body: JSON.stringify(newAddress)
         });
         if (!response) {
             logoutAndRedirect();
@@ -427,8 +475,8 @@ async function saveAddress(addressId) {
 
     try {
         const response = await fetchWithAuth(`${BASE_URL}/addresses/${addressId}`, {
-            method: 'PATCH', // Changed to PATCH as per route
-            body: JSON.stringify(updatedAddress) // Removed unnecessary nesting
+            method: 'PATCH',
+            body: JSON.stringify(updatedAddress)
         });
         if (!response) {
             logoutAndRedirect();
@@ -490,7 +538,7 @@ async function selectAddress(addressId) {
         }
 
         const data = await response.json();
-        const selectedAddress = data.address || data; // Handle potential nesting
+        const selectedAddress = data.address || data;
 
         localStorage.setItem('selectedAddress', JSON.stringify({
             id: selectedAddress.id,
@@ -506,7 +554,7 @@ async function selectAddress(addressId) {
         console.log(`Address ${addressId} selected and stored:`, selectedAddress);
         alert(`Address ${addressId} selected`);
 
-        window.location.href = '../pages/cart.html'; // Changed to cart.html for checkout flow
+        window.location.href = '../pages/cart.html';
     } catch (error) {
         console.error('Error selecting address:', error);
         alert(error.message);
@@ -537,7 +585,7 @@ async function loadCartSummary() {
         updateCartCount(cartData.total_items || 0);
     } catch (error) {
         console.error("Error fetching cart summary:", error);
-        updateCartCount(0); // Fallback to 0 on error
+        updateCartCount(0);
     }
 }
 
@@ -650,8 +698,18 @@ function setupHeaderEventListeners() {
 }
 
 // Sign Out Function
-function handleSignOut() {
+async function handleSignOut() {
     const provider = localStorage.getItem("socialProvider");
+
+    // Invalidate cache on logout
+    try {
+        await fetchWithAuth(`${BASE_URL}/logout`, {
+            method: "POST",
+            headers: getAuthHeaders()
+        });
+    } catch (error) {
+        console.error("Error invalidating cache on logout:", error);
+    }
 
     if (provider === "google" && typeof google !== "undefined" && google.accounts) {
         google.accounts.id.disableAutoSelect();
