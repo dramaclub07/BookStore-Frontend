@@ -107,23 +107,17 @@ async function refreshAccessToken() {
 }
 
 async function fetchWithAuth(url, options = {}) {
+    // Temporarily force proxy usage for testing caching
+    url = url.replace(API_BASE_URL, PROXY_URL);
+    console.log(`Fetching from: ${url}`);
+
     if (!isAuthenticated()) {
         console.log("User not authenticated, proceeding without auth for public routes");
         try {
-            let response = await fetch(url, options);
-            if (!response.ok && response.status >= 500) {
-                console.warn(`Backend failed for ${url}, falling back to proxy`);
-                response = await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
-            }
-            return response;
+            return await fetch(url, options);
         } catch (error) {
-            console.error(`Fetch error with backend: ${error.message}, trying proxy`);
-            try {
-                return await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
-            } catch (proxyError) {
-                console.error(`Proxy fetch also failed: ${proxyError.message}`);
-                return null;
-            }
+            console.error(`Fetch error: ${error.message}`);
+            return null;
         }
     }
 
@@ -137,34 +131,19 @@ async function fetchWithAuth(url, options = {}) {
 
     try {
         let response = await fetch(url, options);
-        if (!response.ok && response.status >= 500) {
-            console.warn(`Backend failed for ${url}, falling back to proxy`);
-            response = await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
-        }
-
-        if (response.status === 401) {
+        if (!response.ok && response.status === 401) {
             const refreshed = await refreshAccessToken();
             if (refreshed) {
                 options.headers = { ...options.headers, ...getAuthHeaders() };
                 response = await fetch(url, options);
-                if (!response.ok && response.status >= 500) {
-                    response = await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
-                }
             } else {
                 return null;
             }
         }
-
         return response;
     } catch (error) {
-        console.error(`Fetch error with backend: ${error.message}, trying proxy`);
-        try {
-            const proxyResponse = await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
-            return proxyResponse;
-        } catch (proxyError) {
-            console.error(`Proxy fetch also failed: ${proxyError.message}`);
-            return null;
-        }
+        console.error(`Fetch error with proxy: ${error.message}`);
+        return null;
     }
 }
 
@@ -177,6 +156,7 @@ function toggleTheme() {
     console.log(`Theme switched to: ${newTheme}`);
 }
 
+// Rest of the code remains unchanged up to DOMContentLoaded
 document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM fully loaded, initializing homepage...");
     console.log("Access Token on load:", localStorage.getItem("access_token"));
@@ -185,21 +165,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     const isLoggedIn = isAuthenticated();
     const userIsAdmin = isAdmin();
 
-    // Show admin-specific UI elements
     if (userIsAdmin) {
         document.querySelector(".admin-actions").style.display = "block";
         document.getElementById("admin-tools-link").style.display = "inline-flex";
-        // Hide the cart icon for admins
         const cartLink = document.getElementById("cart-link");
-        if (cartLink) {
-            cartLink.style.display = "none";
-        }
+        if (cartLink) cartLink.style.display = "none";
     } else {
-        // Ensure the cart icon is visible for non-admin users
         const cartLink = document.getElementById("cart-link");
-        if (cartLink) {
-            cartLink.style.display = "inline-flex";
-        }
+        if (cartLink) cartLink.style.display = "inline-flex";
     }
 
     const sortBooks = document.getElementById("sort-books");
@@ -234,11 +207,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         profileLink.addEventListener("click", (event) => {
             event.preventDefault();
             console.log("Profile link clicked, toggling dropdown");
-            if (isDropdownOpen) {
-                closeDropdown();
-            } else {
-                openDropdown();
-            }
+            if (isDropdownOpen) closeDropdown();
+            else openDropdown();
         });
 
         document.addEventListener("click", (event) => {
@@ -272,11 +242,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         adminToolsLink.addEventListener("click", (event) => {
             event.preventDefault();
             console.log("Admin tools link clicked, toggling modal");
-            if (isAdminToolsModalOpen) {
-                closeAdminToolsModal();
-            } else {
-                openAdminToolsModal();
-            }
+            if (isAdminToolsModalOpen) closeAdminToolsModal();
+            else openAdminToolsModal();
         });
 
         document.addEventListener("click", (event) => {
@@ -291,7 +258,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         });
 
-        // Set up admin tools modal listeners once
         adminToolsModal = document.getElementById("admin-tools-modal");
         if (adminToolsModal) {
             const toggleThemeBtn = document.getElementById("toggle-theme");
@@ -305,10 +271,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     toggleTheme();
                     closeAdminToolsModal();
                 });
-            } else {
-                console.error("Toggle theme button not found");
             }
-
             if (registerUserBtn) {
                 registerUserBtn.addEventListener("click", (event) => {
                     event.stopPropagation();
@@ -316,21 +279,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                     window.location.href = "../pages/signup.html?adminMode=true";
                     closeAdminToolsModal();
                 });
-            } else {
-                console.error("Register user button not found");
             }
-
             if (closeBtn) {
                 closeBtn.addEventListener("click", (event) => {
                     event.stopPropagation();
                     console.log("Close button clicked");
                     closeAdminToolsModal();
                 });
-            } else {
-                console.error("Close button not found");
             }
-        } else {
-            console.error("Admin tools modal not found in DOM");
         }
     }
 
@@ -342,7 +298,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    // Set up edit book modal listeners
     if (userIsAdmin) {
         editBookModal = document.getElementById("edit-book-modal");
         if (editBookModal) {
@@ -355,20 +310,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                     console.log("Close button clicked for edit book modal");
                     closeEditBookModal();
                 });
-            } else {
-                console.error("Close button for edit book modal not found");
             }
-
             if (editBookForm) {
                 editBookForm.addEventListener("submit", async (event) => {
                     event.preventDefault();
                     const bookId = editBookForm.dataset.bookId;
                     await updateBook(bookId);
                 });
-            } else {
-                console.error("Edit book form not found");
             }
-
             document.addEventListener("click", (event) => {
                 if (
                     isEditBookModalOpen &&
@@ -379,8 +328,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                     closeEditBookModal();
                 }
             });
-        } else {
-            console.error("Edit book modal not found in DOM");
         }
     }
 
@@ -428,8 +375,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 closeSearchDropdown();
             }
         });
-    } else {
-        console.error("Search input not found in DOM");
     }
 
     function openDropdown() {
@@ -507,7 +452,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.error("Admin tools modal not found in DOM");
             return;
         }
-
         adminToolsModal.style.display = "flex";
         isAdminToolsModalOpen = true;
     }
@@ -567,7 +511,7 @@ async function updateCartCount() {
         const data = await response.json();
         console.log("Cart API response:", data);
 
-        const cartItems = data.cart || [];
+        const cartItems = data.cart || data.cart_items || [];
         const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
         cartCountElement.textContent = totalItems;
         cartCountElement.style.display = totalItems > 0 ? "flex" : "none";
@@ -620,7 +564,6 @@ async function handleSignOut() {
 
         console.log("Clearing local storage");
         localStorage.clear();
-
         window.location.replace(homePath);
         setTimeout(() => {
             if (!window.location.pathname.includes("homePage.html")) {
@@ -638,7 +581,7 @@ async function handleSignOut() {
 
 async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) {
     const bookContainer = document.getElementById("book-list");
-    const bookLoader = document.getElementById("book-loader");
+    const bookLoader = document.getElementById("bookLoader");
     const prevButton = document.getElementById("prev-page");
     const nextButton = document.getElementById("next-page");
     const totalBooksElement = document.getElementById("total-books");
@@ -660,7 +603,10 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
         console.log("Fetching books from:", url);
 
         const response = await fetchWithAuth(url, { method: "GET" });
-        if (!response) return;
+        if (!response) {
+            console.warn("No response from fetchWithAuth, likely proxy/backend unavailable");
+            return;
+        }
 
         if (!response.ok) {
             const errorText = await response.text();
@@ -670,14 +616,8 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
         const data = await response.json();
         console.log("API Response:", data);
 
-        let books = [];
-        if (searchQuery) {
-            books = data.books || [];
-        } else {
-            books = data.books || [];
-        }
-
-        if (!books || books.length === 0) {
+        let books = data.books || [];
+        if (!books.length) {
             console.warn("No books returned from API.");
             bookContainer.innerHTML = "<p>No books found.</p>";
             updatePagination(1, 1);
@@ -758,8 +698,8 @@ function displayBooks(books) {
                     <span class="rating-count">(${book.rating_count || "0"})</span>
                 </div>
                 <div class="price-info">
-                    <span class="price">Rs. ${book.discounted_price}</span>
-                    <span class="old-price">Rs. ${book.book_mrp}</span>
+                    <span class="price">Rs. ${book.discounted_price || 0}</span>
+                    <span class="old-price">Rs. ${book.book_mrp || 0}</span>
                 </div>
             </div>
         `;
@@ -769,9 +709,7 @@ function displayBooks(books) {
         const quickViewButton = bookCard.querySelector(".quick-view");
         if (quickViewButton) {
             quickViewButton.addEventListener("click", () => {
-                if (!isOutOfStock) {
-                    viewBookDetails(book.id);
-                }
+                if (!isOutOfStock) viewBookDetails(book.id);
             });
         }
 
@@ -813,7 +751,6 @@ async function openEditBookModal(bookId) {
         const book = await response.json();
         console.log("Fetched book details for editing:", book);
 
-        // Populate the form with book details
         document.getElementById("edit-book-name").value = book.book_name || "";
         document.getElementById("edit-author-name").value = book.author_name || "";
         document.getElementById("edit-discounted-price").value = book.discounted_price || "";
@@ -821,7 +758,6 @@ async function openEditBookModal(bookId) {
         document.getElementById("edit-description").value = book.description || "";
         document.getElementById("edit-book-image").value = book.book_image || "";
 
-        // Store book ID in the form for submission
         const editBookForm = document.getElementById("edit-book-form");
         editBookForm.dataset.bookId = bookId;
 
@@ -936,14 +872,11 @@ async function fetchSearchSuggestions(query) {
         const data = await response.json();
         console.log("Raw API response:", data);
 
-        let suggestions = [];
-        if (data.suggestions && Array.isArray(data.suggestions)) {
-            suggestions = data.suggestions.map(suggestion => ({
-                id: suggestion.id,
-                book_name: suggestion.book_name,
-                author_name: suggestion.author_name
-            }));
-        }
+        let suggestions = (data.suggestions || []).map(suggestion => ({
+            id: suggestion.id,
+            book_name: suggestion.book_name,
+            author_name: suggestion.author_name
+        }));
 
         console.log("Parsed suggestions:", suggestions);
         displaySearchSuggestions(suggestions);
@@ -991,7 +924,6 @@ function displaySearchSuggestions(suggestions) {
             if (suggestion.id) {
                 window.location.href = `../pages/bookDetails.html?id=${suggestion.id}`;
             } else {
-                console.warn("No book ID in suggestion, falling back to search");
                 window.location.href = `homePage.html?query=${encodeURIComponent(suggestion.book_name)}`;
             }
         });
