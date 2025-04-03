@@ -1,5 +1,6 @@
-// API Base URL
-const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
+// API Base URLs
+const API_BASE_URL = "http://127.0.0.1:3000/api/v1"; // Backend URL
+const PROXY_URL = "http://127.0.0.1:4000/api/v1"; // Proxy URL as fallback
 
 // Global variable to store cart items after initial load
 let cartItemsCache = null;
@@ -36,12 +37,24 @@ async function refreshAccessToken() {
         return false;
     }
 
+    const backendUrl = `${API_BASE_URL}/refresh`;
+    const proxyUrl = `${PROXY_URL}/refresh`;
+
     try {
-        const response = await fetch(`${API_BASE_URL}/refresh`, {
+        let response = await fetch(backendUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ refresh_token: refreshToken })
         });
+
+        if (!response.ok && response.status >= 500) {
+            console.warn("Backend refresh failed, trying proxy");
+            response = await fetch(proxyUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refresh_token: refreshToken })
+            });
+        }
 
         const data = await response.json();
         if (response.ok && data.access_token) {
@@ -58,6 +71,22 @@ async function refreshAccessToken() {
         }
     } catch (error) {
         console.error("Error refreshing token:", error);
+        try {
+            const proxyResponse = await fetch(proxyUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refresh_token: refreshToken })
+            });
+            const data = await proxyResponse.json();
+            if (proxyResponse.ok && data.access_token) {
+                localStorage.setItem("access_token", data.access_token);
+                localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
+                console.log("Access token refreshed via proxy");
+                return true;
+            }
+        } catch (proxyError) {
+            console.error("Proxy refresh also failed:", proxyError);
+        }
         localStorage.clear();
         window.location.href = "../pages/login.html";
         return false;
@@ -77,19 +106,38 @@ async function fetchWithAuth(url, options = {}) {
     }
 
     options.headers = { ...options.headers, ...getAuthHeaders() };
-    let response = await fetch(url, options);
 
-    if (response.status === 401) {
-        const refreshed = await refreshAccessToken();
-        if (refreshed) {
-            options.headers = { ...options.headers, ...getAuthHeaders() };
-            response = await fetch(url, options);
-        } else {
+    try {
+        let response = await fetch(url, options);
+        if (!response.ok && response.status >= 500) {
+            console.warn(`Backend failed for ${url}, falling back to proxy`);
+            response = await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
+        }
+
+        if (response.status === 401) {
+            const refreshed = await refreshAccessToken();
+            if (refreshed) {
+                options.headers = { ...options.headers, ...getAuthHeaders() };
+                response = await fetch(url, options);
+                if (!response.ok && response.status >= 500) {
+                    response = await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
+                }
+            } else {
+                return null;
+            }
+        }
+
+        return response;
+    } catch (error) {
+        console.error(`Fetch error with backend: ${error.message}, trying proxy`);
+        try {
+            const proxyResponse = await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
+            return proxyResponse;
+        } catch (proxyError) {
+            console.error(`Proxy fetch also failed: ${proxyError.message}`);
             return null;
         }
     }
-
-    return response;
 }
 
 // Update cart count in UI
@@ -509,9 +557,18 @@ function setupHeaderEventListeners() {
 }
 
 // Sign Out (Logout) functionality
-function handleSignOut() {
+async function handleSignOut() {
     console.log("Logging out...");
     const provider = localStorage.getItem("socialProvider");
+
+    try {
+        await fetchWithAuth(`${API_BASE_URL}/logout`, {
+            method: "POST",
+            headers: getAuthHeaders()
+        });
+    } catch (error) {
+        console.error("Error invalidating cache on logout:", error);
+    }
 
     if (provider === "google" && typeof google !== "undefined" && google.accounts) {
         console.log("Logging out from Google");
