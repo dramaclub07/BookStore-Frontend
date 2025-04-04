@@ -15,6 +15,7 @@ redisClient.on('connect', () => console.log('Connected to Redis'));
 redisClient.on('ready', () => console.log('Redis connection established'));
 redisClient.on('reconnecting', () => console.log('Reconnecting to Redis...'));
 
+
 async function initializeRedis() {
     try {
         await redisClient.connect();
@@ -27,6 +28,7 @@ async function initializeRedis() {
         console.warn('Proceeding without Redis caching as Redis is unavailable');
     }
 }
+
 
 app.use(express.json());
 
@@ -41,6 +43,7 @@ app.use((req, res, next) => {
     }
     next();
 });
+
 
 // Proxy middleware
 app.use('/api/v1', async (req, res) => {
