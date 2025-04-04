@@ -1,3 +1,5 @@
 /.scannerwork
 sonar-project.properties
 ./proxy/node_modules
+node_modules
+node_modules

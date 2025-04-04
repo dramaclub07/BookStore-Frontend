@@ -1,32 +1,20 @@
-// Base URL for API (use proxy)
-const API_BASE_URL = 'http://127.0.0.1:3000/api/v1';
+// Access environment variables from a global config object (injected via HTML or config.js)
+const { API_BASE_URL, GITHUB_CLIENT_ID, GITHUB_REDIRECT_URI } = window.config;
 
-// GitHub OAuth configuration
-const GITHUB_CLIENT_ID = 'Ov23liI3VxGwFnrQoeL1'; // Replace with your actual GitHub Client ID
-const GITHUB_REDIRECT_URI = 'http://127.0.0.1:5500/pages/login.html'; // Must match GitHub OAuth app settings
-
-console.log('login.js running');
-
-// Function to handle Google Sign-In response
 function handleCredentialResponse(response) {
-    console.log("Google Sign-In successful!");
-    localStorage.clear(); // Clear previous session data before new login
+    localStorage.clear();
     const id_token = response.credential;
     verifySocialToken(id_token, 'google');
 }
 
-// Function to handle GitHub Sign-In
 function githubSignIn() {
-    console.log("Initiating GitHub Sign-In");
-    localStorage.clear(); // Clear existing session data to ensure fresh login
+    localStorage.clear();
     const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(GITHUB_REDIRECT_URI)}&scope=user:email&prompt=select_account`;
-    window.location.href = authUrl; // Redirect to GitHub
+    window.location.href = authUrl;
 }
 
-// Function to verify social tokens (Google or GitHub) with your backend
 async function verifySocialToken(tokenOrCode, provider) {
     try {
-        console.log(`Sending ${provider} ${provider === 'google' ? 'token' : 'code'} to backend for verification`);
         const endpoint = provider === 'google' ? '/google_auth' : '/github_auth/login';
         const payload = provider === 'google' ? { token: tokenOrCode } : { code: tokenOrCode };
 
@@ -38,17 +26,10 @@ async function verifySocialToken(tokenOrCode, provider) {
             body: JSON.stringify(payload)
         });
 
-        console.log(`Response status from ${provider} auth: ${response.status}`);
         const data = await response.json();
-        console.log(`${provider} auth response data:`, data);
 
         if (response.ok) {
-            console.log("User authenticated successfully:", data.user);
-
-            // Clear localStorage again to ensure no residual data
             localStorage.clear();
-
-            // Store tokens and user info in localStorage
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('refresh_token', data.refresh_token);
             const username = data.user.full_name || data.user.email.split('@')[0];
@@ -57,32 +38,19 @@ async function verifySocialToken(tokenOrCode, provider) {
             localStorage.setItem('socialProvider', provider);
             localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
             localStorage.setItem('justLoggedIn', 'true');
-
-            // Log stored data for debugging
-            console.log("Stored localStorage data after login:", {
-                username: localStorage.getItem('username'),
-                socialEmail: localStorage.getItem('socialEmail'),
-                socialProvider: localStorage.getItem('socialProvider'),
-                access_token: localStorage.getItem('access_token')
-            });
-
             alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} login successful! Welcome, ${username}`);
             window.location.href = '../pages/homePage.html';
         } else {
-            console.error(`${provider} authentication failed:`, data.error || "Unknown error");
             alert(`Authentication failed: ${data.error || "Unknown error"}`);
         }
     } catch (error) {
-        console.error(`Error verifying ${provider} ${provider === 'google' ? 'token' : 'code'}:`, error);
         alert(`Failed to verify ${provider} ${provider === 'google' ? 'token' : 'code'}: ${error.message}`);
     }
 }
 
-// Function to refresh the access token
 async function refreshAccessToken() {
     const refreshToken = localStorage.getItem('refresh_token');
     if (!refreshToken) {
-        console.error('No refresh token available');
         return false;
     }
 
@@ -99,42 +67,33 @@ async function refreshAccessToken() {
         if (response.ok && data.access_token) {
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
-            console.log('Access token refreshed successfully');
             return true;
         } else {
-            console.error('Failed to refresh token:', data.error);
             localStorage.clear();
             alert('Session expired. Please log in again.');
             window.location.href = '../pages/login.html';
             return false;
         }
     } catch (error) {
-        console.error('Error refreshing token:', error);
         localStorage.clear();
         window.location.href = '../pages/login.html';
         return false;
     }
 }
 
-// Function to check if token is expired and refresh if needed
 async function ensureValidToken() {
     const expiresIn = localStorage.getItem('token_expires_in');
     if (!expiresIn || Date.now() >= expiresIn) {
-        console.log('Token expired or not set, attempting to refresh');
         return await refreshAccessToken();
     }
-    console.log('Token is still valid');
     return true;
 }
 
-// Function to logout and clear session
 function logout() {
-    console.log('Logging out and clearing session');
     localStorage.clear();
     window.location.href = '../pages/login.html';
 }
 
-// Fallback quotes in case the API fails
 const fallbackQuotes = [
     { quote: "A room without books is like a body without a soul.", author: "Marcus Tullius Cicero" },
     { quote: "The only thing that you absolutely have to know, is the location of the library.", author: "Albert Einstein" },
@@ -145,7 +104,6 @@ const fallbackQuotes = [
 
 let fallbackQuoteIndex = 0;
 
-// Function to fetch a random quote from Quotable API
 async function fetchRandomQuote() {
     try {
         const response = await fetch('https://api.quotable.io/random?tags=books|literature|motivation|inspirational');
@@ -153,19 +111,16 @@ async function fetchRandomQuote() {
         const data = await response.json();
         return { quote: data.content, author: data.author };
     } catch (error) {
-        console.error('Error fetching random quote:', error);
         const quote = fallbackQuotes[fallbackQuoteIndex];
         fallbackQuoteIndex = (fallbackQuoteIndex + 1) % fallbackQuotes.length;
         return quote;
     }
 }
 
-// Function to display the random quote and rotate every 10 seconds
 function displayRandomQuote() {
     const quoteText = document.getElementById('quote-text');
     const quoteAuthor = document.getElementById('quote-author');
     if (!quoteText || !quoteAuthor) {
-        console.error('Quote elements not found in the DOM');
         return;
     }
 
@@ -185,31 +140,25 @@ function displayRandomQuote() {
     setInterval(updateQuote, 10000);
 }
 
-// Function to handle GitHub callback on page load
 function handleGitHubCallback() {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (code) {
-        console.log("GitHub code received:", code);
-        localStorage.clear(); // Clear previous session data before processing GitHub callback
+        localStorage.clear();
         verifySocialToken(code, 'github');
-        // Clear the URL parameters to avoid re-processing
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 }
 
-// Initialize on DOM load
 document.addEventListener("DOMContentLoaded", async function () {
     displayRandomQuote();
-    handleGitHubCallback(); // Check for GitHub code on page load
+    handleGitHubCallback();
 
-    // Add logout button listener (if you add a logout button in HTML)
     const logoutButton = document.getElementById('logout-button');
     if (logoutButton) {
         logoutButton.addEventListener('click', logout);
     }
 
-    // Tab switching logic
     document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', (e) => {
             e.preventDefault();
@@ -221,7 +170,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     });
 
-    // Toggle to signup form
     document.querySelector('.toggle-signup')?.addEventListener('click', (e) => {
         e.preventDefault();
         document.querySelector('.tab[data-tab="login"]').classList.remove('active');
@@ -230,7 +178,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         document.querySelector('#signup-form').classList.add('active');
     });
 
-    // Password visibility toggle for login form
     const loginPasswordInput = document.getElementById('login-password');
     const loginTogglePassword = document.getElementById('login-toggle-password');
     const loginEyeIcon = loginTogglePassword?.querySelector('svg');
@@ -245,7 +192,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
-    // Password visibility toggle for signup form
     const signupPasswordInput = document.getElementById('signup-password');
     const signupTogglePassword = document.getElementById('signup-toggle-password');
     const signupEyeIcon = signupTogglePassword?.querySelector('svg');
@@ -260,7 +206,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     }
 
-    // Remember Me functionality
     const emailInput = document.getElementById('login-email');
     const passwordInput = document.getElementById('login-password');
     const rememberMeCheckbox = document.getElementById('rememberMe');
@@ -270,7 +215,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
     }
 
-    // Login form submission
     document.getElementById('login-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = emailInput.value.trim();
@@ -295,7 +239,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         try {
             const payload = { email, password };
-            console.log('Login payload:', payload);
             const response = await fetch(`${API_BASE_URL}/users/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -303,32 +246,24 @@ document.addEventListener("DOMContentLoaded", async function () {
             });
 
             const data = await response.json();
-            console.log('Login response:', data);
             if (response.ok && data.access_token) {
-                localStorage.clear(); // Clear previous session data before storing new data
+                localStorage.clear();
                 localStorage.setItem('access_token', data.access_token);
                 localStorage.setItem('refresh_token', data.refresh_token);
                 localStorage.setItem('token_expires_in', Date.now() + (data.expires_in * 1000));
                 const username = data.user?.full_name || email.split('@')[0];
                 localStorage.setItem('username', username);
                 localStorage.setItem('justLoggedIn', 'true');
-                // Log stored data for debugging
-                console.log("Stored localStorage data after email login:", {
-                    username: localStorage.getItem('username'),
-                    access_token: localStorage.getItem('access_token')
-                });
                 alert(data.message || 'Login successful!');
                 window.location.href = '../pages/homePage.html';
             } else {
                 alert(data.errors || data.error || 'Invalid email or password.');
             }
         } catch (error) {
-            console.error('Login error:', error.message);
             alert(`Failed to connect to the server at ${API_BASE_URL}. Error: ${error.message}`);
         }
     });
 
-    // Signup form submission
     document.getElementById('signup-form')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const nameInput = document.getElementById('signup-name');
@@ -377,15 +312,9 @@ document.addEventListener("DOMContentLoaded", async function () {
                 alert(data.errors || data.error || 'Failed to sign up. Please try again.');
             }
         } catch (error) {
-            console.error('Signup error:', error.message);
             alert(`Failed to connect to the server at ${API_BASE_URL}. Error: ${error.message}`);
         }
     });
 
-    // Ensure token is valid on page load and log current state
-    console.log("Checking token validity on page load:", {
-        username: localStorage.getItem('username'),
-        access_token: localStorage.getItem('access_token')
-    });
     await ensureValidToken();
 });

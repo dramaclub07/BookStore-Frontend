@@ -3,7 +3,7 @@ const API_BASE_URL = "http://127.0.0.1:3000/api/v1"; // Backend URL
 const PROXY_URL = "http://127.0.0.1:4000/api/v1"; // Proxy URL as fallback
 
 document.addEventListener("DOMContentLoaded", async function () {
-    console.log("DOM fully loaded, starting initialization...");
+
     const ordersContainer = document.getElementById("orders-container");
     const accessToken = localStorage.getItem("access_token");
 
@@ -20,13 +20,13 @@ document.addEventListener("DOMContentLoaded", async function () {
     await fetchOrders();
     setupHeaderEventListeners();
     setupRefreshButton(); // Add refresh button listener
-    console.log("Initialization completed.");
+    
 });
 
 // Get auth headers
 function getAuthHeaders() {
     const token = localStorage.getItem("access_token");
-    console.log("Generating auth headers with token:", token ? token.substring(0, 20) + "..." : null);
+  
     return {
         "Authorization": `Bearer ${token}`,
         "Content-Type": "application/json"
@@ -36,7 +36,7 @@ function getAuthHeaders() {
 // Token Refresh Logic
 async function refreshAccessToken() {
     const refreshToken = localStorage.getItem("refresh_token");
-    console.log("Attempting token refresh with refreshToken:", refreshToken ? refreshToken.substring(0, 20) + "..." : null);
+  
     if (!refreshToken) {
         console.error("No refresh token available");
         return false;
@@ -53,11 +53,11 @@ async function refreshAccessToken() {
         });
 
         const data = await response.json();
-        console.log("Backend refresh response:", data);
+       
         if (response.ok && data.access_token) {
             localStorage.setItem("access_token", data.access_token);
             localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
-            console.log("Access token refreshed successfully via backend");
+           
             return true;
         } else {
             console.warn("Backend refresh failed, trying proxy:", data.error);
@@ -67,17 +67,17 @@ async function refreshAccessToken() {
                 body: JSON.stringify({ refresh_token: refreshToken })
             });
             const proxyData = await response.json();
-            console.log("Proxy refresh response:", proxyData);
+           
             if (response.ok && proxyData.access_token) {
                 localStorage.setItem("access_token", proxyData.access_token);
                 localStorage.setItem("token_expires_in", Date.now() + (proxyData.expires_in * 1000));
-                console.log("Access token refreshed successfully via proxy");
+             
                 return true;
             }
             throw new Error("Token refresh failed on both backend and proxy: " + (proxyData.error || "Unknown error"));
         }
     } catch (error) {
-        console.error("Error refreshing token:", error.message);
+     
         localStorage.clear();
         alert("Session expired. Please log in again.");
         window.location.href = "../pages/login.html";
@@ -88,17 +88,14 @@ async function refreshAccessToken() {
 async function fetchWithAuth(url, options = {}) {
     console.log("Fetching with auth:", url, options);
     if (!localStorage.getItem("access_token")) {
-        console.log("No access token, redirecting to login.");
         window.location.href = "../pages/login.html";
         return null;
     }
 
     const expiresIn = localStorage.getItem("token_expires_in");
     if (expiresIn && Date.now() >= expiresIn) {
-        console.log("Token expired, attempting refresh...");
         const refreshed = await refreshAccessToken();
         if (!refreshed) {
-            console.log("Token refresh failed.");
             return null;
         }
     }
@@ -106,34 +103,29 @@ async function fetchWithAuth(url, options = {}) {
     options.headers = { ...options.headers, ...getAuthHeaders() };
 
     try {
-        console.log(`Attempting backend fetch: ${url}`);
+        
         let response = await fetch(url, options);
-        console.log(`Backend response for ${url}:`, response.status, response.statusText);
-        if (!response.ok && response.status >= 500) {
-            console.warn(`Backend failed with ${response.status}, falling back to proxy`);
-            const proxyUrl = url.replace(API_BASE_URL, PROXY_URL);
-            console.log(`Attempting proxy fetch: ${proxyUrl}`);
-            response = await fetch(proxyUrl, options);
-            console.log(`Proxy response for ${proxyUrl}:`, response.status, response.statusText);
-        }
-
         if (!response.ok) {
-            if (response.status === 401) {
-                console.log("Received 401, attempting token refresh...");
+            if (response.status >= 500) {
+                console.warn(`Backend failed with ${response.status}, falling back to proxy`);
+                const proxyUrl = url.replace(API_BASE_URL, PROXY_URL);
+                response = await fetch(proxyUrl, options);
+            } else if (response.status === 401) {
+                
                 const refreshed = await refreshAccessToken();
                 if (refreshed) {
                     options.headers = { ...options.headers, ...getAuthHeaders() };
-                    console.log(`Retrying backend fetch post-refresh: ${url}`);
+            
                     response = await fetch(url, options);
-                    console.log(`Post-refresh backend response:`, response.status);
+                   
                     if (!response.ok && response.status >= 500) {
                         const proxyUrl = url.replace(API_BASE_URL, PROXY_URL);
-                        console.log(`Retrying proxy fetch post-refresh: ${proxyUrl}`);
+                       
                         response = await fetch(proxyUrl, options);
-                        console.log(`Post-refresh proxy response:`, response.status);
+                   
                     }
                 } else {
-                    console.log("Token refresh failed after 401.");
+                    
                     return null;
                 }
             }
@@ -143,20 +135,18 @@ async function fetchWithAuth(url, options = {}) {
         }
         return response;
     } catch (error) {
-        console.error(`Fetch error with backend ${url}:`, error.message);
-        try {
+        if (error.message.includes('NetworkError') || error.name === 'TypeError') {
+            console.warn(`Network error with backend ${url}, falling back to proxy`);
             const proxyUrl = url.replace(API_BASE_URL, PROXY_URL);
-            console.log(`Attempting proxy fallback for ${url} at ${proxyUrl}`);
+          
             const proxyResponse = await fetch(proxyUrl, options);
-            console.log(`Proxy response for ${proxyUrl}:`, proxyResponse.status, proxyResponse.statusText);
+         
             if (!proxyResponse.ok) {
                 throw new Error(`Proxy failed with status: ${proxyResponse.status} - ${await proxyResponse.text()}`);
             }
             return proxyResponse;
-        } catch (proxyError) {
-            console.error(`Proxy fetch failed for ${url}:`, proxyError.message);
-            return null;
         }
+        throw error;
     }
 }
 
@@ -166,13 +156,12 @@ async function loadUserProfile() {
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/profile`);
         if (!response) {
-            console.log("No response from profile fetch, skipping update.");
             return;
         }
 
         if (!response.ok) throw new Error(`Profile fetch failed with status: ${response.status}`);
         const userData = await response.json();
-        console.log("Profile data received:", userData);
+        
         const profileElement = document.getElementById("profile-link");
         if (profileElement) {
             profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${userData.name || "User"}</span>`;
@@ -185,7 +174,6 @@ async function loadUserProfile() {
 
 // Update Cart Count
 function updateCartCount(count) {
-    console.log("Updating cart count to:", count);
     const cartCount = document.querySelector("#cart-link .cart-count");
     if (cartCount) {
         cartCount.textContent = count > 0 ? count : "";
@@ -201,14 +189,12 @@ async function loadCartSummary() {
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/carts/summary`);
         if (!response) {
-            console.log("No response from cart summary, using fallback count.");
             updateCartCount(0);
             return;
         }
 
         if (!response.ok) throw new Error(`Cart summary fetch failed with status: ${response.status}`);
         const cartData = await response.json();
-        console.log("Cart summary data:", cartData);
         updateCartCount(cartData.total_items || 0);
     } catch (error) {
         console.error("Error fetching cart summary:", error);
@@ -255,7 +241,7 @@ async function fetchOrders(forceRefresh = false) {
         }
 
         const data = await response.json();
-        console.log("Raw Orders Response from server (backend or proxy):", data);
+       
 
         let orders = [];
         if (Array.isArray(data)) {
@@ -289,20 +275,9 @@ async function fetchOrders(forceRefresh = false) {
 
                 const bookResponse = await fetchWithAuth(`${API_BASE_URL}/books/${order.book_id}`);
                 let bookData = { book_name: "Unknown", author_name: "Unknown", book_image: "../assets/1.png" };
-
                 if (bookResponse && bookResponse.ok) {
                     bookData = await bookResponse.json();
                     console.log(`Book Data for Order ${order.id}:`, bookData);
-                } else if (bookResponse && bookResponse.status === 503) {
-                    // Fallback to cache for book data if backend is down
-                    const proxyUrl = `${PROXY_URL}/books/${order.book_id}`;
-                    const proxyResponse = await fetch(proxyUrl, { headers: getAuthHeaders() });
-                    if (proxyResponse && proxyResponse.ok) {
-                        bookData = await proxyResponse.json();
-                        console.log(`Cached Book Data for Order ${order.id} from proxy:`, bookData);
-                    } else {
-                        console.warn(`No cached data available for book ${order.book_id}`);
-                    }
                 } else {
                     console.warn(`Failed to fetch book for order ${order.id}:`, bookResponse?.status);
                 }
@@ -384,7 +359,7 @@ async function fetchOrders(forceRefresh = false) {
 
 // Cancel Order Function
 async function cancelOrder(orderId) {
-    console.log("Attempting to cancel order:", orderId);
+   
     if (!confirm("Are you sure you want to cancel this order?")) return;
 
     try {
@@ -392,7 +367,7 @@ async function cancelOrder(orderId) {
             method: "PATCH"
         });
         if (!response) {
-            console.log("No response from cancel request, skipping.");
+       
             return;
         }
 
@@ -421,7 +396,7 @@ function setupHeaderEventListeners() {
     if (logo) {
         logo.addEventListener("click", (event) => {
             event.preventDefault();
-            console.log("Logo clicked, redirecting to homepage");
+        
             window.location.href = "../pages/homePage.html";
         });
     } else {

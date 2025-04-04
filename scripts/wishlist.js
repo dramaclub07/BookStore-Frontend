@@ -202,7 +202,7 @@ async function fetchWishlist() {
         const data = await response.json();
 
         // Log the raw data for debugging
-        console.log("Raw wishlist response:", data);
+       
 
         // Handle different possible response formats
         let wishlistItems = [];
@@ -269,10 +269,11 @@ async function fetchWishlist() {
 }
 
 // Remove from Wishlist
+// Remove from Wishlist
 async function removeFromWishlist(bookId) {
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/wishlists`, {
-            method: "DELETE",
+            method: "POST", // Change to POST to match the toggle endpoint
             body: JSON.stringify({ book_id: parseInt(bookId) })
         });
         if (!response) return;
@@ -283,7 +284,7 @@ async function removeFromWishlist(bookId) {
         }
 
         alert("Item removed from wishlist successfully!");
-        await fetchWishlist();
+        await fetchWishlist(); // Refresh the wishlist
     } catch (error) {
         console.error("Error removing from wishlist:", error);
         alert(`Failed to remove item from wishlist: ${error.message}`);

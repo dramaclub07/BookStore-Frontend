@@ -11,10 +11,6 @@ let adminToolsModal = null;
 let isAdminToolsModalOpen = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
-    console.log("DOM fully loaded, initializing book details...");
-    console.log("Access Token on load:", localStorage.getItem("access_token"));
-    console.log("User Role on load:", localStorage.getItem("user_role"));
-
     const urlParams = new URLSearchParams(window.location.search);
     const bookId = urlParams.get("id");
 
@@ -23,7 +19,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         fetchReviews(bookId);
         checkWishlistStatus(bookId);
     } else {
-        console.error("No book ID found in URL");
         document.querySelector(".book-details").innerHTML = "<p>Book not found.</p>";
     }
 
@@ -34,23 +29,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Check if user is admin and show admin tools and features
     if (isAdmin()) {
-        console.log("User is admin, showing admin tools and features");
         document.getElementById("admin-tools-link").style.display = "inline-flex";
         const adminActions = document.getElementById("admin-actions");
         if (adminActions) {
             adminActions.style.display = "block";
-        } else {
-            console.error("Admin actions container not found in DOM");
         }
         // Hide the cart icon for admins
         const cartLink = document.getElementById("cart-link");
         if (cartLink) {
             cartLink.style.display = "none";
-        } else {
-            console.error("Cart link not found in DOM");
         }
     } else {
-        console.log("User is not admin, hiding admin tools and features");
         document.getElementById("admin-tools-link").style.display = "none";
         const adminActions = document.getElementById("admin-actions");
         if (adminActions) {
@@ -60,8 +49,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const cartLink = document.getElementById("cart-link");
         if (cartLink) {
             cartLink.style.display = "inline-flex";
-        } else {
-            console.error("Cart link not found in DOM");
         }
     }
 });
@@ -83,14 +70,12 @@ function isAuthenticated() {
 
 function isAdmin() {
     const userRole = localStorage.getItem("user_role");
-    console.log("Checking isAdmin, user_role:", userRole);
     return userRole === "admin";
 }
 
 async function refreshAccessToken() {
     const refreshToken = localStorage.getItem("refresh_token");
     if (!refreshToken) {
-        console.error("No refresh token available");
         return false;
     }
 
@@ -108,10 +93,8 @@ async function refreshAccessToken() {
         if (response.ok && data.access_token) {
             localStorage.setItem("access_token", data.access_token);
             localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
-            console.log("Access token refreshed successfully via proxy");
             return true;
         } else {
-            console.error("Failed to refresh token via proxy:", data.error);
             // Fallback to backend if proxy fails
             response = await fetch(backendUrl, {
                 method: "POST",
@@ -122,13 +105,11 @@ async function refreshAccessToken() {
             if (response.ok && backendData.access_token) {
                 localStorage.setItem("access_token", backendData.access_token);
                 localStorage.setItem("token_expires_in", Date.now() + (backendData.expires_in * 1000));
-                console.log("Access token refreshed successfully via backend");
                 return true;
             }
             throw new Error("Token refresh failed on both proxy and backend");
         }
     } catch (error) {
-        console.error("Error refreshing token:", error);
         localStorage.clear();
         alert("Session expired. Please log in again.");
         window.location.href = "../pages/login.html";
@@ -138,7 +119,6 @@ async function refreshAccessToken() {
 
 async function fetchWithAuth(url, options = {}) {
     url = url.replace(API_BASE_URL, PROXY_URL); // Force proxy usage for testing caching
-    console.log(`Fetching with auth from: ${url}`);
 
     if (!isAuthenticated()) {
         window.location.href = "../pages/pleaseLogin.html";
@@ -168,7 +148,6 @@ async function fetchWithAuth(url, options = {}) {
         }
         return response;
     } catch (error) {
-        console.error(`Fetch error with proxy: ${error.message}`);
         return null;
     }
 }
@@ -176,7 +155,6 @@ async function fetchWithAuth(url, options = {}) {
 // Fetch without authentication (for public endpoints)
 async function fetchWithoutAuth(url, options = {}) {
     url = url.replace(API_BASE_URL, PROXY_URL); // Force proxy usage for testing caching
-    console.log(`Fetching without auth from: ${url}`);
 
     try {
         const response = await fetch(url, options);
@@ -185,7 +163,6 @@ async function fetchWithoutAuth(url, options = {}) {
         }
         return response;
     } catch (error) {
-        console.error(`Fetch error with proxy: ${error.message}`);
         return null;
     }
 }
@@ -196,7 +173,6 @@ function toggleTheme() {
     const newTheme = currentTheme === LIGHT_MODE ? DARK_MODE : LIGHT_MODE;
     document.body.classList.toggle("dark", newTheme === DARK_MODE);
     localStorage.setItem(THEME_KEY, newTheme);
-    console.log(`Theme switched to: ${newTheme}`);
 }
 
 // Fetch and display user profile
@@ -220,9 +196,7 @@ async function loadUserProfile() {
         profileNameElement.textContent = username;
         localStorage.setItem("username", username);
         localStorage.setItem("user_role", userData.role || "user");
-        console.log("User profile loaded, role:", userData.role);
     } catch (error) {
-        console.error("Profile fetch error:", error.message);
         profileNameElement.textContent = localStorage.getItem("username") || "User";
     }
 }
@@ -233,7 +207,6 @@ async function updateCartCount() {
     if (!cartCountElement) return;
 
     if (!isAuthenticated() || isAdmin()) {
-        console.log("User not authenticated or is admin, setting cart count to 0");
         cartCountElement.textContent = "0";
         cartCountElement.style.display = "none";
         return;
@@ -244,12 +217,10 @@ async function updateCartCount() {
         if (!response) return;
 
         const cartData = await response.json();
-        console.log("Cart summary API response:", cartData);
         const totalItems = cartData.total_items || cartData.total_price || 0; // Adjust based on mock response
         cartCountElement.textContent = totalItems;
         cartCountElement.style.display = totalItems > 0 ? "flex" : "none";
     } catch (error) {
-        console.error("Error fetching cart count:", error);
         cartCountElement.textContent = "0";
         cartCountElement.style.display = "none";
     }
@@ -268,7 +239,6 @@ function setupHeaderEventListeners() {
     if (logo) {
         logo.addEventListener("click", (event) => {
             event.preventDefault();
-            console.log("Logo clicked, redirecting to homepage");
             window.location.href = "../pages/homePage.html";
         });
     }
@@ -276,7 +246,6 @@ function setupHeaderEventListeners() {
     if (profileLink) {
         profileLink.addEventListener("click", (event) => {
             event.preventDefault();
-            console.log("Profile link clicked, toggling dropdown");
             if (isDropdownOpen) {
                 closeDropdown();
             } else {
@@ -300,10 +269,8 @@ function setupHeaderEventListeners() {
         cartLink.addEventListener("click", (event) => {
             event.preventDefault();
             if (!isLoggedIn) {
-                console.log("User not logged in, redirecting to please login page");
                 window.location.href = "../pages/pleaseLogin.html";
             } else {
-                console.log("Redirecting to cart page");
                 window.location.href = "../pages/cart.html";
             }
         });
@@ -312,7 +279,6 @@ function setupHeaderEventListeners() {
     if (adminToolsLink && isAdmin()) {
         adminToolsLink.addEventListener("click", (event) => {
             event.preventDefault();
-            console.log("Admin tools link clicked, toggling modal");
             if (isAdminToolsModalOpen) {
                 closeAdminToolsModal();
             } else {
@@ -341,7 +307,6 @@ function setupHeaderEventListeners() {
             if (toggleThemeBtn) {
                 toggleThemeBtn.addEventListener("click", (event) => {
                     event.stopPropagation();
-                    console.log("Toggle Theme clicked");
                     toggleTheme();
                     closeAdminToolsModal();
                 });
@@ -349,7 +314,6 @@ function setupHeaderEventListeners() {
             if (registerUserBtn) {
                 registerUserBtn.addEventListener("click", (event) => {
                     event.stopPropagation();
-                    console.log("Register New User clicked");
                     window.location.href = "../pages/signup.html?adminMode=true";
                     closeAdminToolsModal();
                 });
@@ -357,7 +321,6 @@ function setupHeaderEventListeners() {
             if (closeBtn) {
                 closeBtn.addEventListener("click", (event) => {
                     event.stopPropagation();
-                    console.log("Close button clicked");
                     closeAdminToolsModal();
                 });
             }
@@ -368,7 +331,6 @@ function setupHeaderEventListeners() {
         if (event.key === "Enter") {
             const query = event.target.value.trim();
             if (query) {
-                console.log("Search triggered with query:", query);
                 window.location.href = `../pages/homePage.html?query=${encodeURIComponent(query)}`;
             }
         }
@@ -445,7 +407,6 @@ function setupHeaderEventListeners() {
     function openAdminToolsModal() {
         adminToolsModal = document.getElementById("admin-tools-modal");
         if (!adminToolsModal) {
-            console.error("Admin tools modal not found in DOM");
             return;
         }
         adminToolsModal.style.display = "flex";
@@ -462,7 +423,6 @@ function setupHeaderEventListeners() {
 
 // Sign Out (Logout) functionality
 async function handleSignOut() {
-    console.log("Logging out...");
     const provider = localStorage.getItem("socialProvider");
 
     try {
@@ -471,24 +431,17 @@ async function handleSignOut() {
             headers: getAuthHeaders()
         });
     } catch (error) {
-        console.error("Error invalidating cache on logout:", error);
     }
 
     if (provider === "google" && typeof google !== "undefined" && google.accounts) {
-        console.log("Logging out from Google");
         google.accounts.id.disableAutoSelect();
-        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
-            console.log("Google session revoked");
-        });
+        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {});
     }
 
     if (provider === "facebook" && typeof FB !== "undefined") {
-        console.log("Logging out from Facebook");
         FB.getLoginStatus(function (response) {
             if (response.status === "connected") {
-                FB.logout(function (response) {
-                    console.log("Facebook session revoked");
-                });
+                FB.logout(function (response) {});
             }
         });
     }
@@ -504,10 +457,8 @@ async function fetchBookDetails(bookId) {
         const response = await fetchWithoutAuth(`${API_BASE_URL}/books/${bookId}`);
         if (!response) throw new Error("No response from server");
         const book = await response.json();
-        console.log("Book image URL from API:", book.book_image);
         displayBookDetails(book);
     } catch (error) {
-        console.error("Error fetching book details:", error);
         document.querySelector(".book-details").innerHTML = "<p>Failed to load book details.</p>";
     }
 }
@@ -540,10 +491,8 @@ async function fetchReviews(bookId) {
         const response = await fetchWithoutAuth(`${API_BASE_URL}/books/${bookId}/reviews`);
         if (!response) throw new Error("No response from server");
         const reviews = await response.json();
-        console.log("Fetched reviews:", reviews);
         displayReviews(Array.isArray(reviews) ? reviews : []);
     } catch (error) {
-        console.error("Error fetching reviews:", error);
         document.getElementById("reviews-list").innerHTML = "<p>Failed to load reviews.</p>";
     }
 }
@@ -616,7 +565,6 @@ async function deleteReview(reviewId) {
         fetchReviews(bookId);
         fetchBookDetails(bookId);
     } catch (error) {
-        console.error("Error deleting review:", error);
         alert(`Failed to delete review: ${error.message}`);
     }
 }
@@ -649,7 +597,6 @@ async function deleteAllRatings(bookId) {
         fetchReviews(bookId);
         fetchBookDetails(bookId);
     } catch (error) {
-        console.error("Error deleting all ratings:", error);
         alert(`Failed to delete all ratings: ${error.message}`);
     }
 }
@@ -672,7 +619,6 @@ async function deleteBook(bookId) {
         alert("Book deleted successfully!");
         window.location.href = "../pages/homePage.html";
     } catch (error) {
-        console.error("Error deleting book:", error);
         alert(`Failed to delete book: ${error.message}`);
     }
 }
@@ -704,7 +650,6 @@ async function updateBook(bookId) {
         fetchBookDetails(bookId);
         closeEditModal();
     } catch (error) {
-        console.error("Error updating book:", error);
         alert(`Failed to update book: ${error.message}`);
     }
 }
@@ -723,7 +668,6 @@ async function checkWishlistStatus(bookId) {
         const wishlistButton = document.getElementById("add-to-wishlist");
         wishlistButton.classList.toggle("wishlisted", isWishlisted);
     } catch (error) {
-        console.error("Error checking wishlist status:", error);
     }
 }
 
@@ -737,7 +681,6 @@ function getCurrentUserFromToken() {
         const decodedPayload = atob(payload);
         return JSON.parse(decodedPayload);
     } catch (error) {
-        console.error("Error decoding token:", error);
         return null;
     }
 }
@@ -755,7 +698,6 @@ async function getCartItemQuantity(bookId) {
         const cartItem = cart.find(item => item.book_id === parseInt(bookId));
         return cartItem ? cartItem.quantity : 0;
     } catch (error) {
-        console.error("Error checking cart item:", error);
         return 0;
     }
 }
@@ -773,7 +715,6 @@ async function updateCartItemQuantity(bookId, newQuantity) {
         if (!response.ok) throw new Error(`Failed to update quantity: ${result.error || "Unknown error"}`);
         return result;
     } catch (error) {
-        console.error("Error updating cart item quantity:", error);
         throw error;
     }
 }
@@ -793,7 +734,6 @@ function setupEventListeners() {
             currentQuantity = quantity;
             updateQuantityUI(quantity);
         }).catch(error => {
-            console.error("Failed to fetch initial cart quantity:", error);
             updateQuantityUI(0);
         });
     }
@@ -827,7 +767,6 @@ function setupEventListeners() {
                     await updateCartCount();
                 }
             } catch (error) {
-                console.error("Error adding to cart:", error);
                 alert(`Failed to add to bag: ${error.message}`);
             }
         });
@@ -876,7 +815,6 @@ function setupEventListeners() {
                     await updateCartCount();
                 }
             } catch (error) {
-                console.error("Error during decrement:", error);
                 if (currentQuantity > 1) currentQuantity++;
                 updateQuantityUI(currentQuantity);
                 alert(`Failed to update cart: ${error.message}`);
@@ -884,7 +822,7 @@ function setupEventListeners() {
         });
     }
 
-    const wishlistBtn = document.getElementById("add-to-wishlist"); // Fixed syntax error
+    const wishlistBtn = document.getElementById("add-to-wishlist");
     if (wishlistBtn) {
         wishlistBtn.addEventListener("click", async () => {
             if (!isAuthenticated()) {
@@ -914,7 +852,6 @@ function setupEventListeners() {
                 wishlistButton.classList.toggle("wishlisted", isWishlisted);
                 alert(isWishlisted ? "Book added to wishlist!" : "Book removed from wishlist!");
             } catch (error) {
-                console.error("Error toggling wishlist:", error);
                 alert(`Failed to update wishlist: ${error.message}`);
             }
         });
@@ -979,7 +916,6 @@ function setupEventListeners() {
                 fetchBookDetails(bookId);
                 localStorage.setItem("reviewSubmitted", "true");
             } catch (error) {
-                console.error("Error submitting review:", error);
                 alert(`Failed to submit review: ${error.message}`);
             }
         });
@@ -1053,7 +989,6 @@ function updateQuantityUI(quantity) {
     const quantityDisplay = document.getElementById("quantity-display");
 
     if (!addToBagBtn || !quantityControl || !quantityDisplay) {
-        console.error("One or more quantity control elements not found");
         return;
     }
 

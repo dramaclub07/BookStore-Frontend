@@ -39,14 +39,12 @@ function isAuthenticated() {
 
 function isAdmin() {
     const userRole = localStorage.getItem("user_role");
-    console.log("Checking isAdmin, user_role:", userRole);
     return userRole === "admin";
 }
 
 async function refreshAccessToken() {
     const refreshToken = localStorage.getItem("refresh_token");
     if (!refreshToken) {
-        console.error("No refresh token available");
         return false;
     }
 
@@ -61,7 +59,6 @@ async function refreshAccessToken() {
         });
 
         if (!response.ok && response.status >= 500) {
-            console.warn("Backend refresh failed, trying proxy");
             response = await fetch(proxyUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -73,17 +70,14 @@ async function refreshAccessToken() {
         if (response.ok && data.access_token) {
             localStorage.setItem("access_token", data.access_token);
             localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
-            console.log("Access token refreshed successfully");
             return true;
         } else {
-            console.error("Failed to refresh token:", data.error);
             localStorage.clear();
             alert("Session expired. Please log in again.");
             window.location.href = "../pages/login.html";
             return false;
         }
     } catch (error) {
-        console.error("Error refreshing token:", error);
         try {
             const proxyResponse = await fetch(proxyUrl, {
                 method: "POST",
@@ -94,11 +88,9 @@ async function refreshAccessToken() {
             if (proxyResponse.ok && data.access_token) {
                 localStorage.setItem("access_token", data.access_token);
                 localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
-                console.log("Access token refreshed via proxy");
                 return true;
             }
         } catch (proxyError) {
-            console.error("Proxy refresh also failed:", proxyError);
         }
         localStorage.clear();
         window.location.href = "../pages/login.html";
@@ -107,16 +99,12 @@ async function refreshAccessToken() {
 }
 
 async function fetchWithAuth(url, options = {}) {
-    // Temporarily force proxy usage for testing caching
     url = url.replace(API_BASE_URL, PROXY_URL);
-    console.log(`Fetching from: ${url}`);
 
     if (!isAuthenticated()) {
-        console.log("User not authenticated, proceeding without auth for public routes");
         try {
             return await fetch(url, options);
         } catch (error) {
-            console.error(`Fetch error: ${error.message}`);
             return null;
         }
     }
@@ -142,7 +130,6 @@ async function fetchWithAuth(url, options = {}) {
         }
         return response;
     } catch (error) {
-        console.error(`Fetch error with proxy: ${error.message}`);
         return null;
     }
 }
@@ -153,15 +140,10 @@ function toggleTheme() {
     const newTheme = currentTheme === LIGHT_MODE ? DARK_MODE : LIGHT_MODE;
     document.body.classList.toggle(DARK_MODE, newTheme === DARK_MODE);
     localStorage.setItem(THEME_KEY, newTheme);
-    console.log(`Theme switched to: ${newTheme}`);
 }
 
 // Rest of the code remains unchanged up to DOMContentLoaded
 document.addEventListener("DOMContentLoaded", async () => {
-    console.log("DOM fully loaded, initializing homepage...");
-    console.log("Access Token on load:", localStorage.getItem("access_token"));
-    console.log("User Role:", localStorage.getItem("user_role"));
-
     const isLoggedIn = isAuthenticated();
     const userIsAdmin = isAdmin();
 
@@ -179,15 +161,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const initialSortOption = sortBooks?.value || "relevance";
 
     if (localStorage.getItem("justLoggedIn") === "true") {
-        console.log("User just logged in, forcing refresh of books...");
         localStorage.removeItem("justLoggedIn");
         fetchBooks(initialSortOption, 1, true);
     } else if (localStorage.getItem("reviewSubmitted") === "true") {
-        console.log("Review submitted previously, forcing refresh of books...");
         localStorage.removeItem("reviewSubmitted");
         fetchBooks(initialSortOption, 1, true);
     } else if (localStorage.getItem("bookAdded") === "true") {
-        console.log("Book added previously, forcing refresh of books...");
         localStorage.removeItem("bookAdded");
         fetchBooks(initialSortOption, 1, true);
     } else {
@@ -206,7 +185,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (profileLink) {
         profileLink.addEventListener("click", (event) => {
             event.preventDefault();
-            console.log("Profile link clicked, toggling dropdown");
             if (isDropdownOpen) closeDropdown();
             else openDropdown();
         });
@@ -221,18 +199,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                 closeDropdown();
             }
         });
-    } else {
-        console.error("Profile link not found in DOM");
     }
 
     if (cartLink) {
         cartLink.addEventListener("click", (event) => {
             event.preventDefault();
             if (!isLoggedIn) {
-                console.log("User not logged in, redirecting to please login page");
                 window.location.href = "../pages/pleaseLogin.html";
             } else {
-                console.log("Redirecting to cart page");
                 window.location.href = "../pages/cart.html";
             }
         });
@@ -241,7 +215,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (adminToolsLink && userIsAdmin) {
         adminToolsLink.addEventListener("click", (event) => {
             event.preventDefault();
-            console.log("Admin tools link clicked, toggling modal");
             if (isAdminToolsModalOpen) closeAdminToolsModal();
             else openAdminToolsModal();
         });
@@ -267,7 +240,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (toggleThemeBtn) {
                 toggleThemeBtn.addEventListener("click", (event) => {
                     event.stopPropagation();
-                    console.log("Toggle Theme clicked");
                     toggleTheme();
                     closeAdminToolsModal();
                 });
@@ -275,7 +247,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (registerUserBtn) {
                 registerUserBtn.addEventListener("click", (event) => {
                     event.stopPropagation();
-                    console.log("Register New User clicked");
                     window.location.href = "../pages/signup.html?adminMode=true";
                     closeAdminToolsModal();
                 });
@@ -283,7 +254,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (closeBtn) {
                 closeBtn.addEventListener("click", (event) => {
                     event.stopPropagation();
-                    console.log("Close button clicked");
                     closeAdminToolsModal();
                 });
             }
@@ -293,7 +263,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const addBookBtn = document.getElementById("add-book-btn");
     if (addBookBtn && userIsAdmin) {
         addBookBtn.addEventListener("click", () => {
-            console.log("Add Book button clicked, redirecting to addBook.html");
             window.location.href = "../pages/addBook.html";
         });
     }
@@ -307,7 +276,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (closeBtn) {
                 closeBtn.addEventListener("click", (event) => {
                     event.stopPropagation();
-                    console.log("Close button clicked for edit book modal");
                     closeEditBookModal();
                 });
             }
@@ -333,7 +301,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const searchInput = document.getElementById("search");
     if (searchInput) {
-        console.log("Search input found, setting up event listeners");
         const debounce = (func, delay) => {
             let timeoutId;
             return (...args) => {
@@ -344,9 +311,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         searchInput.addEventListener("input", debounce(async (event) => {
             const query = event.target.value.trim();
-            console.log("Input event triggered with query:", query);
             if (query.length < 2) {
-                console.log("Query too short, closing dropdown");
                 closeSearchDropdown();
                 return;
             }
@@ -357,7 +322,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (event.key === "Enter") {
                 const query = event.target.value.trim();
                 if (query) {
-                    console.log("Enter pressed, searching for:", query);
                     closeSearchDropdown();
                     window.location.href = `homePage.html?query=${encodeURIComponent(query)}`;
                 }
@@ -371,7 +335,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 searchDropdown &&
                 !searchDropdown.contains(event.target)
             ) {
-                console.log("Clicked outside, closing search dropdown");
                 closeSearchDropdown();
             }
         });
@@ -416,7 +379,6 @@ document.addEventListener("DOMContentLoaded", async () => {
                 closeDropdown();
             });
             document.getElementById("dropdown-logout").addEventListener("click", () => {
-                console.log("Logout button clicked");
                 handleSignOut();
                 closeDropdown();
             });
@@ -449,7 +411,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     function openAdminToolsModal() {
         adminToolsModal = document.getElementById("admin-tools-modal");
         if (!adminToolsModal) {
-            console.error("Admin tools modal not found in DOM");
             return;
         }
         adminToolsModal.style.display = "flex";
@@ -486,7 +447,6 @@ async function loadUserProfile() {
         localStorage.setItem("username", username);
         localStorage.setItem("user_role", userData.role || "user");
     } catch (error) {
-        console.error("Profile fetch error:", error.message);
         profileNameElement.textContent = localStorage.getItem("username") || "User";
     }
 }
@@ -497,7 +457,6 @@ async function updateCartCount() {
 
     const isLoggedIn = isAuthenticated();
     if (!isLoggedIn) {
-        console.log("User not authenticated, setting cart count to 0");
         cartCountElement.textContent = "0";
         cartCountElement.style.display = "none";
         return;
@@ -509,21 +468,18 @@ async function updateCartCount() {
 
         if (!response.ok) throw new Error("Failed to fetch cart");
         const data = await response.json();
-        console.log("Cart API response:", data);
 
         const cartItems = data.cart || data.cart_items || [];
         const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
         cartCountElement.textContent = totalItems;
         cartCountElement.style.display = totalItems > 0 ? "flex" : "none";
     } catch (error) {
-        console.error("Error fetching cart count:", error);
         cartCountElement.textContent = "0";
         cartCountElement.style.display = "none";
     }
 }
 
 async function handleSignOut() {
-    console.log("=== Starting logout process ===");
     const provider = localStorage.getItem("socialProvider");
     const homePath = "../pages/homePage.html";
 
@@ -533,26 +489,21 @@ async function handleSignOut() {
             headers: getAuthHeaders()
         });
     } catch (error) {
-        console.error("Error invalidating cache on logout:", error);
     }
 
     try {
         if (provider === "google" && typeof google !== "undefined" && google.accounts) {
-            console.log("Attempting Google logout");
             google.accounts.id.disableAutoSelect();
             await new Promise((resolve) => {
                 google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
-                    console.log("Google session revoked");
                     resolve();
                 });
             });
         } else if (provider === "facebook" && typeof FB !== "undefined") {
-            console.log("Attempting Facebook logout");
             await new Promise((resolve) => {
                 FB.getLoginStatus(function (response) {
                     if (response.status === "connected") {
                         FB.logout(function (response) {
-                            console.log("Facebook session revoked");
                             resolve();
                         });
                     } else {
@@ -562,7 +513,6 @@ async function handleSignOut() {
             });
         }
 
-        console.log("Clearing local storage");
         localStorage.clear();
         window.location.replace(homePath);
         setTimeout(() => {
@@ -572,7 +522,6 @@ async function handleSignOut() {
             alert("Logged out successfully.");
         }, 500);
     } catch (error) {
-        console.error("Logout error:", error);
         localStorage.clear();
         window.location = homePath;
         alert("Logged out successfully (with error handling)");
@@ -587,7 +536,6 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
     const totalBooksElement = document.getElementById("total-books");
 
     if (!bookContainer) {
-        console.error("Error: 'book-list' element not found in the DOM.");
         return;
     }
 
@@ -600,11 +548,9 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
         const searchQuery = new URLSearchParams(window.location.search).get("query") || "";
         let url = `${API_BASE_URL}/books?page=${page}&per_page=${booksPerPage}&sort=${sortBy}&force_refresh=${forceRefresh}`;
         if (searchQuery) url = `${API_BASE_URL}/books/search?page=${page}&per_page=${booksPerPage}&sort=${sortBy}&query=${encodeURIComponent(searchQuery)}&force_refresh=${forceRefresh}`;
-        console.log("Fetching books from:", url);
 
         const response = await fetchWithAuth(url, { method: "GET" });
         if (!response) {
-            console.warn("No response from fetchWithAuth, likely proxy/backend unavailable");
             return;
         }
 
@@ -614,11 +560,9 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
         }
 
         const data = await response.json();
-        console.log("API Response:", data);
 
         let books = data.books || [];
         if (!books.length) {
-            console.warn("No books returned from API.");
             bookContainer.innerHTML = "<p>No books found.</p>";
             updatePagination(1, 1);
             if (totalBooksElement) totalBooksElement.textContent = "0";
@@ -634,7 +578,6 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
         if (totalBooksElement) totalBooksElement.textContent = totalBooks;
         updatePagination(totalPages, currentPage);
     } catch (error) {
-        console.error("Error fetching books:", error.message);
         bookContainer.innerHTML = "<p>Failed to load books. Please try again.</p>";
     } finally {
         if (bookLoader) bookLoader.style.display = "none";
@@ -646,12 +589,10 @@ async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) 
 function displayBooks(books) {
     const bookContainer = document.getElementById("book-list");
     if (!bookContainer) {
-        console.error("Error: 'book-list' element not found in the DOM.");
         return;
     }
 
     bookContainer.innerHTML = "";
-    console.log("Displaying books:", books.length);
 
     if (!books || books.length === 0) {
         bookContainer.innerHTML = "<p>No books found.</p>";
@@ -719,14 +660,12 @@ function displayBooks(books) {
 
             if (editButton) {
                 editButton.addEventListener("click", async () => {
-                    console.log("Edit book clicked for ID:", book.id);
                     await openEditBookModal(book.id);
                 });
             }
 
             if (deleteButton) {
                 deleteButton.addEventListener("click", async () => {
-                    console.log("Delete book clicked for ID:", book.id);
                     if (confirm(`Are you sure you want to delete "${book.book_name}"?`)) {
                         await deleteBook(book.id);
                     }
@@ -739,7 +678,6 @@ function displayBooks(books) {
 async function openEditBookModal(bookId) {
     editBookModal = document.getElementById("edit-book-modal");
     if (!editBookModal) {
-        console.error("Edit book modal not found in DOM");
         return;
     }
 
@@ -749,7 +687,6 @@ async function openEditBookModal(bookId) {
 
         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch book details`);
         const book = await response.json();
-        console.log("Fetched book details for editing:", book);
 
         document.getElementById("edit-book-name").value = book.book_name || "";
         document.getElementById("edit-author-name").value = book.author_name || "";
@@ -764,7 +701,6 @@ async function openEditBookModal(bookId) {
         editBookModal.style.display = "flex";
         isEditBookModalOpen = true;
     } catch (error) {
-        console.error("Error fetching book details for edit:", error);
         alert("Failed to load book details for editing.");
     }
 }
@@ -802,7 +738,6 @@ async function updateBook(bookId) {
         closeEditBookModal();
         fetchBooks(document.getElementById("sort-books").value, currentPage, true);
     } catch (error) {
-        console.error("Error updating book:", error);
         alert(`Failed to update book: ${error.message}`);
     }
 }
@@ -826,7 +761,6 @@ async function deleteBook(bookId) {
             alert(`Failed to delete book: ${errorData.error || "Unknown error"}`);
         }
     } catch (error) {
-        console.error("Error deleting book:", error);
         alert("Failed to delete book. Please try again.");
     }
 }
@@ -849,16 +783,12 @@ function updatePagination(totalPagesFromAPI, currentPageFromAPI) {
 }
 
 function viewBookDetails(bookId) {
-    console.log("Navigating to book details with ID:", bookId);
     if (bookId) {
         window.location.href = `../pages/bookDetails.html?id=${bookId}`;
-    } else {
-        console.error("Book ID is undefined or invalid");
     }
 }
 
 async function fetchSearchSuggestions(query) {
-    console.log("Fetching suggestions for query:", query);
     try {
         const url = `${API_BASE_URL}/books/search_suggestions?query=${encodeURIComponent(query)}`;
         const response = await fetchWithAuth(url, { method: "GET" });
@@ -870,7 +800,6 @@ async function fetchSearchSuggestions(query) {
         }
 
         const data = await response.json();
-        console.log("Raw API response:", data);
 
         let suggestions = (data.suggestions || []).map(suggestion => ({
             id: suggestion.id,
@@ -878,10 +807,8 @@ async function fetchSearchSuggestions(query) {
             author_name: suggestion.author_name
         }));
 
-        console.log("Parsed suggestions:", suggestions);
         displaySearchSuggestions(suggestions);
     } catch (error) {
-        console.error("Error fetching search suggestions:", error.message);
         closeSearchDropdown();
     }
 }
@@ -889,18 +816,15 @@ async function fetchSearchSuggestions(query) {
 function displaySearchSuggestions(suggestions) {
     const searchInput = document.getElementById("search");
     if (!searchInput) {
-        console.error("Search input not found for displaying suggestions");
         return;
     }
 
     closeSearchDropdown();
 
     if (!suggestions || suggestions.length === 0) {
-        console.log("No suggestions to display");
         return;
     }
 
-    console.log("Displaying suggestions:", suggestions);
     searchDropdown = document.createElement("div");
     searchDropdown.classList.add("search-dropdown-menu");
     searchDropdown.style.position = "absolute";
@@ -918,7 +842,6 @@ function displaySearchSuggestions(suggestions) {
         `;
 
         suggestionItem.addEventListener("click", () => {
-            console.log("Suggestion clicked:", suggestion.book_name, "ID:", suggestion.id);
             searchInput.value = suggestion.book_name;
             closeSearchDropdown();
             if (suggestion.id) {
@@ -937,7 +860,6 @@ function displaySearchSuggestions(suggestions) {
 
 function closeSearchDropdown() {
     if (searchDropdown) {
-        console.log("Closing search dropdown");
         searchDropdown.remove();
         searchDropdown = null;
     }
@@ -946,19 +868,16 @@ function closeSearchDropdown() {
 
 document.getElementById("prev-page")?.addEventListener("click", () => {
     if (currentPage > 1) {
-        console.log("Fetching previous page:", currentPage - 1);
         fetchBooks(document.getElementById("sort-books").value, currentPage - 1);
     }
 });
 
 document.getElementById("next-page")?.addEventListener("click", () => {
     if (currentPage < totalPages) {
-        console.log("Fetching next page:", currentPage + 1);
         fetchBooks(document.getElementById("sort-books").value, currentPage + 1);
     }
 });
 
 document.getElementById("sort-books")?.addEventListener("change", (event) => {
-    console.log("Sorting books by:", event.target.value);
     fetchBooks(event.target.value, 1);
 });

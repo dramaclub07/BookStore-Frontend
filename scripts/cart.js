@@ -1,6 +1,6 @@
 // API Base URLs
-const API_BASE_URL = "http://127.0.0.1:3000/api/v1"; // Backend URL
-const PROXY_URL = "http://127.0.0.1:4000/api/v1"; // Proxy URL as fallback
+const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
+const PROXY_URL = "http://127.0.0.1:4000/api/v1";
 
 // Global variable to store cart items after initial load
 let cartItemsCache = null;
@@ -33,7 +33,6 @@ function getAuthHeaders() {
 async function refreshAccessToken() {
     const refreshToken = localStorage.getItem("refresh_token");
     if (!refreshToken) {
-        console.error("No refresh token available");
         return false;
     }
 
@@ -48,7 +47,6 @@ async function refreshAccessToken() {
         });
 
         if (!response.ok && response.status >= 500) {
-            console.warn("Backend refresh failed, trying proxy");
             response = await fetch(proxyUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -60,17 +58,14 @@ async function refreshAccessToken() {
         if (response.ok && data.access_token) {
             localStorage.setItem("access_token", data.access_token);
             localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
-            console.log("Access token refreshed successfully");
             return true;
         } else {
-            console.error("Failed to refresh token:", data.error);
             localStorage.clear();
             alert("Session expired. Please log in again.");
             window.location.href = "../pages/login.html";
             return false;
         }
     } catch (error) {
-        console.error("Error refreshing token:", error);
         try {
             const proxyResponse = await fetch(proxyUrl, {
                 method: "POST",
@@ -81,11 +76,9 @@ async function refreshAccessToken() {
             if (proxyResponse.ok && data.access_token) {
                 localStorage.setItem("access_token", data.access_token);
                 localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
-                console.log("Access token refreshed via proxy");
                 return true;
             }
         } catch (proxyError) {
-            console.error("Proxy refresh also failed:", proxyError);
         }
         localStorage.clear();
         window.location.href = "../pages/login.html";
@@ -110,7 +103,6 @@ async function fetchWithAuth(url, options = {}) {
     try {
         let response = await fetch(url, options);
         if (!response.ok && response.status >= 500) {
-            console.warn(`Backend failed for ${url}, falling back to proxy`);
             response = await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
         }
 
@@ -129,12 +121,10 @@ async function fetchWithAuth(url, options = {}) {
 
         return response;
     } catch (error) {
-        console.error(`Fetch error with backend: ${error.message}, trying proxy`);
         try {
             const proxyResponse = await fetch(url.replace(API_BASE_URL, PROXY_URL), options);
             return proxyResponse;
         } catch (proxyError) {
-            console.error(`Proxy fetch also failed: ${proxyError.message}`);
             return null;
         }
     }
@@ -146,8 +136,6 @@ function updateCartCount(count) {
     const sectionCount = document.getElementById("cart-count");
     const placeOrderButton = document.querySelector(".place-order");
 
-    console.log("Updating cart count:", count, "Type:", typeof count); // Debug log
-
     if (cartCount) {
         if (count > 0) {
             cartCount.textContent = count;
@@ -156,8 +144,6 @@ function updateCartCount(count) {
             cartCount.textContent = "";
             cartCount.style.display = "none";
         }
-    } else {
-        console.warn("Cart count element (#cart-link .cart-count) not found");
     }
 
     if (sectionCount) {
@@ -168,15 +154,10 @@ function updateCartCount(count) {
             sectionCount.textContent = "";
             sectionCount.style.display = "none";
         }
-    } else {
-        console.warn("Section count element (#cart-count) not found");
     }
 
     if (placeOrderButton) {
         placeOrderButton.style.display = count > 0 ? "block" : "none";
-        console.log("Place Order button visibility set to:", placeOrderButton.style.display); // Debug log
-    } else {
-        console.warn("Place Order button (.place-order) not found");
     }
 }
 
@@ -184,13 +165,10 @@ function updateCartCount(count) {
 async function loadCartItems(forceRefresh = false) {
     const cartContainer = document.getElementById("cart-container");
     if (!cartContainer) {
-        console.error("cart-container element not found in DOM");
         return;
     }
 
-    // If cart items are already loaded and no refresh is forced, use the cached version
     if (cartItemsCache && !forceRefresh) {
-        console.log("Using cached cart items:", cartItemsCache);
         renderCartItems(cartItemsCache);
         const totalCount = cartItemsCache.reduce((sum, item) => sum + (item.quantity || 1), 0);
         updateCartCount(totalCount);
@@ -200,12 +178,10 @@ async function loadCartItems(forceRefresh = false) {
     }
 
     cartContainer.innerHTML = "<p>Loading cart...</p>";
-    console.log("Fetching cart items...");
 
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/carts`, { method: "GET" });
         if (!response) {
-            console.error("No response from fetchWithAuth");
             cartContainer.innerHTML = "<p>Authentication error. Please log in again.</p>";
             updateCartCount(0);
             return;
@@ -217,9 +193,7 @@ async function loadCartItems(forceRefresh = false) {
         }
 
         const data = await response.json();
-        console.log("Cart API raw response:", data); // Debug raw response
 
-        // Handle different possible response structures
         let cartItems = [];
         if (Array.isArray(data)) {
             cartItems = data;
@@ -230,32 +204,22 @@ async function loadCartItems(forceRefresh = false) {
         } else if (data.data && Array.isArray(data.data)) {
             cartItems = data.data;
         } else if (data.message) {
-            // Handle cases where the API returns a message (e.g., "Cart is empty")
-            console.warn("API returned a message:", data.message);
             cartItems = [];
         } else {
             throw new Error(`Invalid cart data format: Expected an array or object with 'items', 'cart', or 'data' property, got ${JSON.stringify(data)}`);
         }
 
-        console.log("Parsed cart items:", cartItems); // Debug parsed items
-
-        // Store cart items in cache and localStorage
         cartItemsCache = cartItems;
         localStorage.setItem("cartItems", JSON.stringify(cartItems));
-        console.log("Stored cart items in localStorage:", cartItems);
 
         renderCartItems(cartItems);
         const totalCount = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
-        console.log("Calculated total count:", totalCount);
         updateCartCount(totalCount);
         setupCartEventListeners();
         await loadCartSummary();
     } catch (error) {
-        console.error("Error fetching cart items:", error.message);
-        // Fallback to localStorage if API fails
         const localCartItems = JSON.parse(localStorage.getItem("cartItems") || "[]");
         if (localCartItems.length > 0) {
-            console.log("Falling back to localStorage cart items:", localCartItems);
             cartItemsCache = localCartItems;
             renderCartItems(localCartItems);
             const totalCount = localCartItems.reduce((sum, item) => sum + (item.quantity || 1), 0);
@@ -264,7 +228,7 @@ async function loadCartItems(forceRefresh = false) {
         } else {
             cartContainer.innerHTML = `<p>Error loading cart: ${error.message}</p>`;
             cartItemsCache = [];
-            updateCartCount(0);
+            updateCartCount( vur0);
         }
     }
 }
@@ -273,11 +237,8 @@ async function loadCartItems(forceRefresh = false) {
 function renderCartItems(cartItems) {
     const cartContainer = document.getElementById("cart-container");
     if (!cartContainer) {
-        console.error("cart-container not found during render");
         return;
     }
-
-    console.log("Rendering cart items:", cartItems); // Debug items to render
 
     if (!cartItems || cartItems.length === 0) {
         cartContainer.innerHTML = `<p>Your cart is empty.</p>`;
@@ -307,7 +268,6 @@ function renderCartItems(cartItems) {
         `;
         }).join("");
     } catch (error) {
-        console.error("Error rendering cart items:", error);
         cartContainer.innerHTML = "<p>Error rendering cart items.</p>";
         updateCartCount(0);
     }
@@ -344,7 +304,6 @@ async function updateQuantity(button, change) {
     let currentQuantity = parseInt(quantityElement.textContent, 10);
 
     if (isNaN(currentQuantity)) {
-        console.error("Invalid quantity:", quantityElement.textContent);
         alert("Error: Invalid quantity.");
         return;
     }
@@ -378,9 +337,8 @@ async function updateQuantity(button, change) {
         if (discountedPriceElement) discountedPriceElement.textContent = newDiscountedPrice;
         if (unitPriceElement) unitPriceElement.textContent = newUnitPrice;
 
-        await loadCartItems(true); // Force refresh after updating quantity
+        await loadCartItems(true);
     } catch (error) {
-        console.error("Error updating quantity:", error);
         alert(`Failed to update quantity: ${error.message}`);
         quantityElement.textContent = currentQuantity;
     }
@@ -396,16 +354,12 @@ async function removeCartItem(bookId) {
 
         const result = await response.json();
         if (!response.ok) {
-            console.warn("Failed to remove item from cart:", result.error || "Unknown error");
-            console.log("Full response from /carts/:id/delete:", result);
             throw new Error(result.error || "Failed to remove item");
         }
 
-        await loadCartItems(true); // Force refresh after removing item
+        await loadCartItems(true);
     } catch (error) {
-        console.error("Error removing item:", error);
-        console.log("Error details:", error.message);
-        await loadCartItems(true); // Force refresh even on error
+        await loadCartItems(true);
     }
 }
 
@@ -418,14 +372,12 @@ async function loadCartSummary() {
         if (!response.ok) throw new Error("Failed to fetch cart summary");
 
         const cartData = await response.json();
-        console.log("Cart summary data:", cartData); // Debug summary
         const totalPriceElement = document.getElementById("cart-total");
         if (totalPriceElement) {
             totalPriceElement.textContent = cartData.total_price || 0;
         }
         updateCartCount(cartData.total_items || 0);
     } catch (error) {
-        console.error("Error fetching cart summary:", error);
         updateCartCount(0);
     }
 }
@@ -445,7 +397,6 @@ async function loadUserProfile() {
         profileNameElement.textContent = username;
         localStorage.setItem("username", username);
     } catch (error) {
-        console.error("Profile fetch error:", error.message);
         profileNameElement.textContent = localStorage.getItem("username") || "User";
     }
 }
@@ -461,17 +412,13 @@ function setupHeaderEventListeners() {
     if (logo) {
         logo.addEventListener("click", (event) => {
             event.preventDefault();
-            console.log("Logo clicked, redirecting to homepage");
             window.location.href = "../pages/homePage.html";
         });
-    } else {
-        console.error("Logo element not found in DOM");
     }
 
     if (profileLink) {
         profileLink.addEventListener("click", (event) => {
             event.preventDefault();
-            console.log("Profile link clicked, toggling dropdown");
             if (isDropdownOpen) {
                 closeDropdown();
             } else {
@@ -489,14 +436,11 @@ function setupHeaderEventListeners() {
                 closeDropdown();
             }
         });
-    } else {
-        console.error("Profile link not found in DOM");
     }
 
     if (cartLink) {
         cartLink.addEventListener("click", (event) => {
             event.preventDefault();
-            console.log("Cart link clicked, already on cart page");
         });
     }
 
@@ -504,7 +448,6 @@ function setupHeaderEventListeners() {
         if (event.key === "Enter") {
             const query = event.target.value.trim();
             if (query) {
-                console.log("Search triggered with query:", query);
                 window.location.href = `../pages/homePage.html?query=${encodeURIComponent(query)}`;
             }
         }
@@ -558,7 +501,6 @@ function setupHeaderEventListeners() {
 
 // Sign Out (Logout) functionality
 async function handleSignOut() {
-    console.log("Logging out...");
     const provider = localStorage.getItem("socialProvider");
 
     try {
@@ -567,24 +509,17 @@ async function handleSignOut() {
             headers: getAuthHeaders()
         });
     } catch (error) {
-        console.error("Error invalidating cache on logout:", error);
     }
 
     if (provider === "google" && typeof google !== "undefined" && google.accounts) {
-        console.log("Logging out from Google");
         google.accounts.id.disableAutoSelect();
-        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
-            console.log("Google session revoked");
-        });
+        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {});
     }
 
     if (provider === "facebook" && typeof FB !== "undefined") {
-        console.log("Logging out from Facebook");
         FB.getLoginStatus(function (response) {
             if (response.status === "connected") {
-                FB.logout(function (response) {
-                    console.log("Facebook session revoked");
-                });
+                FB.logout(function (response) {});
             }
         });
     }
@@ -620,7 +555,6 @@ async function saveCurrentLocationToBackend(locationData) {
 
         return result.address;
     } catch (error) {
-        console.error("Error saving current location:", error);
         throw error;
     }
 }
@@ -636,7 +570,6 @@ async function fetchAddresses() {
         const data = await response.json();
         return data.addresses || [];
     } catch (error) {
-        console.error("Error fetching addresses:", error);
         return null;
     }
 }
@@ -653,7 +586,6 @@ function updateAddressFields(address) {
 function setupLocationButton() {
     const useLocationButton = document.querySelector(".use-location");
     if (!useLocationButton) {
-        console.log("Use current location button not found");
         return;
     }
 
@@ -750,7 +682,6 @@ document.querySelector(".place-order")?.addEventListener("click", async () => {
         return;
     }
 
-    // Use cached cart items instead of re-fetching
     if (!cartItemsCache || cartItemsCache.length === 0) {
         alert("Cannot place order: Your cart is empty or not loaded.");
         return;

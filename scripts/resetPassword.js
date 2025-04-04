@@ -6,28 +6,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const passwordStrength = document.getElementById("password-strength");
     const passwordRequirements = document.getElementById("password-requirements");
     const otpExpiryTimer = document.getElementById("otp-expiry-timer");
-    const API_BASE_URL = "http://127.0.0.1:3000/api/v1"; // Updated for consistency
+    const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
 
-    let otpExpiryTime = 300; // 5 minutes in seconds
+    let otpExpiryTime = 300;
     let timerInterval;
 
-    // Restrict OTP input to numbers only
     if (otpInput) {
         otpInput.addEventListener("input", (e) => {
-            // Replace any non-numeric characters with an empty string
             e.target.value = e.target.value.replace(/[^0-9]/g, "");
         });
 
-        // Prevent non-numeric keypresses (optional, for better UX)
         otpInput.addEventListener("keypress", (e) => {
             const charCode = e.charCode || e.keyCode;
-            if (charCode < 48 || charCode > 57) { // Allow only 0-9
+            if (charCode < 48 || charCode > 57) {
                 e.preventDefault();
             }
         });
     }
 
-    // Get email from URL query parameter
     const urlParams = new URLSearchParams(window.location.search);
     const email = urlParams.get("email");
 
@@ -39,7 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
-    // Password toggle functionality
     if (passwordToggle) {
         passwordToggle.addEventListener("click", () => {
             const type = passwordInput.type === "password" ? "text" : "password";
@@ -58,7 +53,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 </svg>`;
         });
 
-        // Accessibility: Toggle with Enter or Space key
         passwordToggle.addEventListener("keydown", (e) => {
             if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
@@ -67,7 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Password strength checker
     if (passwordInput) {
         passwordInput.addEventListener("input", () => {
             const password = passwordInput.value;
@@ -77,7 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Check password strength
     function checkPasswordStrength(password) {
         let strength = 0;
         if (password.length >= 8) strength++;
@@ -87,7 +79,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return strength;
     }
 
-    // Update password strength UI
     function updatePasswordStrengthUI(strength) {
         passwordStrength.classList.remove("weak", "medium", "strong");
         if (strength <= 1) {
@@ -102,7 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Validate password requirements
     function validatePasswordRequirements(password) {
         const requirements = [];
         if (password.length < 8) requirements.push("at least 8 characters");
@@ -114,9 +104,8 @@ document.addEventListener("DOMContentLoaded", () => {
             : "";
     }
 
-    // OTP expiry timer
     function startOtpTimer() {
-        if (timerInterval) clearInterval(timerInterval); // Clear any existing timer
+        if (timerInterval) clearInterval(timerInterval);
         timerInterval = setInterval(() => {
             if (otpExpiryTime <= 0) {
                 clearInterval(timerInterval);
@@ -131,10 +120,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 1000);
     }
 
-    // Start the timer on page load
     startOtpTimer();
 
-    // Resend OTP
     if (resendOtpButton) {
         resendOtpButton.addEventListener("click", async () => {
             try {
@@ -150,13 +137,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = await response.json();
                 if (response.ok && data.message) {
                     alert("OTP resent successfully!");
-                    otpExpiryTime = 300; // Reset timer to 5 minutes
+                    otpExpiryTime = 300;
                     startOtpTimer();
                 } else {
                     errorMessage.textContent = data.error || "Failed to resend OTP. Please try again.";
                 }
             } catch (error) {
-                console.error("Resend OTP Error:", error);
                 errorMessage.textContent = "Failed to connect to the server. Please try again.";
             } finally {
                 resendOtpButton.disabled = false;
@@ -165,7 +151,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Reset Password Form Submission
     if (resetPasswordForm) {
         resetPasswordForm.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -195,7 +180,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 submitButton.textContent = "Resetting...";
 
                 const payload = { email, otp, new_password: newPassword };
-                console.log("Raw Reset Password Request Body:", JSON.stringify(payload));
 
                 const response = await fetch(`${API_BASE_URL}/users/password/reset`, {
                     method: "POST",
@@ -204,7 +188,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 const data = await response.json();
-                console.log("Reset Password Response:", data);
 
                 if (response.ok && data.message) {
                     showToaster(data.message, "success");
@@ -215,7 +198,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     errorMessage.textContent = data.error || "Failed to reset password. Please try again.";
                 }
             } catch (error) {
-                console.error("Reset Password Error:", error);
                 showToaster("Failed to connect to the server. Please try again.", "error");
             } finally {
                 const submitButton = resetPasswordForm.querySelector(".btn-submit");
@@ -225,7 +207,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Toaster queue
     const toastQueue = [];
     let isShowingToast = false;
 
@@ -247,34 +228,27 @@ document.addEventListener("DOMContentLoaded", () => {
         const toaster = document.getElementById("toaster");
         const p = toaster.querySelector("p");
 
-        // Position the toaster above the reset-password-card
         const card = document.getElementById("reset-password-card");
         const cardRect = card.getBoundingClientRect();
         const toasterHeight = toaster.offsetHeight;
-        const marginAboveCard = 10; // Space between toaster and card
+        const marginAboveCard = 10;
 
-        // Calculate the left position to center the toaster above the card
         const cardCenterX = cardRect.left + (cardRect.width / 2);
         const toasterLeft = cardCenterX - (toaster.offsetWidth / 2);
-
-        // Set the final top position (just above the card)
         const finalTop = cardRect.top - toasterHeight - marginAboveCard;
 
-        // Apply the calculated position
         toaster.style.left = `${toasterLeft}px`;
         toaster.style.top = `${finalTop}px`;
 
-        // Reset animation state to ensure animations re-trigger
         toaster.classList.remove("show", "shake");
-        toaster.offsetHeight; // Trigger reflow to restart animations
-        toaster.className = "toaster " + type; // Reset classes and set type
+        toaster.offsetHeight;
+        toaster.className = "toaster " + type;
         p.textContent = message;
         toaster.classList.add("show");
 
-        // Apply shake for all error messages
         if (type === "error") {
             toaster.classList.add("shake");
-            shakePage(); // Shake the entire page
+            shakePage();
         }
 
         setTimeout(() => {
@@ -283,14 +257,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 5000);
     }
 
-    // Function to shake the entire page
     function shakePage() {
         document.body.classList.remove("shake-all");
-        document.body.offsetHeight; // Trigger reflow to restart animation
+        document.body.offsetHeight;
         document.body.classList.add("shake-all");
     }
 
-    // Close toaster manually
     const toaster = document.getElementById("toaster");
     if (toaster) {
         const closeBtn = toaster.querySelector(".close");
