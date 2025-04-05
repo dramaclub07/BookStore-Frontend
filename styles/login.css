@@ -443,7 +443,7 @@ label {
 .btn-social {
     flex: 1;
     min-width: 120px;
-    padding: 12px; /* Adjusted padding for consistency */
+   
     border: none;
     border-radius: 8px;
     cursor: pointer;
