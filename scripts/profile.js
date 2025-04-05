@@ -1,5 +1,5 @@
-const BASE_URL = "http://127.0.0.1:3000/api/v1"; // Backend URL
-const PROXY_URL = "http://127.0.0.1:4000/api/v1"; // Proxy URL as fallback
+const BASE_URL = "http://127.0.0.1:3000/api/v1";
+const PROXY_URL = "http://127.0.0.1:4000/api/v1";
 
 let isEditingPersonalDetails = false;
 let isEditingAddress = {};
@@ -8,12 +8,9 @@ let isAddressFormVisible = false;
 document.addEventListener("DOMContentLoaded", async function () {
     const accessToken = localStorage.getItem('access_token');
     if (!accessToken) {
-        console.log("No token found, redirecting to login.");
         window.location.href = '../pages/login.html';
         return;
     }
-
-    console.log("Access token found:", accessToken);
 
     try {
         await loadUserProfile();
@@ -21,11 +18,9 @@ document.addEventListener("DOMContentLoaded", async function () {
         await loadCartSummary();
         setupHeaderEventListeners();
     } catch (error) {
-        console.error("Initialization error:", error);
     }
 });
 
-// Get auth headers
 function getAuthHeaders() {
     const token = localStorage.getItem('access_token');
     return {
@@ -34,11 +29,9 @@ function getAuthHeaders() {
     };
 }
 
-// Token Refresh Logic
 async function refreshAccessToken() {
     const refreshToken = localStorage.getItem("refresh_token");
     if (!refreshToken) {
-        console.error("No refresh token available");
         return false;
     }
 
@@ -53,7 +46,6 @@ async function refreshAccessToken() {
         });
 
         if (!response.ok && response.status >= 500) {
-            console.warn("Backend refresh failed, trying proxy");
             response = await fetch(proxyUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -65,17 +57,14 @@ async function refreshAccessToken() {
         if (response.ok && data.access_token) {
             localStorage.setItem("access_token", data.access_token);
             localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
-            console.log("Access token refreshed successfully");
             return true;
         } else {
-            console.error("Failed to refresh token:", data.error);
             localStorage.clear();
             alert("Session expired. Please log in again.");
             window.location.href = "../pages/login.html";
             return false;
         }
     } catch (error) {
-        console.error("Error refreshing token:", error);
         try {
             const proxyResponse = await fetch(proxyUrl, {
                 method: "POST",
@@ -86,11 +75,9 @@ async function refreshAccessToken() {
             if (proxyResponse.ok && data.access_token) {
                 localStorage.setItem("access_token", data.access_token);
                 localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
-                console.log("Access token refreshed via proxy");
                 return true;
             }
         } catch (proxyError) {
-            console.error("Proxy refresh also failed:", proxyError);
         }
         localStorage.clear();
         window.location.href = "../pages/login.html";
@@ -115,7 +102,6 @@ async function fetchWithAuth(url, options = {}) {
     try {
         let response = await fetch(url, options);
         if (!response.ok && response.status >= 500) {
-            console.warn(`Backend failed for ${url}, falling back to proxy`);
             response = await fetch(url.replace(BASE_URL, PROXY_URL), options);
         }
 
@@ -134,12 +120,10 @@ async function fetchWithAuth(url, options = {}) {
 
         return response;
     } catch (error) {
-        console.error(`Fetch error with backend: ${error.message}, trying proxy`);
         try {
             const proxyResponse = await fetch(url.replace(BASE_URL, PROXY_URL), options);
             return proxyResponse;
         } catch (proxyError) {
-            console.error(`Proxy fetch also failed: ${proxyError.message}`);
             return null;
         }
     }
@@ -184,12 +168,10 @@ function toggleEdit(sectionId) {
     }
 }
 
-// Load User Profile
 async function loadUserProfile() {
     try {
         const response = await fetchWithAuth(`${BASE_URL}/users/profile`);
         if (!response) {
-            console.log("Unauthorized or no response in loadUserProfile, redirecting.");
             logoutAndRedirect();
             return;
         }
@@ -197,7 +179,6 @@ async function loadUserProfile() {
         if (!response.ok) throw new Error(`Failed to fetch profile: ${response.status}`);
 
         const userData = await response.json();
-        console.log("Profile data received:", userData);
 
         const name = userData.full_name || userData.name || 'User';
         document.getElementById('full_name').value = name;
@@ -212,9 +193,6 @@ async function loadUserProfile() {
         if (profileElement) {
             profileElement.innerHTML = `<i class="fa-solid fa-user"></i> <span class="profile-name">${name}</span>`;
             localStorage.setItem('username', name);
-            console.log("Profile link updated with:", name);
-        } else {
-            console.error("Profile link element (#profile-link) not found in DOM");
         }
 
         localStorage.setItem('user', JSON.stringify({
@@ -223,12 +201,10 @@ async function loadUserProfile() {
             mobile_number: userData.mobile_number
         }));
     } catch (error) {
-        console.error("Profile fetch error:", error.message);
         alert(`Error fetching profile: ${error.message}`);
     }
 }
 
-// Save Personal Details
 async function savePersonalDetails() {
     const currentPassword = document.getElementById('current_password').value;
     const newPassword = document.getElementById('new_password').value;
@@ -289,12 +265,10 @@ async function savePersonalDetails() {
         toggleEdit('personal-details');
         await loadUserProfile();
     } catch (error) {
-        console.error('Error saving personal details:', error);
         alert(error.message);
     }
 }
 
-// Fetch Addresses
 async function fetchAddresses() {
     try {
         const response = await fetchWithAuth(`${BASE_URL}/addresses`);
@@ -312,12 +286,10 @@ async function fetchAddresses() {
             document.getElementById('address-list').innerHTML = '<p>No addresses found.</p>';
         }
     } catch (error) {
-        console.error('Error fetching addresses:', error);
         document.getElementById('address-list').innerHTML = '<p>No addresses found.</p>';
     }
 }
 
-// Render Addresses
 function renderAddresses(addresses) {
     const addressList = document.getElementById('address-list');
     addressList.innerHTML = '';
@@ -414,7 +386,6 @@ function toggleAddressForm() {
     }
 }
 
-// Save New Address
 async function saveNewAddress() {
     const zipCode = document.getElementById('new-zip-code').value;
     if (!zipCode) {
@@ -451,12 +422,10 @@ async function saveNewAddress() {
         toggleAddressForm();
         await fetchAddresses();
     } catch (error) {
-        console.error('Error adding address:', error);
         alert(error.message);
     }
 }
 
-// Save Existing Address
 async function saveAddress(addressId) {
     const zipCode = document.getElementById(`zip-code-${addressId}`).value;
     if (!zipCode) {
@@ -492,12 +461,10 @@ async function saveAddress(addressId) {
         isEditingAddress[addressId] = false;
         await fetchAddresses();
     } catch (error) {
-        console.error('Error saving address:', error);
         alert(error.message);
     }
 }
 
-// Delete Address
 async function deleteAddress(addressId) {
     if (!confirm('Are you sure you want to delete this address?')) return;
 
@@ -518,12 +485,10 @@ async function deleteAddress(addressId) {
         alert('Address deleted successfully');
         await fetchAddresses();
     } catch (error) {
-        console.error('Error deleting address:', error);
         alert(error.message);
     }
 }
 
-// Select Address
 async function selectAddress(addressId) {
     try {
         const response = await fetchWithAuth(`${BASE_URL}/addresses/${addressId}`);
@@ -551,28 +516,21 @@ async function selectAddress(addressId) {
         }));
         localStorage.setItem('selectedAddressId', selectedAddress.id);
 
-        console.log(`Address ${addressId} selected and stored:`, selectedAddress);
         alert(`Address ${addressId} selected`);
-
         window.location.href = '../pages/cart.html';
     } catch (error) {
-        console.error('Error selecting address:', error);
         alert(error.message);
     }
 }
 
-// Update Cart Count
 function updateCartCount(count) {
     const cartCount = document.querySelector('#cart-link .cart-count');
     if (cartCount) {
         cartCount.textContent = count;
         cartCount.style.display = count > 0 ? 'flex' : 'none';
-    } else {
-        console.error("Cart count element not found in DOM");
     }
 }
 
-// Load Cart Summary
 async function loadCartSummary() {
     try {
         const response = await fetchWithAuth(`${BASE_URL}/carts/summary`);
@@ -581,15 +539,12 @@ async function loadCartSummary() {
         if (!response.ok) throw new Error("Failed to fetch cart summary");
 
         const cartData = await response.json();
-        console.log("Cart summary:", cartData);
         updateCartCount(cartData.total_items || 0);
     } catch (error) {
-        console.error("Error fetching cart summary:", error);
         updateCartCount(0);
     }
 }
 
-// Setup Header Event Listeners
 function setupHeaderEventListeners() {
     let dropdownMenu = null;
     let isDropdownOpen = false;
@@ -600,15 +555,11 @@ function setupHeaderEventListeners() {
     if (logo) {
         logo.addEventListener("click", (event) => {
             event.preventDefault();
-            console.log("Logo clicked, redirecting to homepage");
             window.location.href = "../pages/homePage.html";
         });
-    } else {
-        console.error("Logo element not found in DOM");
     }
 
     if (!profileLink) {
-        console.error("Profile link element (#profile-link) not found in DOM");
         return;
     }
 
@@ -697,33 +648,26 @@ function setupHeaderEventListeners() {
     }
 }
 
-// Sign Out Function
 async function handleSignOut() {
     const provider = localStorage.getItem("socialProvider");
 
-    // Invalidate cache on logout
     try {
         await fetchWithAuth(`${BASE_URL}/logout`, {
             method: "POST",
             headers: getAuthHeaders()
         });
     } catch (error) {
-        console.error("Error invalidating cache on logout:", error);
     }
 
     if (provider === "google" && typeof google !== "undefined" && google.accounts) {
         google.accounts.id.disableAutoSelect();
-        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
-            console.log("Google session revoked");
-        });
+        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {});
     }
 
     if (provider === "facebook" && typeof FB !== "undefined") {
         FB.getLoginStatus(function (response) {
             if (response.status === "connected") {
-                FB.logout(function (response) {
-                    console.log("Facebook session revoked");
-                });
+                FB.logout(function (response) {});
             }
         });
     }

@@ -11,21 +11,19 @@ document.addEventListener("DOMContentLoaded", async function () {
     try {
         await loadUserProfile();
         await fetchOrderDetails();
-        await updateCartCount(); // Add this to refresh cart UI
+        await updateCartCount();
         setupHeaderEventListeners();
 
         document.querySelector('.continue-button')?.addEventListener('click', function() {
             window.location.href = '../pages/homePage.html';
         });
     } catch (error) {
-        console.error("Initialization error:", error);
         document.querySelector('.success-message').innerHTML = `
             <p>Error loading confirmation details. Please try again later.</p>
         `;
     }
 });
 
-// Get auth headers
 function getAuthHeaders() {
     const token = localStorage.getItem('access_token');
     return {
@@ -34,11 +32,9 @@ function getAuthHeaders() {
     };
 }
 
-// Token Refresh Logic
 async function refreshAccessToken() {
     const refreshToken = localStorage.getItem("refresh_token");
     if (!refreshToken) {
-        console.error("No refresh token available");
         return false;
     }
 
@@ -53,17 +49,14 @@ async function refreshAccessToken() {
         if (response.ok && data.access_token) {
             localStorage.setItem("access_token", data.access_token);
             localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
-            console.log("Access token refreshed successfully");
             return true;
         } else {
-            console.error("Failed to refresh token:", data.error);
             localStorage.clear();
             alert("Session expired. Please log in again.");
             window.location.href = "../pages/login.html";
             return false;
         }
     } catch (error) {
-        console.error("Error refreshing token:", error);
         localStorage.clear();
         window.location.href = "../pages/login.html";
         return false;
@@ -98,7 +91,6 @@ async function fetchWithAuth(url, options = {}) {
     return response;
 }
 
-// Load User Profile
 async function loadUserProfile() {
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/users/profile`);
@@ -112,11 +104,9 @@ async function loadUserProfile() {
             localStorage.setItem('username', userData.name || 'User');
         }
     } catch (error) {
-        console.error("Profile fetch error:", error.message);
     }
 }
 
-// Fetch Order Details
 async function fetchOrderDetails() {
     try {
         const urlParams = new URLSearchParams(window.location.search);
@@ -134,16 +124,13 @@ async function fetchOrderDetails() {
             }
 
             const orderData = await ordersResponse.json();
-            console.log("Orders Response:", orderData);
 
             if (orderData.orders && orderData.orders.length > 0) {
                 const latestOrder = orderData.orders.sort((a, b) => 
                     new Date(b.created_at) - new Date(a.created_at)
                 )[0];
-                console.log("Latest Order:", latestOrder);
                 displayOrderDetails(latestOrder);
             } else {
-                console.error("No orders found in response");
                 document.querySelector('.success-message').innerHTML = `
                     <p>No recent order found. Please place an order first.</p>
                 `;
@@ -160,21 +147,17 @@ async function fetchOrderDetails() {
             }
 
             const orderData = await orderResponse.json();
-            console.log("Order Response:", orderData);
             displayOrderDetails(orderData.order || orderData);
         }
 
-        // Ensure cartItems is cleared from localStorage
         localStorage.removeItem('cartItems');
     } catch (error) {
-        console.error("Error in fetchOrderDetails:", error);
         document.querySelector('.success-message').innerHTML = `
             <p>Error loading order details: ${error.message}</p>
         `;
     }
 }
 
-// Display Order Details
 function displayOrderDetails(order) {
     document.querySelector(".success-message").innerHTML = `
         <h1>Order Placed Successfully</h1>
@@ -193,7 +176,6 @@ function displayOrderDetails(order) {
     document.querySelector('.success-container').appendChild(myOrdersList);
 }
 
-// Update Cart Count
 async function updateCartCount() {
     const cartCountElement = document.querySelector("#cart-link .cart-count");
     if (!cartCountElement) return;
@@ -204,31 +186,25 @@ async function updateCartCount() {
 
         if (!response.ok) throw new Error("Failed to fetch cart");
         const data = await response.json();
-        console.log("Cart API response on confirmation:", data);
 
         const cartItems = data.cart || [];
         const totalItems = cartItems.reduce((sum, item) => sum + (item.quantity || 1), 0) || 0;
         cartCountElement.textContent = totalItems;
         cartCountElement.style.display = totalItems > 0 ? "flex" : "none";
 
-        // Sync localStorage with backend cart state
         localStorage.setItem('cartItems', JSON.stringify(cartItems));
     } catch (error) {
-        console.error("Error fetching cart count:", error);
         cartCountElement.textContent = "0";
         cartCountElement.style.display = "none";
     }
 }
 
-// Handle Unauthorized Access
 function handleUnauthorized() {
     alert("Session expired. Please log in again.");
     localStorage.removeItem('access_token');
-    console.log("Redirecting to login page due to 401");
     window.location.href = '../pages/login.html';
 }
 
-// Setup Header Event Listeners
 function setupHeaderEventListeners() {
     let dropdownMenu = null;
     let isDropdownOpen = false;
@@ -239,15 +215,11 @@ function setupHeaderEventListeners() {
     if (logo) {
         logo.addEventListener("click", (event) => {
             event.preventDefault();
-            console.log("Logo clicked, redirecting to homepage");
             window.location.href = "../pages/homePage.html";
         });
-    } else {
-        console.error("Logo element not found in DOM");
     }
 
     if (!profileLink) {
-        console.error("Profile link element (#profile-link) not found in DOM");
         return;
     }
 
@@ -336,23 +308,18 @@ function setupHeaderEventListeners() {
     }
 }
 
-// Sign Out Function
 function handleSignOut() {
     const provider = localStorage.getItem("socialProvider");
 
     if (provider === "google" && typeof google !== "undefined" && google.accounts) {
         google.accounts.id.disableAutoSelect();
-        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
-            console.log("Google session revoked");
-        });
+        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {});
     }
 
     if (provider === "facebook" && typeof FB !== "undefined") {
         FB.getLoginStatus(function (response) {
             if (response.status === "connected") {
-                FB.logout(function (response) {
-                    console.log("Facebook session revoked");
-                });
+                FB.logout(function (response) {});
             }
         });
     }

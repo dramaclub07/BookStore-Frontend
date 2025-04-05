@@ -84,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 alert(`Failed to add book: ${result.errors?.join(", ") || "Unknown error"}`);
             }
         } catch (error) {
-            console.error("Error adding book:", error);
+           
             alert("An error occurred while adding the book.");
         }
     });
@@ -125,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 alert(`Failed to upload CSV: ${result.errors?.join(", ") || "Unknown error"}`);
             }
         } catch (error) {
-            console.error("Error uploading CSV:", error);
+     
             alert("An error occurred while uploading the CSV.");
         }
     });

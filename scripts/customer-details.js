@@ -35,7 +35,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             alert("Please use the 'CONTINUE' button to proceed after verifying details.");
         });
     } catch (error) {
-        console.error("Initialization error:", error);
         alert("Failed to load page data. Please try again.");
     }
 });
@@ -53,7 +52,6 @@ function getAuthHeaders() {
 async function refreshAccessToken() {
     const refreshToken = localStorage.getItem("refresh_token");
     if (!refreshToken) {
-        console.error("No refresh token available");
         return false;
     }
 
@@ -68,17 +66,14 @@ async function refreshAccessToken() {
         if (response.ok && data.access_token) {
             localStorage.setItem("access_token", data.access_token);
             localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
-            console.log("Access token refreshed successfully");
             return true;
         } else {
-            console.error("Failed to refresh token:", data.error);
             localStorage.clear();
             alert("Session expired. Please log in again.");
             window.location.href = "../pages/login.html";
             return false;
         }
     } catch (error) {
-        console.error("Error refreshing token:", error);
         localStorage.clear();
         window.location.href = "../pages/login.html";
         return false;
@@ -146,7 +141,6 @@ async function loadUserProfile() {
             document.querySelector('input[readonly][value="81678954778"]')?.setAttribute('value', userData.mobile_number || 'N/A');
         }
     } catch (error) {
-        console.error("Profile fetch error:", error.message);
     }
 }
 
@@ -175,7 +169,6 @@ async function loadCartItems() {
 
         localStorage.setItem('cartItems', JSON.stringify(cartItems));
     } catch (error) {
-        console.error('Error fetching cart items:', error);
         cartContainer.innerHTML = `<p>Error loading cart: ${error.message}</p>`;
         updateCartCount(0);
     }
@@ -251,7 +244,6 @@ async function updateQuantity(button, change) {
     let currentQuantity = parseInt(quantityElement.textContent, 10);
 
     if (isNaN(currentQuantity)) {
-        console.error("Invalid quantity:", quantityElement.textContent);
         alert("Error: Invalid quantity.");
         return;
     }
@@ -294,7 +286,6 @@ async function updateQuantity(button, change) {
         });
         localStorage.setItem('cartItems', JSON.stringify(updatedCartItems));
     } catch (error) {
-        console.error("Error updating quantity:", error);
         alert("Failed to update quantity: " + error.message);
         quantityElement.textContent = currentQuantity;
     }
@@ -306,7 +297,6 @@ async function removeCartItem(button) {
     const bookId = cartItem.dataset.id;
 
     if (!bookId) {
-        console.error("Book ID not found");
         return;
     }
 
@@ -332,7 +322,6 @@ async function removeCartItem(button) {
         const updatedCartItems = cartItems.filter(item => item.book_id !== bookId);
         localStorage.setItem('cartItems', JSON.stringify(updatedCartItems));
     } catch (error) {
-        console.error("Error removing item:", error);
         alert("Failed to remove item: " + error.message);
     }
 }
@@ -344,7 +333,6 @@ async function loadOrderSummary() {
     const orderSummarySection = document.getElementById('order-summary-section');
 
     if (!orderSummarySection) {
-        console.warn("Order summary section (#order-summary-section) not found in DOM.");
         return;
     }
 
@@ -375,7 +363,6 @@ async function loadOrderSummary() {
 
         updateCartCount(totalItems);
     } catch (error) {
-        console.error("Error fetching order summary:", error);
         const fallbackTotalPrice = cartItems.reduce((sum, item) => 
             sum + (item.discounted_price * (item.quantity || 1)), 0).toFixed(2);
         orderSummarySection.innerHTML = `
@@ -403,7 +390,6 @@ async function fetchAddresses() {
         if (!data.success) throw new Error("Failed to load addresses from server");
         return data.addresses || [];
     } catch (error) {
-        console.error("Error fetching addresses:", error);
         alert("Error loading addresses: " + error.message);
         return null;
     }
@@ -508,7 +494,6 @@ async function saveCurrentLocationToBackend(locationData) {
         const result = await response.json();
         return result.address;
     } catch (error) {
-        console.error("Error saving current location:", error);
         throw error;
     }
 }
@@ -613,7 +598,6 @@ function setupHeaderEventListeners() {
     });
 
     if (!profileLink) {
-        console.error("Profile link element (#profile-link) not found in DOM");
         return;
     }
 
@@ -706,17 +690,13 @@ function handleSignOut() {
 
     if (provider === "google" && typeof google !== "undefined" && google.accounts) {
         google.accounts.id.disableAutoSelect();
-        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
-            console.log("Google session revoked");
-        });
+        google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {});
     }
 
     if (provider === "facebook" && typeof FB !== "undefined") {
         FB.getLoginStatus(function (response) {
             if (response.status === "connected") {
-                FB.logout(function (response) {
-                    console.log("Facebook session revoked");
-                });
+                FB.logout(function (response) {});
             }
         });
     }

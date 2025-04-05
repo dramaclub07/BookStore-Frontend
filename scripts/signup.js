@@ -32,9 +32,9 @@ const isAdminMode = urlParams.get("adminMode") === "true";
 const roleGroup = document.getElementById("role-group");
 
 if (isAdminMode) {
-    roleGroup.style.display = "block"; // Show role dropdown only in admin mode
+    roleGroup.style.display = "block";
 } else {
-    roleGroup.style.display = "none"; // Hide role dropdown by default
+    roleGroup.style.display = "none";
 }
 
 // Form validation and API submission
@@ -43,14 +43,12 @@ const signupForm = document.getElementById("signup-form");
 signupForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // Get form values
     const name = document.getElementById("signup-name").value.trim();
     const email = document.getElementById("signup-email").value.trim();
     const password = document.getElementById("signup-password").value.trim();
     const mobile = document.getElementById("signup-mobile").value.trim();
-    const role = isAdminMode ? document.getElementById("signup-role").value : "user"; // Default to "user" unless in admin mode
+    const role = isAdminMode ? document.getElementById("signup-role").value : "user";
 
-    // Get form elements for error handling
     const nameField = document.getElementById("signup-name");
     const emailField = document.getElementById("signup-email");
     const passwordField = document.getElementById("signup-password");
@@ -62,7 +60,6 @@ signupForm.addEventListener("submit", async (e) => {
     const mobileError = document.getElementById("mobile-error");
     const roleError = document.getElementById("role-error");
 
-    // Define elements and messages arrays, conditionally include role if in admin mode
     const errorElements = [nameField, emailField, passwordField, mobileField];
     const errorMessages = [nameError, emailError, passwordError, mobileError];
     if (isAdminMode) {
@@ -70,11 +67,9 @@ signupForm.addEventListener("submit", async (e) => {
         errorMessages.push(roleError);
     }
 
-    // Reset error states
     errorElements.forEach(el => el.classList.remove("error"));
     errorMessages.forEach(el => (el.textContent = ""));
 
-    // Validation rules aligned with backend requirements
     if (!name || name.length < 3 || name.length > 50) {
         nameField.classList.add("error");
         nameError.textContent = "Full name must be between 3 and 50 characters.";
@@ -101,14 +96,12 @@ signupForm.addEventListener("submit", async (e) => {
         return;
     }
 
-    // Role validation only in admin mode
     if (isAdminMode && (!role || (role !== "user" && role !== "admin"))) {
         roleField.classList.add("error");
         roleError.textContent = "Please select a valid role (Customer or Admin).";
         return;
     }
 
-    // API submission
     try {
         const response = await fetch(`${BASE_URL}/users`, {
             method: "POST",
@@ -121,7 +114,7 @@ signupForm.addEventListener("submit", async (e) => {
                     email: email,
                     password: password,
                     mobile_number: mobile,
-                    role: role // Send the selected role or "user" by default
+                    role: role
                 }
             }),
         });
@@ -132,23 +125,19 @@ signupForm.addEventListener("submit", async (e) => {
         }
 
         const data = await response.json();
-        console.log("Signup response:", data);
 
-        // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify({
             id: data.user.id,
             email: data.user.email,
             full_name: data.user.full_name,
-            role: role // Store the role as submitted
+            role: role
         }));
 
-        // Provide feedback and redirect based on context
         const roleText = role === "admin" ? "Admin" : "Customer";
         const redirectMessage = isAdminMode ? "Returning to homepage..." : "Redirecting to login...";
         alert(`Signup successful as ${roleText}! ${redirectMessage}`);
         window.location.href = isAdminMode ? "../pages/homePage.html" : "../pages/login.html";
     } catch (error) {
-        console.error("Signup Error:", error.message);
         alert(`Signup failed: ${error.message}. Please ensure the backend is running at ${BASE_URL}.`);
         errorMessages.forEach(el => (el.textContent = error.message));
     }
