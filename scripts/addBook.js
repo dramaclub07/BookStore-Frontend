@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://127.0.0.1:3000/api/v1";
+const API_BASE_URL = "https://bookstore-backend-p7e1.onrender.com/api/v1/";
 
 function getAuthHeaders() {
     const accessToken = localStorage.getItem("access_token");

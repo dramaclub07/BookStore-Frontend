@@ -1,4 +1,4 @@
-const BASE_URL = 'http://127.0.0.1:3000/api/v1';
+const BASE_URL = "https://bookstore-backend-p7e1.onrender.com/api/v1/";
 
 // Password toggle functionality
 document.getElementById("signup-toggle-password").addEventListener("click", () => {

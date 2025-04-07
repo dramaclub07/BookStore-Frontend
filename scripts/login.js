@@ -1,5 +1,8 @@
-// Access environment variables from a global config object (injected via HTML or config.js)
-const { API_BASE_URL, GITHUB_CLIENT_ID, GITHUB_REDIRECT_URI } = window.config;
+const API_BASE_URL = "https://bookstore-backend-p7e1.onrender.com/api/v1/";
+
+const GITHUB_CLIENT_ID = 'Ov23liI3VxGwFnrQoeL1'; 
+
+const GITHUB_REDIRECT_URI = 'http://127.0.0.1:5500/pages/login.html'; 
 
 function handleCredentialResponse(response) {
     localStorage.clear();
@@ -18,13 +21,13 @@ async function verifySocialToken(tokenOrCode, provider) {
         const endpoint = provider === 'google' ? '/google_auth' : '/github_auth/login';
         const payload = provider === 'google' ? { token: tokenOrCode } : { code: tokenOrCode };
 
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
         const data = await response.json();
 

@@ -1,4 +1,4 @@
-const BASE_URL = "http://127.0.0.1:3000/api/v1";
+const BASE_URL = "https://bookstore-backend-p7e1.onrender.com/api/v1/";
 const PROXY_URL = "http://127.0.0.1:4000/api/v1";
 
 let isEditingPersonalDetails = false;
