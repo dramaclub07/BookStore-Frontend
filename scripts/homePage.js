@@ -1,6 +1,4 @@
-// // API Base URLs and Pagination Settings
 // const API_BASE_URL = "https://bookstore-backend-p7e1.onrender.com/api/v1/"; // Backend URL
-// // const PROXY_URL = "http://127.0.0.1:4000/api/v1"; // Proxy URL as fallback
 // let currentPage = 1;
 // let totalPages = 1;
 // const booksPerPage = 12;
@@ -48,8 +46,7 @@
 //         return false;
 //     }
 
-//     const backendUrl = `${API_BASE_URL}/refresh`;
-//     const proxyUrl = `${PROXY_URL}/refresh`;
+//     const backendUrl = `${API_BASE_URL}refresh`;
 
 //     try {
 //         let response = await fetch(backendUrl, {
@@ -57,14 +54,6 @@
 //             headers: { "Content-Type": "application/json" },
 //             body: JSON.stringify({ refresh_token: refreshToken })
 //         });
-
-//         if (!response.ok && response.status >= 500) {
-//             response = await fetch(proxyUrl, {
-//                 method: "POST",
-//                 headers: { "Content-Type": "application/json" },
-//                 body: JSON.stringify({ refresh_token: refreshToken })
-//             });
-//         }
 
 //         const data = await response.json();
 //         if (response.ok && data.access_token) {
@@ -78,20 +67,7 @@
 //             return false;
 //         }
 //     } catch (error) {
-//         try {
-//             const proxyResponse = await fetch(proxyUrl, {
-//                 method: "POST",
-//                 headers: { "Content-Type": "application/json" },
-//                 body: JSON.stringify({ refresh_token: refreshToken })
-//             });
-//             const data = await proxyResponse.json();
-//             if (proxyResponse.ok && data.access_token) {
-//                 localStorage.setItem("access_token", data.access_token);
-//                 localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
-//                 return true;
-//             }
-//         } catch (proxyError) {
-//         }
+//         console.log("Subtle token refresh failure:", error.message);
 //         localStorage.clear();
 //         window.location.href = "../pages/login.html";
 //         return false;
@@ -99,12 +75,11 @@
 // }
 
 // async function fetchWithAuth(url, options = {}) {
-//     url = url.replace(API_BASE_URL, PROXY_URL);
-
 //     if (!isAuthenticated()) {
 //         try {
 //             return await fetch(url, options);
 //         } catch (error) {
+//             console.log("Subtle unauthenticated fetch error:", error.message);
 //             return null;
 //         }
 //     }
@@ -130,6 +105,7 @@
 //         }
 //         return response;
 //     } catch (error) {
+//         console.log("Subtle authenticated fetch error:", error.message);
 //         return null;
 //     }
 // }
@@ -142,7 +118,7 @@
 //     localStorage.setItem(THEME_KEY, newTheme);
 // }
 
-// // Rest of the code remains unchanged up to DOMContentLoaded
+// // DOMContentLoaded Event
 // document.addEventListener("DOMContentLoaded", async () => {
 //     const isLoggedIn = isAuthenticated();
 //     const userIsAdmin = isAdmin();
@@ -410,17 +386,13 @@
 
 //     function openAdminToolsModal() {
 //         adminToolsModal = document.getElementById("admin-tools-modal");
-//         if (!adminToolsModal) {
-//             return;
-//         }
+//         if (!adminToolsModal) return;
 //         adminToolsModal.style.display = "flex";
 //         isAdminToolsModalOpen = true;
 //     }
 
 //     function closeAdminToolsModal() {
-//         if (adminToolsModal) {
-//             adminToolsModal.style.display = "none";
-//         }
+//         if (adminToolsModal) adminToolsModal.style.display = "none";
 //         isAdminToolsModalOpen = false;
 //     }
 // });
@@ -437,7 +409,7 @@
 //     }
 
 //     try {
-//         const response = await fetchWithAuth(`${API_BASE_URL}/users/profile`);
+//         const response = await fetchWithAuth(`${API_BASE_URL}users/profile`);
 //         if (!response) return;
 
 //         if (!response.ok) throw new Error(`Profile fetch failed with status: ${response.status}`);
@@ -463,7 +435,7 @@
 //     }
 
 //     try {
-//         const response = await fetchWithAuth(`${API_BASE_URL}/carts`);
+//         const response = await fetchWithAuth(`${API_BASE_URL}carts`);
 //         if (!response) return;
 
 //         if (!response.ok) throw new Error("Failed to fetch cart");
@@ -484,28 +456,23 @@
 //     const homePath = "../pages/homePage.html";
 
 //     try {
-//         await fetchWithAuth(`${API_BASE_URL}/logout`, {
+//         await fetchWithAuth(`${API_BASE_URL}logout`, {
 //             method: "POST",
 //             headers: getAuthHeaders()
 //         });
-//     } catch (error) {
-//     }
+//     } catch (error) {}
 
 //     try {
 //         if (provider === "google" && typeof google !== "undefined" && google.accounts) {
 //             google.accounts.id.disableAutoSelect();
 //             await new Promise((resolve) => {
-//                 google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => {
-//                     resolve();
-//                 });
+//                 google.accounts.id.revoke(localStorage.getItem("socialEmail") || "", () => resolve());
 //             });
 //         } else if (provider === "facebook" && typeof FB !== "undefined") {
 //             await new Promise((resolve) => {
 //                 FB.getLoginStatus(function (response) {
 //                     if (response.status === "connected") {
-//                         FB.logout(function (response) {
-//                             resolve();
-//                         });
+//                         FB.logout(function () { resolve(); });
 //                     } else {
 //                         resolve();
 //                     }
@@ -530,12 +497,13 @@
 
 // async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) {
 //     const bookContainer = document.getElementById("book-list");
-//     const bookLoader = document.getElementById("bookLoader");
+//     const bookLoader = document.getElementById("book-loader"); // Updated to match HTML
 //     const prevButton = document.getElementById("prev-page");
 //     const nextButton = document.getElementById("next-page");
 //     const totalBooksElement = document.getElementById("total-books");
 
 //     if (!bookContainer) {
+//         console.log("Subtle note: Book container not found");
 //         return;
 //     }
 
@@ -546,20 +514,23 @@
 
 //     try {
 //         const searchQuery = new URLSearchParams(window.location.search).get("query") || "";
-//         let url = `${API_BASE_URL}/books?page=${page}&per_page=${booksPerPage}&sort=${sortBy}&force_refresh=${forceRefresh}`;
-//         if (searchQuery) url = `${API_BASE_URL}/books/search?page=${page}&per_page=${booksPerPage}&sort=${sortBy}&query=${encodeURIComponent(searchQuery)}&force_refresh=${forceRefresh}`;
+//         let url = `${API_BASE_URL}books?page=${page}&per_page=${booksPerPage}&sort=${sortBy}&force_refresh=${forceRefresh}`;
+//         if (searchQuery) url = `${API_BASE_URL}books/search?page=${page}&per_page=${booksPerPage}&sort=${sortBy}&query=${encodeURIComponent(searchQuery)}&force_refresh=${forceRefresh}`;
 
+//         console.log("Subtly fetching books from:", url);
 //         const response = await fetchWithAuth(url, { method: "GET" });
 //         if (!response) {
+//             console.log("Subtle note: No response received");
+//             bookContainer.innerHTML = "<p>No books loaded. Please try again.</p>";
 //             return;
 //         }
 
-//         if (!response.ok) {
-//             const errorText = await response.text();
-//             throw new Error(`HTTP Error ${response.status}: ${errorText}`);
-//         }
-
 //         const data = await response.json();
+//         console.log("Subtle data received:", data.books.length, "books");
+
+//         if (!response.ok) {
+//             throw new Error(`HTTP Error ${response.status}: ${data.error || "Unknown error"}`);
+//         }
 
 //         let books = data.books || [];
 //         if (!books.length) {
@@ -578,6 +549,7 @@
 //         if (totalBooksElement) totalBooksElement.textContent = totalBooks;
 //         updatePagination(totalPages, currentPage);
 //     } catch (error) {
+//         console.log("Subtle fetchBooks error:", error.message);
 //         bookContainer.innerHTML = "<p>Failed to load books. Please try again.</p>";
 //     } finally {
 //         if (bookLoader) bookLoader.style.display = "none";
@@ -588,9 +560,7 @@
 
 // function displayBooks(books) {
 //     const bookContainer = document.getElementById("book-list");
-//     if (!bookContainer) {
-//         return;
-//     }
+//     if (!bookContainer) return;
 
 //     bookContainer.innerHTML = "";
 
@@ -677,12 +647,10 @@
 
 // async function openEditBookModal(bookId) {
 //     editBookModal = document.getElementById("edit-book-modal");
-//     if (!editBookModal) {
-//         return;
-//     }
+//     if (!editBookModal) return;
 
 //     try {
-//         const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}`);
+//         const response = await fetchWithAuth(`${API_BASE_URL}books/${bookId}`);
 //         if (!response) return;
 
 //         if (!response.ok) throw new Error(`Error ${response.status}: Unable to fetch book details`);
@@ -706,9 +674,7 @@
 // }
 
 // function closeEditBookModal() {
-//     if (editBookModal) {
-//         editBookModal.style.display = "none";
-//     }
+//     if (editBookModal) editBookModal.style.display = "none";
 //     isEditBookModalOpen = false;
 // }
 
@@ -723,7 +689,7 @@
 //     };
 
 //     try {
-//         const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}`, {
+//         const response = await fetchWithAuth(`${API_BASE_URL}books/${bookId}`, {
 //             method: "PUT",
 //             body: JSON.stringify(bookData)
 //         });
@@ -744,7 +710,7 @@
 
 // async function deleteBook(bookId) {
 //     try {
-//         const response = await fetchWithAuth(`${API_BASE_URL}/books/${bookId}`, {
+//         const response = await fetchWithAuth(`${API_BASE_URL}books/${bookId}`, {
 //             method: "DELETE"
 //         });
 
@@ -783,14 +749,12 @@
 // }
 
 // function viewBookDetails(bookId) {
-//     if (bookId) {
-//         window.location.href = `../pages/bookDetails.html?id=${bookId}`;
-//     }
+//     if (bookId) window.location.href = `../pages/bookDetails.html?id=${bookId}`;
 // }
 
 // async function fetchSearchSuggestions(query) {
 //     try {
-//         const url = `${API_BASE_URL}/books/search_suggestions?query=${encodeURIComponent(query)}`;
+//         const url = `${API_BASE_URL}books/search_suggestions?query=${encodeURIComponent(query)}`;
 //         const response = await fetchWithAuth(url, { method: "GET" });
 //         if (!response) return;
 
@@ -815,15 +779,11 @@
 
 // function displaySearchSuggestions(suggestions) {
 //     const searchInput = document.getElementById("search");
-//     if (!searchInput) {
-//         return;
-//     }
+//     if (!searchInput) return;
 
 //     closeSearchDropdown();
 
-//     if (!suggestions || suggestions.length === 0) {
-//         return;
-//     }
+//     if (!suggestions || suggestions.length === 0) return;
 
 //     searchDropdown = document.createElement("div");
 //     searchDropdown.classList.add("search-dropdown-menu");
@@ -883,6 +843,7 @@
 // });
 // API Base URLs and Pagination Settings
 const API_BASE_URL = "https://bookstore-backend-p7e1.onrender.com/api/v1/"; // Backend URL
+const PROXY_URL = "http://127.0.0.1:4000/api/v1"; // Proxy URL for local testing
 let currentPage = 1;
 let totalPages = 1;
 const booksPerPage = 12;
@@ -926,72 +887,72 @@ function isAdmin() {
 
 async function refreshAccessToken() {
     const refreshToken = localStorage.getItem("refresh_token");
-    if (!refreshToken) {
-        return false;
-    }
+    if (!refreshToken) return false;
 
-    const backendUrl = `${API_BASE_URL}refresh`;
+    const urls = [`${PROXY_URL}refresh`, `${API_BASE_URL}refresh`]; // Try proxy first, then backend
 
-    try {
-        let response = await fetch(backendUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh_token: refreshToken })
-        });
-
-        const data = await response.json();
-        if (response.ok && data.access_token) {
-            localStorage.setItem("access_token", data.access_token);
-            localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
-            return true;
-        } else {
-            localStorage.clear();
-            alert("Session expired. Please log in again.");
-            window.location.href = "../pages/login.html";
-            return false;
+    for (const url of urls) {
+        try {
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refresh_token: refreshToken })
+            });
+            const data = await response.json();
+            if (response.ok && data.access_token) {
+                localStorage.setItem("access_token", data.access_token);
+                localStorage.setItem("token_expires_in", Date.now() + (data.expires_in * 1000));
+                return true;
+            }
+        } catch (error) {
+            console.log(`Subtle refresh failure at ${url}:`, error.message);
         }
-    } catch (error) {
-        console.log("Subtle token refresh failure:", error.message);
-        localStorage.clear();
-        window.location.href = "../pages/login.html";
-        return false;
     }
+
+    localStorage.clear();
+    alert("Session expired. Please log in again.");
+    window.location.href = "../pages/login.html";
+    return false;
 }
 
 async function fetchWithAuth(url, options = {}) {
-    if (!isAuthenticated()) {
-        try {
-            return await fetch(url, options);
-        } catch (error) {
-            console.log("Subtle unauthenticated fetch error:", error.message);
-            return null;
-        }
-    }
+    const urls = [url.replace(API_BASE_URL, PROXY_URL), url]; // Try proxy first, then backend
 
-    const expiresIn = localStorage.getItem("token_expires_in");
-    if (expiresIn && Date.now() >= expiresIn) {
-        const refreshed = await refreshAccessToken();
-        if (!refreshed) return null;
-    }
-
-    options.headers = { ...options.headers, ...getAuthHeaders() };
-
-    try {
-        let response = await fetch(url, options);
-        if (!response.ok && response.status === 401) {
-            const refreshed = await refreshAccessToken();
-            if (refreshed) {
-                options.headers = { ...options.headers, ...getAuthHeaders() };
-                response = await fetch(url, options);
-            } else {
-                return null;
+    for (const fetchUrl of urls) {
+        if (!isAuthenticated()) {
+            try {
+                return await fetch(fetchUrl, options);
+            } catch (error) {
+                console.log(`Subtle unauthenticated fetch error at ${fetchUrl}:`, error.message);
+                continue;
             }
         }
-        return response;
-    } catch (error) {
-        console.log("Subtle authenticated fetch error:", error.message);
-        return null;
+
+        const expiresIn = localStorage.getItem("token_expires_in");
+        if (expiresIn && Date.now() >= expiresIn) {
+            const refreshed = await refreshAccessToken();
+            if (!refreshed) return null;
+        }
+
+        options.headers = { ...options.headers, ...getAuthHeaders() };
+
+        try {
+            let response = await fetch(fetchUrl, options);
+            if (!response.ok && response.status === 401) {
+                const refreshed = await refreshAccessToken();
+                if (refreshed) {
+                    options.headers = { ...options.headers, ...getAuthHeaders() };
+                    response = await fetch(fetchUrl, options);
+                } else {
+                    return null;
+                }
+            }
+            if (response.ok) return response;
+        } catch (error) {
+            console.log(`Subtle fetch error at ${fetchUrl}:`, error.message);
+        }
     }
+    return null;
 }
 
 // Toggle theme function
@@ -1002,7 +963,7 @@ function toggleTheme() {
     localStorage.setItem(THEME_KEY, newTheme);
 }
 
-// DOMContentLoaded Event
+// DOMContentLoaded Event and other functions remain unchanged up to fetchBooks
 document.addEventListener("DOMContentLoaded", async () => {
     const isLoggedIn = isAuthenticated();
     const userIsAdmin = isAdmin();
@@ -1381,7 +1342,7 @@ async function handleSignOut() {
 
 async function fetchBooks(sortBy = "relevance", page = 1, forceRefresh = false) {
     const bookContainer = document.getElementById("book-list");
-    const bookLoader = document.getElementById("book-loader"); // Updated to match HTML
+    const bookLoader = document.getElementById("book-loader");
     const prevButton = document.getElementById("prev-page");
     const nextButton = document.getElementById("next-page");
     const totalBooksElement = document.getElementById("total-books");
