@@ -1,4 +1,4 @@
-const API_BASE_URL = window.config.API_BASE_URL;; // Backend URL
+const API_BASE_URL = window.config.API_BASE_URL; // Backend URL
 const PROXY_URL = "http://127.0.0.1:4000/api/v1"; // Proxy URL for local testing
 let currentPage = 1;
 let totalPages = 1;
