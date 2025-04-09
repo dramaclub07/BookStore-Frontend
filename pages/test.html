@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Env</title>
+</head>
+<body>
+  <h1>Testing env.js</h1>
+
+  <script src="../scripts/env.js"></script>
+  <script>
+    document.write("GOOGLE_CLIENT_ID: " + window.config.GOOGLE_CLIENT_ID + "<br>");
+    document.write("GITHUB_CLIENT_ID: " + window.config.GITHUB_CLIENT_ID + "<br>");
+    document.write("API_BASE_URL: " + window.config.API_BASE_URL + "<br>");
+    console.log(window.config);
+  </script>
+</body>
+</html>

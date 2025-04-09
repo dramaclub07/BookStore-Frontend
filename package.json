@@ -4,8 +4,9 @@
   "description": "",
   "main": "build.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "node build.js"
+    "build": "node build.js",
+    "vercel-build": "npm run build"
+  
   },
   "keywords": [],
   "author": "",
