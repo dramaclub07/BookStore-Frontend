@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://bookstore-backend-p7e1.onrender.com/api/v1/";
+const API_BASE_URL = window.config.API_BASE_URL;;
 
 const GITHUB_CLIENT_ID = 'Ov23liI3VxGwFnrQoeL1'; 
 

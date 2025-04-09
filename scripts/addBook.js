@@ -1,4 +1,4 @@
-const API_BASE_URL = "https://bookstore-backend-p7e1.onrender.com/api/v1/";
+const API_BASE_URL = window.config.API_BASE_URL;;
 
 function getAuthHeaders() {
     const accessToken = localStorage.getItem("access_token");

@@ -1,6 +1,9 @@
 document.addEventListener("DOMContentLoaded", () => {
     const forgotPasswordForm = document.getElementById("forgot-password-form");
-    const API_BASE_URL = "https://bookstore-backend-p7e1.onrender.com/api/v1/";
+    // const API_BASE_URL = window.config.API_BASE_URL;;
+    const API_BASE_URL =
+      window.env.BACKEND_URL ||
+      "https://bookstore-backend-p7e1.onrender.com/api/v1/";
 
     if (forgotPasswordForm) {
         forgotPasswordForm.addEventListener("submit", async (e) => {

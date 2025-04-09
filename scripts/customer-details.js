@@ -1,4 +1,7 @@
-const API_BASE_URL =  "https://bookstore-backend-p7e1.onrender.com/api/v1/";
+// const API_BASE_URL =  "https://bookstore-backend-p7e1.onrender.com/api/v1/";
+const API_BASE_URL =
+  window.env.BACKEND_URL ||
+  "https://bookstore-backend-p7e1.onrender.com/api/v1/";
 
 document.addEventListener("DOMContentLoaded", async () => {
     const accessToken = localStorage.getItem('access_token');

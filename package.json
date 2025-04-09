@@ -1,5 +1,8 @@
 {
-  "dependencies": {
-    "dotenv": "^16.4.7"
+  "name": "my-frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "mkdir -p public && cp -r pages/* public/ && cp -r scripts/* public/scripts/ && cp -r styles/* public/styles/ && cp -r assets/* public/assets/",
+    "vercel-build": "npm run build"
   }
 }
