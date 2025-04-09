@@ -2,7 +2,10 @@
   "name": "book-store-frontend",
   "version": "1.0.0",
   "scripts": {
-    "build": "mkdir -p public && cp -r pages/* public/ && cp -r scripts/* public/scripts/ && cp -r styles/* public/styles/ && cp -r assets/* public/assets/",
+    "build": "node build.js",
     "vercel-build": "npm run build"
+  },
+  "engines": {
+    "node": "20.14.0"
   }
 }
