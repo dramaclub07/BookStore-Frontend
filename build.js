@@ -1,23 +1,25 @@
-const fs = require('fs').promises;
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-async function build() {
-  // Remove public directory if it exists
-  const publicPath = path.join(__dirname, 'public');
-  if (await fs.access(publicPath).then(() => true).catch(() => false)) {
-    await fs.rm(publicPath, { recursive: true, force: true });
+const env = {
+  GOOGLE_CLIENT_ID:
+    "487636959884-qpcsgvs3m6vcmjtmmt60mnpjb66bv2uj.apps.googleusercontent.com",
+  GITHUB_CLIENT_ID: "Ov23liI3VxGwFnrQoeL1",
+  BACKEND_URL: process.env.BACKEND_URL || "http://localhost:3000", // Fallback if undefined
+};
+
+try {
+  const jsDir = path.join(__dirname, "js");
+  // Create 'js/' directory if it doesn’t exist
+  if (!fs.existsSync(jsDir)) {
+    fs.mkdirSync(jsDir, { recursive: true }); // recursive ensures parent dirs are created if needed
+    console.log("Created js/ directory");
   }
 
-  // Create public directory
-  await fs.mkdir(publicPath, { recursive: true });
-
-  // Copy directories
-  await fs.cp(path.join(__dirname, 'pages'), path.join(publicPath, 'pages'), { recursive: true });
-  await fs.cp(path.join(__dirname, 'scripts'), path.join(publicPath, 'scripts'), { recursive: true });
-  await fs.cp(path.join(__dirname, 'styles'), path.join(publicPath, 'styles'), { recursive: true });
-  await fs.cp(path.join(__dirname, 'assets'), path.join(publicPath, 'assets'), { recursive: true }).catch(() => {
-    console.warn('assets/ not found, skipping');
-  }); // Skip if assets/ is missing
+  const content = `window.env = ${JSON.stringify(env, null, 2)};`;
+  fs.writeFileSync(path.join(jsDir, "env.js"), content);
+  console.log("Generated env.js successfully");
+} catch (error) {
+  console.error("Error generating env.js:", error.message);
+  process.exit(1); // Exit with failure code
 }
-
-build().catch(console.error);
