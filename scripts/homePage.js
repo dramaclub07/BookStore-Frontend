@@ -10,7 +10,7 @@ let isSearchDropdownOpen = false;
 
 // Admin tools modal state
 let adminToolsModal = null;
-let isAdminToolsModalOpen = false;
+let isAdminToolsModalOpen = false; 
 
 // Edit book modal state
 let editBookModal = null;
