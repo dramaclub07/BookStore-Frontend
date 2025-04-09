@@ -1,5 +1,5 @@
 // API Base URL
-const API_BASE_URL = "https://bookstore-backend-p7e1.onrender.com/api/v1/";
+const API_BASE_URL = window.config.API_BASE_URL;;
 
 // Global variable to store cart items after initial load
 let cartItemsCache = null;
@@ -90,9 +90,7 @@ async function fetchWithAuth(url, options = {}) {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({})); // Handle JSON parse errors
       throw new Error(
-        `Request failed: ${errorData.error || response.statusText} (Status: ${
-          response.status
-        })`
+        `Request failed: ${errorData.error || response.statusText} (Status: ${response.status})`
       );
     }
     return response;
@@ -544,9 +542,7 @@ async function saveCurrentLocationToBackend(locationData) {
     const result = await response.json();
     if (!response.ok)
       throw new Error(
-        `Failed to save address: ${result.error || "Server error"} (Status: ${
-          response.status
-        })`
+        `Failed to save address: ${result.error || "Server error"} (Status: ${response.status})`
       );
 
     return result.address || result;
