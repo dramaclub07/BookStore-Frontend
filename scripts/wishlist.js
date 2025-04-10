@@ -2,13 +2,40 @@
 const API_BASE_URL = window.config.API_BASE_URL;; // Backend URL
 const PROXY_URL = "http://127.0.0.1:4000/api/v1"; // Proxy URL as fallback
 
+
+
+function showToast(message, type = 'info') {
+    const existingToast = document.querySelector('.toast');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.classList.add('toast');
+    if (type === 'success') toast.classList.add('success');
+    else if (type === 'error') toast.classList.add('error');
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+
+    if (type === 'error' && message.includes("Please log in")) {
+        setTimeout(() => {
+            window.location.href = "./pages/login.html";
+        }, 100);
+    }
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     const wishlistContainer = document.getElementById("wishlist-container");
     const wishlistCountElement = document.getElementById("wishlist-count");
 
     const accessToken = localStorage.getItem("access_token");
     if (!accessToken) {
-        window.location.href = "../pages/login.html";
+        // window.location.href = "../pages/login.html";
+        showToast("Please log in to view your wishlist.");
         return;
     }
 
@@ -63,8 +90,8 @@ async function refreshAccessToken() {
         } else {
             console.error("Failed to refresh token:", data.error);
             localStorage.clear();
-            alert("Session expired. Please log in again.");
-            window.location.href = "../pages/login.html";
+            showToast("Session expired. Please log in again.");
+            // window.location.href = "../pages/login.html";
             return false;
         }
     } catch (error) {
@@ -86,7 +113,8 @@ async function refreshAccessToken() {
             console.error("Proxy refresh also failed:", proxyError);
         }
         localStorage.clear();
-        window.location.href = "../pages/login.html";
+        // window.location.href = "../pages/login.html";
+        showToast("Session expired. Please log in again.");
         return false;
     }
 }
@@ -283,11 +311,12 @@ async function removeFromWishlist(bookId) {
             throw new Error(errorData.error || "Failed to remove from wishlist");
         }
 
-        alert("Item removed from wishlist successfully!");
+
+        showToast("Item removed from wishlist.");
         await fetchWishlist(); // Refresh the wishlist
     } catch (error) {
         console.error("Error removing from wishlist:", error);
-        alert(`Failed to remove item from wishlist: ${error.message}`);
+        showToast("Failed to remove from wishlist. Please try again.");
     }
 }
 
@@ -430,6 +459,6 @@ async function handleSignOut() {
     }
 
     localStorage.clear();
-    alert("Logged out successfully.");
+    showToast("You have been signed out.");
     window.location.href = "../pages/homePage.html";
 }

@@ -349,3 +349,57 @@ footer {
     color: #333;
     font-weight: bold;
 }
+
+/* Toast Notification Styles */
+.toast {
+    position: fixed;
+    top: 80px; /* Adjusted for your ~60px navbar + padding */
+    right: 20px;
+    min-width: 300px;
+    max-width: 400px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 16px;
+    line-height: 1.4;
+    color: #fff;
+    background-color: #007bff; /* Info default */
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 1100;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast.success {
+    background-color: #28a745; /* Green */
+    border-left: 4px solid #218838;
+}
+
+.toast.error {
+    background-color: #dc3545; /* Red */
+    border-left: 4px solid #c82333;
+}
+
+.toast:not(.success):not(.error) {
+    background-color: #007bff; /* Blue */
+    border-left: 4px solid #0069d9;
+}
+
+header, nav {
+    z-index: 1000;
+}
+
+@media (max-width: 600px) {
+    .toast {
+        min-width: 250px;
+        max-width: 90%;
+        right: 10px;
+        top: 70px;
+    }
+}
